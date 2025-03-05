@@ -2,8 +2,9 @@ from .indexer import Indexer
 import logging
 from rdflib import Graph
 from typing import Optional
-from os.path import isfile, basename
+from os.path import isfile 
 from ..ontologies import OWLOntology
+from ..ontologies.ontology import slug_from_path
 
 class Ingester:
     def __init__(self, indexer: Indexer, logger: logging.Logger):
@@ -47,7 +48,7 @@ class Ingester:
             return None 
 
         self.logger.debug('Inserting ontology %s from %r', owl.uri, path)
-        slug = basename(path)
+        slug = slug_from_path(path)
         try:
             self.indexer.upsert(slug, owl)
         except Exception as err:

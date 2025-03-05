@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from rdflib import Graph
 from rdflib.namespace import RDF
+from os.path import basename, splitext
 from typing import Iterable
 
 @dataclass
@@ -15,6 +16,13 @@ class Ontology:
 
     # set of urls defined by this ontology
     definienda: set[str]
+
+def slug_from_path(path: str) -> str:
+    """ Given a relative or absolute pathname, return a slug for the given ontology """
+    
+    base, _ = splitext(basename(path))
+    return base
+    
 
 def subjects(graph: Graph, types: Iterable[str]) -> set[str]:
     """ Extracts all subjects of the given type from the graph """

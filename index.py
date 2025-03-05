@@ -1,7 +1,7 @@
 import argparse
 import sqlite3
 from lontod.indexer import Indexer, Ingester
-from os.path import isdir, isfile, basename
+from os.path import isdir, isfile 
 import logging
 
 
