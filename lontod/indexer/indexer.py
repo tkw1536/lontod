@@ -80,7 +80,7 @@ class Indexer:
         try:
             cursor.execute('INSERT INTO NAMES (SLUG, URI) VALUES (?, ?)', (slug, ontology.uri))
             cursor.executemany(
-                'INSERT INTO ONTOLOGIES (URI, MIME_TYPE, DATA) VALUES(?, ?, ?)',
+                'INSERT INTO ONTOLOGIES (URI, MIME_TYPE, DATA) VALUES(?, ?, CAST(? AS BLOB))',
                 [
                     (ontology.uri,media_type,data) for (media_type, data) in ontology.encodings.items()
                 ]
