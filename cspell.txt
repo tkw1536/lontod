@@ -1,0 +1,8 @@
+definienda
+pylode
+hext
+Ontopub
+executescript
+executemany
+ontpub
+
