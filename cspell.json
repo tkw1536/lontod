@@ -1,6 +1,9 @@
 {
     "version": "0.2",
     "language": "en",
+    "files": [
+        "**/*.py"
+    ],
     "dictionaries": ["words"],
     "dictionaryDefinitions": [
         { "name": "words", "path": "./cspell.txt"}
