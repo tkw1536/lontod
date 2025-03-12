@@ -1,6 +1,6 @@
 """OWL Ontology Parsing"""
 
-from typing import Generator, List
+from typing import Generator, List, Tuple, Union, Optional
 
 from dominate.tags import code, div, dom_tag, table, td, th, tr
 from pylode.profiles.ontpub import OntPub
@@ -10,7 +10,7 @@ from rdflib.namespace import (
     RDF,
 )
 
-from .ontology import Ontology
+from .ontology import NoOntologyFound, Ontology
 
 _DEFINIENDA = {
     OWL.Class,
@@ -41,17 +41,17 @@ def owl_ontology(graph: Graph) -> Ontology:
     for s in graph.subjects(RDF.type, OWL.Ontology):
         uri = str(s)
     if uri is None:
-        raise Exception("no defined owl ontology")
+        raise NoOntologyFound()
 
     # encode the ontology in all different formats
     types = [
-        (media_type, graph.serialize(None, format))
+        (media_type, _as_utf8(graph.serialize(None, format)))
         for (format, media_type) in _FORMAT_TO_MEDIA_TYPES_.items()
     ]
 
     # make html
     pub = OntPub(graph)
-    types.append(("text/html", pub.make_html().encode("utf-8")))
+    types.append(("text/html", _as_utf8(pub.make_html())))
 
     return Ontology(
         uri=uri,
@@ -60,7 +60,13 @@ def owl_ontology(graph: Graph) -> Ontology:
     )
 
 
-def definienda_of(pub: OntPub, uri: str) -> Generator[[str, str]]:
+def _as_utf8(value: Union[str, bytes]) -> bytes:
+    if isinstance(value, str):
+        return value.encode("utf-8")
+    return value
+
+
+def definienda_of(pub: OntPub, uri: str) -> Generator[Tuple[str, Optional[str]]]:
     """finds all (definiendum, fragment) identifiers in the given ontopub profile."""
 
     # This finds all definienda defined in the ontopub profile.
@@ -72,7 +78,7 @@ def definienda_of(pub: OntPub, uri: str) -> Generator[[str, str]]:
     # - the first one must say "IRI"
     # - the second one must contain the code element (text used as definiendum)
 
-    yield (uri, "")
+    yield (uri, None)
 
     for code_elem in all_tags(pub.doc.body):
         if not isinstance(code_elem, code):

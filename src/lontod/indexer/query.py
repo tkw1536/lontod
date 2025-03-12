@@ -1,8 +1,8 @@
 from logging import Logger
 from sqlite3 import Connection
-from typing import Any, Iterable, List, Optional, Tuple
-
-from ..db import Pool, SqliteConnector
+from typing import Iterable, Optional, Tuple
+from ..db import SqliteConnector
+from ..utils.pool import Pool
 
 
 class Query:
@@ -50,19 +50,9 @@ class Query:
         finally:
             cursor.close()
 
-    def get_mime_types_uri(self, uri: str) -> set[str]:
-        return self._get_mime_types(
-            "SELECT DISTINCT ONTOLOGIES.MIME_TYPE FROM ONTOLOGIES WHERE ONTOLOGIES.URI = ?",
-            (uri,),
-        )
-
-    def get_mime_types_slug(self, slug: str) -> set[str]:
-        return self._get_mime_types(
-            "SELECT DISTINCT ONTOLOGIES.MIME_TYPE FROM ONTOLOGIES INNER JOIN NAMES ON ONTOLOGIES.URI = NAMES.URI WHERE NAMES.SLUG = ?",
-            (slug,),
-        )
-
-    def get_definiendum(self, *uris: List[str]) -> Optional[Tuple[str, Optional[str]]]:
+    def get_definiendum(
+        self, *uris: Iterable[str]
+    ) -> Optional[Tuple[str, Optional[str]]]:
         """Returns the slug and fragment any of the given URIs are defined in"""
 
         # nothing requested, nothing returned!
@@ -87,12 +77,16 @@ class Query:
         finally:
             cursor.close()
 
-    def _get_mime_types(self, query: str, params: Iterable[Any]) -> set[str]:
+    def get_mime_types(self, slug: str) -> set[str]:
+        """Returns a set containing all available mime types representations for the given slug"""
         mime_types = set()
 
         cursor = self.conn.cursor()
         try:
-            cursor.execute(query, params)
+            cursor.execute(
+                "SELECT DISTINCT ONTOLOGIES.MIME_TYPE FROM ONTOLOGIES INNER JOIN NAMES ON ONTOLOGIES.URI = NAMES.URI WHERE NAMES.SLUG = ?",
+                (slug,),
+            )
 
             for (mime_type,) in cursor.fetchall():
                 mime_types.add(str(mime_type))

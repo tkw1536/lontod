@@ -20,9 +20,7 @@ class Ingester:
         ingested = []
 
         for file in listdir(directory):
-            path = join(directory, file)
-
-            slug = self.ingest_file(path(directory, file))
+            slug = self.ingest_file(join(directory, file))
             if slug is None:
                 continue
 

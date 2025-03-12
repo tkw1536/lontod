@@ -11,7 +11,7 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response, StreamingResponse
 from starlette.routing import Route
 
-from ..db import Pool
+from ..utils.pool import Pool
 from ..indexer import Query
 from .http import LoggingMiddleware, negotiate
 
@@ -21,15 +21,12 @@ class Handler(Starlette):
 
     def __init__(
         self,
-        *args,
         pool: Pool[Query],
         logger: Logger,
         public_url: Optional[str] = None,
         debug: bool = False,
-        **kwargs,
     ):
         super().__init__(
-            *args,
             routes=[
                 Route("/", self.handle_root),
                 Route("/ontology/{slug}", self.handle_ontology),
@@ -39,14 +36,13 @@ class Handler(Starlette):
                 # for speed - don't bother with these
                 Route("/favicon.ico", Response("Not Found", 404)),
                 Route("/robots.txt", Response("Not Found", 404)),
-                
                 # do the actual lookup
                 Route("/{path:path}", self.handle_fallback),
             ],
             middleware=[
                 Middleware(LoggingMiddleware, logger=logger),
             ],
-            **kwargs,
+            debug=debug,
         )
 
         self.public_url = public_url
@@ -56,8 +52,8 @@ class Handler(Starlette):
 
     @staticmethod
     def _catch_handler_error(
-        func: Callable[["Handler", Request], Response],
-    ) -> Callable[["Handler", Request], Response]:
+        func: Callable[..., Response],
+    ) -> Callable[..., Response]:
         """Wraps a handler to safely catch all errors"""
 
         @wraps(func)
@@ -111,6 +107,7 @@ class Handler(Starlette):
 
     @_catch_handler_error
     def redirect_response(self, dest: str, status_code: int = 307) -> RedirectResponse:
+        """Creates a generic response that redirects the user to the given destination"""
         return RedirectResponse(dest, status_code)
 
     def error_response(self, code: int, message: str) -> Response:
@@ -169,14 +166,18 @@ class Handler(Starlette):
         if html:
             yield Handler.__root_html_foot
 
+    @_catch_handler_error
     def handle_ontology(self, req: Request) -> Response:
         """Handles the '/ontology/:slug/' route"""
 
         slug = req.path_params.get("slug")
+        if not isinstance(slug, str):
+            raise AssertionError("expected slug parameter to be a string")
+
         with self.pool.use() as query:
 
             # find the mime times we can serve for this ontology
-            offers = query.get_mime_types_slug(slug)
+            offers = query.get_mime_types(slug)
             if len(offers) == 0:
                 return self.error_response(404, "Ontology not found")
 

@@ -1,4 +1,4 @@
-from .ontology import Ontology
+from .ontology import NoOntologyFound, Ontology
 from .owl import owl_ontology
 
-__all__ = ["Ontology", "owl_ontology"]
+__all__ = ["Ontology", "NoOntologyFound", "owl_ontology"]

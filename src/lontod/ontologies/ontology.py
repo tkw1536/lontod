@@ -2,10 +2,7 @@
 
 from dataclasses import dataclass
 from os.path import basename, splitext
-from typing import Iterable, Optional
-
-from rdflib import Graph
-from rdflib.namespace import RDF
+from typing import Optional, Tuple
 
 
 @dataclass
@@ -19,7 +16,11 @@ class Ontology:
     encodings: dict[str, bytes]
 
     # list of (definiendum, fragment)
-    definienda: list[[str, Optional[str]]]
+    definienda: list[Tuple[str, Optional[str]]]
+
+
+class NoOntologyFound(Exception):
+    """Raised when no ontology is found"""
 
 
 def slug_from_path(path: str) -> str:
@@ -27,15 +28,3 @@ def slug_from_path(path: str) -> str:
 
     base, _ = splitext(basename(path))
     return base
-
-
-def subjects(graph: Graph, types: Iterable[str]) -> set[str]:
-    """Extracts all subjects of the given type from the graph"""
-
-    uris = set()
-
-    for tp in types:
-        for s in graph.subjects(RDF.type, tp):
-            uris.add(str(s))
-
-    return uris
