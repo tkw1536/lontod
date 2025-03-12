@@ -100,7 +100,7 @@ class QueryPool(Pool[Query]):
     """Represents a pool of Query objects"""
 
     def __init__(self, max_size: int, logger: Logger, connector: SqliteConnector):
-        super().__init__(size=max_size, setup=self.__setup, teardown=self.__teardown)
+        super().__init__(size=max_size, setup=self.__setup, reset=None, teardown=self.__teardown)
         self._connector = connector
         self._logger = logger
 

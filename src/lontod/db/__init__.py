@@ -1,3 +1,3 @@
-from .sqlite import SqliteConnector
+from .sqlite import SqliteConnector, SqliteMode
 
-__all__ = ["SqliteConnector"]
+__all__ = ["SqliteMode", "SqliteConnector"]

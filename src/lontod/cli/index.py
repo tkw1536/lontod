@@ -1,13 +1,14 @@
 import argparse
 import logging
-import sqlite3
 from os.path import isdir, isfile
 from typing import Optional, Sequence, Text
 
+from ..db import SqliteConnector
 from ..indexer import Indexer, Ingester
 
 
-def main(args: Optional[Sequence[Text]] = None):
+def main(args: Optional[Sequence[Text]] = None) -> None:
+    """ Main Entry point for the lontod_index executable """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "input",
@@ -33,24 +34,36 @@ def main(args: Optional[Sequence[Text]] = None):
         default="info",
         help="Set logging level",
     )
+    parser.add_argument(
+        "-s",
+        "--simulate",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Simulate import by using a dummy transaction",
+    )
 
     result = parser.parse_args(args)
-    run(result.input, result.clean, result.database, result.log)
+    run(result.input, result.clean, result.simulate, result.database, result.log)
 
 
-def run(paths: str, clean: bool, db: str, log_level: str):
+def run(paths: str, clean: bool, simulate: bool, db: str, log_level: str) -> None:
     """Begins an indexing process"""
+
     # setup logging
     logging.basicConfig(level=f"logging.{log_level}")
     logger = logging.getLogger(__name__)
 
-    logger.info("Opening database at %r", db)
-    conn = sqlite3.connect(db)
+    connector = SqliteConnector(db)
+    logger.info("Opening database at %r", connector.connect_url)
+    conn = connector.connect()
 
     indexer = Indexer(conn)
     ingester = Ingester(indexer, logger)
 
     try:
+        # create a transaction
+        conn.execute('BEGIN;')
+
         logger.info("Initializing schema")
         indexer.initialize_schema()
 
@@ -68,6 +81,14 @@ def run(paths: str, clean: bool, db: str, log_level: str):
                     "Unable to ingest %r: Neither a path nor a directory", path
                 )
 
+        if simulate:
+            logger.info('Simulate was provided, rolling back transaction')
+            conn.rollback()
+            return
+        
+        logger.info('Committing changes')
         conn.commit()
+
+        return
     finally:
         conn.close()

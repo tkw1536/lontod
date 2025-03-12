@@ -1,9 +1,18 @@
 """Implements Connections to an sqlite database"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from enum import Enum
 
 from sqlite3 import Connection, connect
-from typing import Any, Tuple
+from typing import Any
+
+class SqliteMode(Enum):
+    """ Modes for connecting to an sqlite database """
+
+    READ_ONLY = 'ro'
+    READ_WRITE = 'rw'
+    READ_WRITE_CREATE = 'rwc'
+    MEMORY = 'memory'
 
 
 @dataclass
@@ -11,23 +20,21 @@ class SqliteConnector:
     """Represents connection parameter for an sqlite database"""
 
     filename: str
-    memory: bool = False
-    readonly: bool = False
+    mode: SqliteMode = SqliteMode.READ_WRITE_CREATE
     check_same_thread: bool = False
-    kwargs: dict[str, Any] = {}
+    kwargs: dict[str, Any] = field(default_factory=dict)
 
-    def connect_args(self) -> Tuple[str, dict[str, Any]]:
-        """Returns arguments to be passed to connect"""
+    @property
+    def connect_url(self) -> str:
+        return f"file:{self.filename}?mode={self.mode.value}"
 
-        url = f"file:{self.filename}?mode={'ro' if self.readonly else 'rw'}{"&mode=memory" if self.memory else ""}"
-
+    @property
+    def connect_kwargs(self) -> dict[str, Any]:
         kwargs = self.kwargs.copy()
         kwargs["check_same_thread"] = self.check_same_thread
-
-        return url, kwargs
+        return kwargs
 
     def connect(self) -> Connection:
         """Creates a connection to the given database"""
-        url, kwargs = self.connect_args()
-        conn = connect(url, **kwargs)  # type: Connection
+        conn = connect(self.connect_url, **self.connect_kwargs)  # type: Connection
         return conn

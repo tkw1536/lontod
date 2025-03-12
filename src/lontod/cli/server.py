@@ -5,11 +5,11 @@ from typing import Optional, Sequence, Text
 from uvicorn import run as uv_run
 
 from ..daemon import Handler
-from ..db import SqliteConnector
+from ..db import SqliteConnector, SqliteMode
 from ..indexer import QueryPool
 
 
-def main(args: Optional[Sequence[Text]] = None):
+def main(args: Optional[Sequence[Text]] = None) -> None:
     """Entrypoint for the lontod_server command"""
     parser = argparse.ArgumentParser()
 
@@ -49,7 +49,7 @@ def main(args: Optional[Sequence[Text]] = None):
     run(result.database, result.port, result.host, result.public_url, result.log)
 
 
-def run(db: str, port: int, host: str, public_url: Optional[str], log_level: str):
+def run(db: str, port: int, host: str, public_url: Optional[str], log_level: str) -> None:
     """Starts the lontod server"""
 
     # setup logging
@@ -58,7 +58,7 @@ def run(db: str, port: int, host: str, public_url: Optional[str], log_level: str
 
     # setup the handler
     app = Handler(
-        pool=QueryPool(10, logger, SqliteConnector(db, readonly=True)),
+        pool=QueryPool(10, logger, SqliteConnector(db, mode=SqliteMode.READ_ONLY)),
         public_url=public_url,
         logger=logger,
         debug=log_level == "debug",

@@ -1,14 +1,15 @@
 """OWL Ontology Parsing"""
 
-from typing import Generator, List, Tuple, Union, Optional
+from typing import Generator, Tuple, Union, Optional
 
-from dominate.tags import code, div, dom_tag, table, td, th, tr
 from pylode.profiles.ontpub import OntPub
 from rdflib import Graph
 from rdflib.namespace import (
     OWL,
     RDF,
 )
+
+from bs4 import BeautifulSoup, Tag
 
 from .ontology import NoOntologyFound, Ontology
 
@@ -50,23 +51,26 @@ def owl_ontology(graph: Graph) -> Ontology:
     ]
 
     # make html
-    pub = OntPub(graph)
-    types.append(("text/html", _as_utf8(pub.make_html())))
+    html = _as_utf8(OntPub(graph).make_html())
+    types.append(("text/html", html))
 
     return Ontology(
         uri=uri,
         encodings=dict(types),
-        definienda=list(definienda_of(pub, uri)),
+        definienda=list(definienda_of(BeautifulSoup(html, "html.parser"), uri)),
     )
 
 
 def _as_utf8(value: Union[str, bytes]) -> bytes:
+    """ Turns a value into a utf-8 encoded set of bytes, unless it already is"""
     if isinstance(value, str):
         return value.encode("utf-8")
     return value
 
 
-def definienda_of(pub: OntPub, uri: str) -> Generator[Tuple[str, Optional[str]]]:
+def definienda_of(
+    html: BeautifulSoup, uri: str
+) -> Generator[Tuple[str, Optional[str]]]:
     """finds all (definiendum, fragment) identifiers in the given ontopub profile."""
 
     # This finds all definienda defined in the ontopub profile.
@@ -80,58 +84,41 @@ def definienda_of(pub: OntPub, uri: str) -> Generator[Tuple[str, Optional[str]]]
 
     yield (uri, None)
 
-    for code_elem in all_tags(pub.doc.body):
-        if not isinstance(code_elem, code):
-            continue
-
-        td_elem = code_elem.parent
-        if not isinstance(td_elem, (td, th)):
+    for code in html.find_all('code'):
+        td_elem = code.parent
+        if td_elem is None or not _is_tag(td_elem, "td", "th"):
             continue
 
         tr_elem = td_elem.parent
-        if not isinstance(tr_elem, tr):
+        if tr_elem is None or not _is_tag(tr_elem, "tr"):
             continue
 
-        children = child_tags(tr_elem)
+        children = [c for c in tr_elem.children if isinstance(c, Tag)]
         if (
             len(children) != 2
             or children[1] != td_elem
-            or child_text(children[0]) != "IRI"
+            or children[0].getText() != "IRI"
         ):
             continue
 
         table_elem = tr_elem.parent
-        if not isinstance(table_elem, table):
+        if table_elem is None or not _is_tag(table_elem, "table"):
             continue
 
         div_elem = table_elem.parent
-        if not isinstance(div_elem, div):
+        if div_elem is None or not _is_tag(div_elem, "div"):
+            continue
+        
+        fragment_id = div_elem.get('id')
+        if not isinstance(fragment_id, str):
             continue
 
-        if "id" not in div_elem.attributes:
-            continue
+        yield (code.getText(), fragment_id)
 
-        yield (child_text(code_elem), div_elem.attributes["id"])
-
-
-def child_text(root: dom_tag) -> str:
-    """returns the concatenation of all children which are strings"""
-    return "".join(filter(lambda x: isinstance(x, str), root.children))
-
-
-def child_tags(root: dom_tag) -> List[dom_tag]:
-    """Finds all children of root which are tags"""
-    return list(filter(lambda x: isinstance(x, dom_tag), root.children))
-
-
-def all_tags(root: dom_tag) -> Generator[dom_tag]:
-    """yields all tags recursively"""
-
-    # ignore non-tags!
-    if not isinstance(root, dom_tag):
-        return
-
-    yield root
-    for child in root.children:
-        for tag in all_tags(child):
-            yield tag
+def _is_tag(tag: Tag, *names: str) -> bool:
+    """ Checks if the given tag corresponds to any of the given tag names """
+    t = tag.name.lower()
+    for n in names:
+        if n.lower() == t:
+            return True
+    return False

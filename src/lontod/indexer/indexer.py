@@ -36,15 +36,14 @@ class Indexer:
     def __init__(self, conn: Connection):
         self.conn = conn
 
-    def initialize_schema(self):
+    def initialize_schema(self) -> None:
         """
         Initializes the database schema, unless if already exists.
         Automatically commits any pending changes.
         """
         self.conn.executescript(_TABLE_SCHEMA_)
-        self.conn.commit()
 
-    def truncate(self):
+    def truncate(self) -> None:
         """Removes all indexed data from the database"""
 
         cursor = self.conn.cursor()
@@ -55,7 +54,7 @@ class Indexer:
         finally:
             cursor.close()
 
-    def remove(self, slug: Optional[str] = None, uri: Optional[str] = None):
+    def remove(self, slug: Optional[str] = None, uri: Optional[str] = None) -> None:
         """Remove any indexed data from the database which match either the slug or the URI"""
 
         cursor = self.conn.cursor()
@@ -80,7 +79,7 @@ class Indexer:
         finally:
             cursor.close()
 
-    def upsert(self, slug: str, ontology: Ontology):
+    def upsert(self, slug: str, ontology: Ontology) -> None:
         """Inserts the given ontology into the database, removing any old references as necessary"""
 
         self.remove(slug, ontology.uri)
