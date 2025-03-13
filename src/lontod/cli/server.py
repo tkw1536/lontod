@@ -49,7 +49,9 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     run(result.database, result.port, result.host, result.public_url, result.log)
 
 
-def run(db: str, port: int, host: str, public_url: Optional[str], log_level: str) -> None:
+def run(
+    db: str, port: int, host: str, public_url: Optional[str], log_level: str
+) -> None:
     """Starts the lontod server"""
 
     # setup logging

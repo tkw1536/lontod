@@ -8,7 +8,7 @@ from ..indexer import Indexer, Ingester
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
-    """ Main Entry point for the lontod_index executable """
+    """Main Entry point for the lontod_index executable"""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "input",
@@ -41,12 +41,26 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         action=argparse.BooleanOptionalAction,
         help="Simulate import by using a dummy transaction",
     )
+    parser.add_argument(
+        "-L",
+        "--language",
+        default=None,
+        type=str,
+        help="Limit html output to the given language",
+    )
 
     result = parser.parse_args(args)
-    run(result.input, result.clean, result.simulate, result.database, result.log)
+    run(result.input, result.clean, result.language, result.simulate, result.database, result.log)
 
 
-def run(paths: str, clean: bool, simulate: bool, db: str, log_level: str) -> None:
+def run(
+        paths: str,
+        clean: bool,
+        html_language: Optional[str],
+        simulate: bool,
+        db: str,
+        log_level: str,
+    ) -> None:
     """Begins an indexing process"""
 
     # setup logging
@@ -58,11 +72,11 @@ def run(paths: str, clean: bool, simulate: bool, db: str, log_level: str) -> Non
     conn = connector.connect()
 
     indexer = Indexer(conn)
-    ingester = Ingester(indexer, logger)
+    ingester = Ingester(indexer, html_language, logger)
 
     try:
         # create a transaction
-        conn.execute('BEGIN;')
+        conn.execute("BEGIN;")
 
         logger.info("Initializing schema")
         indexer.initialize_schema()
@@ -82,11 +96,11 @@ def run(paths: str, clean: bool, simulate: bool, db: str, log_level: str) -> Non
                 )
 
         if simulate:
-            logger.info('Simulate was provided, rolling back transaction')
+            logger.info("Simulate was provided, rolling back transaction")
             conn.rollback()
             return
-        
-        logger.info('Committing changes')
+
+        logger.info("Committing changes")
         conn.commit()
 
         return

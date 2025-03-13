@@ -46,7 +46,7 @@ class Pool(Generic[T]):
         return PoolContextManager(self)
 
     def get(self) -> T:
-        """Gets an object from the pool, or returns an empty object"""
+        """Gets an object from the pool, or (if empty) creates a new object"""
         with self._lock:
             if len(self._q) == 0:
                 return self._setup()

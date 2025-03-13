@@ -11,9 +11,10 @@ from .indexer import Indexer
 
 
 class Ingester:
-    def __init__(self, indexer: Indexer, logger: logging.Logger):
+    def __init__(self, indexer: Indexer, html_language: Optional[str], logger: logging.Logger):
         self.indexer = indexer
         self.logger = logger
+        self.html_language = html_language
 
     def ingest_directory(self, directory: str) -> list[str]:
         """Ingests all ontologies from the given directory"""
@@ -44,7 +45,7 @@ class Ingester:
         self.logger.debug("Reading OWL ontology at %r", path)
         owl = None
         try:
-            owl = owl_ontology(g)
+            owl = owl_ontology(g, html_language=self.html_language)
         except Exception as err:
             self.logger.error("Unable to read OWL ontology at %r: %s", path, err)
             return None

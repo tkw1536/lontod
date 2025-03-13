@@ -6,13 +6,14 @@ from enum import Enum
 from sqlite3 import Connection, connect
 from typing import Any
 
-class SqliteMode(Enum):
-    """ Modes for connecting to an sqlite database """
 
-    READ_ONLY = 'ro'
-    READ_WRITE = 'rw'
-    READ_WRITE_CREATE = 'rwc'
-    MEMORY = 'memory'
+class SqliteMode(Enum):
+    """Modes for connecting to an sqlite database"""
+
+    READ_ONLY = "ro"
+    READ_WRITE = "rw"
+    READ_WRITE_CREATE = "rwc"
+    MEMORY = "memory"
 
 
 @dataclass

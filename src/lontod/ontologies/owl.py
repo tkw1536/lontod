@@ -3,7 +3,7 @@
 from typing import Generator, Tuple, Union, Optional
 
 from pylode.profiles.ontpub import OntPub
-from rdflib import Graph
+from rdflib import Graph, Literal
 from rdflib.namespace import (
     OWL,
     RDF,
@@ -12,6 +12,8 @@ from rdflib.namespace import (
 from bs4 import BeautifulSoup, Tag
 
 from .ontology import NoOntologyFound, Ontology
+from ..utils.graph import only_object_lang
+
 
 _DEFINIENDA = {
     OWL.Class,
@@ -34,7 +36,7 @@ _FORMAT_TO_MEDIA_TYPES_ = {
 }
 
 
-def owl_ontology(graph: Graph) -> Ontology:
+def owl_ontology(graph: Graph, html_language: Optional[str] = None) -> Ontology:
     """Returns a new OWL Ontology"""
 
     # determine the URI of the ontology
@@ -50,8 +52,12 @@ def owl_ontology(graph: Graph) -> Ontology:
         for (format, media_type) in _FORMAT_TO_MEDIA_TYPES_.items()
     ]
 
+    # make publication
+
+    lang_graph = graph if html_language is None else only_object_lang(graph, html_language)
+
     # make html
-    html = _as_utf8(OntPub(graph).make_html())
+    html = _as_utf8(OntPub(lang_graph).make_html())
     types.append(("text/html", html))
 
     return Ontology(
@@ -62,7 +68,7 @@ def owl_ontology(graph: Graph) -> Ontology:
 
 
 def _as_utf8(value: Union[str, bytes]) -> bytes:
-    """ Turns a value into a utf-8 encoded set of bytes, unless it already is"""
+    """Turns a value into a utf-8 encoded set of bytes, unless it already is"""
     if isinstance(value, str):
         return value.encode("utf-8")
     return value
@@ -84,7 +90,7 @@ def definienda_of(
 
     yield (uri, None)
 
-    for code in html.find_all('code'):
+    for code in html.find_all("code"):
         td_elem = code.parent
         if td_elem is None or not _is_tag(td_elem, "td", "th"):
             continue
@@ -108,15 +114,16 @@ def definienda_of(
         div_elem = table_elem.parent
         if div_elem is None or not _is_tag(div_elem, "div"):
             continue
-        
-        fragment_id = div_elem.get('id')
+
+        fragment_id = div_elem.get("id")
         if not isinstance(fragment_id, str):
             continue
 
         yield (code.getText(), fragment_id)
 
+
 def _is_tag(tag: Tag, *names: str) -> bool:
-    """ Checks if the given tag corresponds to any of the given tag names """
+    """Checks if the given tag corresponds to any of the given tag names"""
     t = tag.name.lower()
     for n in names:
         if n.lower() == t:
