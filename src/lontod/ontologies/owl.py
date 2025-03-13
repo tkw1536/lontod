@@ -3,16 +3,14 @@
 from typing import Generator, Tuple, Union, Optional
 
 from pylode.profiles.ontpub import OntPub
-from rdflib import Graph, Literal
-from rdflib.namespace import (
-    OWL,
-    RDF,
-)
+from rdflib import Graph, Literal, Node
+from rdflib.namespace import OWL, RDF, DCTERMS, PROF, SKOS, XSD
+from itertools import chain
 
 from bs4 import BeautifulSoup, Tag
 
 from .ontology import NoOntologyFound, Ontology
-from ..utils.graph import only_object_lang
+from ..utils.graph import only_object_lang, sanitize
 
 
 _DEFINIENDA = {
@@ -52,12 +50,22 @@ def owl_ontology(graph: Graph, html_language: Optional[str] = None) -> Ontology:
         for (format, media_type) in _FORMAT_TO_MEDIA_TYPES_.items()
     ]
 
-    # make publication
+    # prepare graph for use in OntPub
 
-    lang_graph = graph if html_language is None else only_object_lang(graph, html_language)
+    # remove all other languages    
+    if isinstance(html_language, str):
+        only_object_lang(graph, html_language)
+
+    # make sure
+    insert_fallback_title(
+        graph, Literal("", datatype=XSD.string)
+    )
+
+    # cleanup, to prevent at least some html injections!
+    sanitize(graph)
 
     # make html
-    html = _as_utf8(OntPub(lang_graph).make_html())
+    html = _as_utf8(OntPub(graph).make_html())
     types.append(("text/html", html))
 
     return Ontology(
@@ -65,6 +73,27 @@ def owl_ontology(graph: Graph, html_language: Optional[str] = None) -> Ontology:
         encodings=dict(types),
         definienda=list(definienda_of(BeautifulSoup(html, "html.parser"), uri)),
     )
+
+
+def insert_fallback_title(g: Graph, *titles: Node) -> None:
+    """Inserts a fallback title for an ontology if none is found"""
+
+    uri = None
+    for s in chain(
+        g.subjects(RDF.type, OWL.Ontology),
+        g.subjects(RDF.type, PROF.Profile),
+        g.subjects(RDF.type, SKOS.ConceptScheme),
+    ):
+        uri = s
+
+        # if we have some title, we don't need to add one!
+        for _ in g.objects(s, DCTERMS.title):
+            return
+
+        # insert all the titles
+        for title in titles:
+            g.add((uri, DCTERMS.title, title))
+        return
 
 
 def _as_utf8(value: Union[str, bytes]) -> bytes:

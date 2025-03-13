@@ -8,10 +8,13 @@ from rdflib import Graph
 from ..ontologies import owl_ontology
 from ..ontologies.ontology import slug_from_path
 from .indexer import Indexer
+from ..utils.ns import BrokenSplitNamespaceManager
 
 
 class Ingester:
-    def __init__(self, indexer: Indexer, html_language: Optional[str], logger: logging.Logger):
+    def __init__(
+        self, indexer: Indexer, html_language: Optional[str], logger: logging.Logger
+    ):
         self.indexer = indexer
         self.logger = logger
         self.html_language = html_language
@@ -36,6 +39,7 @@ class Ingester:
 
         self.logger.info("Parsing graph data at %r", path)
         g = Graph()
+        g.namespace_manager = BrokenSplitNamespaceManager(g, g._bind_namespaces)
         try:
             g.parse(path)
         except Exception as err:

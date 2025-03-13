@@ -45,22 +45,28 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         "-L",
         "--language",
         default=None,
-        type=str,
         help="Limit html output to the given language",
     )
 
     result = parser.parse_args(args)
-    run(result.input, result.clean, result.language, result.simulate, result.database, result.log)
+    run(
+        result.input,
+        result.clean,
+        result.language,
+        result.simulate,
+        result.database,
+        result.log,
+    )
 
 
 def run(
-        paths: str,
-        clean: bool,
-        html_language: Optional[str],
-        simulate: bool,
-        db: str,
-        log_level: str,
-    ) -> None:
+    paths: str,
+    clean: bool,
+    html_language: Optional[str],
+    simulate: bool,
+    db: str,
+    log_level: str,
+) -> None:
     """Begins an indexing process"""
 
     # setup logging

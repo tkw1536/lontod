@@ -1,3 +1,4 @@
+DCTERMS
 definienda
 executemany
 executescript
@@ -13,6 +14,7 @@ ontpub
 pylint
 pylode
 rdflib
+SKOS
 starlette
 uvicorn
 Wiesing
