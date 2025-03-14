@@ -7,8 +7,8 @@ from rdflib import Graph
 
 from ..ontologies import owl_ontology
 from ..ontologies.ontology import slug_from_path
-from .indexer import Indexer
 from ..utils.ns import BrokenSplitNamespaceManager
+from .indexer import Indexer
 
 
 class Ingester:

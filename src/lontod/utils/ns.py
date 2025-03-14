@@ -1,6 +1,7 @@
-from typing import override, Tuple
-from rdflib.namespace import NamespaceManager
+from typing import Tuple, override
+
 from rdflib import URIRef
+from rdflib.namespace import NamespaceManager
 
 
 class BrokenSplitNamespaceManager(NamespaceManager):

@@ -11,8 +11,8 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response, StreamingResponse
 from starlette.routing import Route
 
-from ..utils.pool import Pool
 from ..indexer import Query
+from ..utils.pool import Pool
 from .http import LoggingMiddleware, negotiate
 
 

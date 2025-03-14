@@ -1,6 +1,7 @@
 from logging import Logger
 from sqlite3 import Connection
 from typing import Iterable, Optional, Tuple
+
 from ..db import SqliteConnector
 from ..utils.pool import Pool
 

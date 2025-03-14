@@ -5,7 +5,7 @@ Implements a pool that recycles objects when needed
 from collections import deque
 from threading import Lock
 from types import TracebackType
-from typing import Callable, Generic, Optional, Type, TypeVar, Literal
+from typing import Callable, Generic, Literal, Optional, Type, TypeVar
 
 T = TypeVar("T")
 

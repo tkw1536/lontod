@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-
 from sqlite3 import Connection, connect
 from typing import Any
 

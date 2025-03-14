@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Awaitable, Callable, Iterable, Optional, Any
+from typing import Any, Awaitable, Callable, Iterable, Optional
 
 from mimeparse import MimeTypeParseException, best_match
 from starlette.middleware.base import BaseHTTPMiddleware

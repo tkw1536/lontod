@@ -1,17 +1,15 @@
 """OWL Ontology Parsing"""
 
-from typing import Generator, Tuple, Union, Optional
-
-from pylode.profiles.ontpub import OntPub
-from rdflib import Graph, Literal, Node
-from rdflib.namespace import OWL, RDF, DCTERMS, PROF, SKOS, XSD
 from itertools import chain
+from typing import Generator, Optional, Tuple, Union
 
 from bs4 import BeautifulSoup, Tag
+from pylode.profiles.ontpub import OntPub
+from rdflib import Graph, Literal, Node
+from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 
-from .ontology import NoOntologyFound, Ontology
 from ..utils.graph import only_object_lang, sanitize
-
+from .ontology import NoOntologyFound, Ontology
 
 _DEFINIENDA = {
     OWL.Class,
@@ -52,14 +50,12 @@ def owl_ontology(graph: Graph, html_language: Optional[str] = None) -> Ontology:
 
     # prepare graph for use in OntPub
 
-    # remove all other languages    
+    # remove all other languages
     if isinstance(html_language, str):
         only_object_lang(graph, html_language)
 
     # make sure
-    insert_fallback_title(
-        graph, Literal("", datatype=XSD.string)
-    )
+    insert_fallback_title(graph, Literal("", datatype=XSD.string))
 
     # cleanup, to prevent at least some html injections!
     sanitize(graph)

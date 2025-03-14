@@ -1,6 +1,7 @@
-from rdflib import Graph, Literal
 from typing import Optional
-from html_sanitizer import Sanitizer # type: ignore
+
+from html_sanitizer import Sanitizer  # type: ignore
+from rdflib import Graph, Literal
 
 
 def sanitize(g: Graph) -> None:
@@ -8,7 +9,7 @@ def sanitize(g: Graph) -> None:
 
     cleaned = Graph()
 
-    for (s, p, o) in g:
+    for s, p, o in g:
         if not isinstance(o, Literal):
             continue
 
@@ -30,6 +31,7 @@ def sanitize(g: Graph) -> None:
 
 
 sanitizer = Sanitizer({"keep_typographic_whitespace": True})
+
 
 def _sanitize_literal(o: Literal) -> Optional[Literal]:
     # make sure we have a string value
