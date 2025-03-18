@@ -23,7 +23,7 @@ lontod_index = 'lontod.cli.index:main'
 lontod_server = 'lontod.cli.server:main'
 
 [tool.pylint]
-disable = ["R0903", "W0718", "C0301"]
+disable = ["R0903", "R0913", "R0917", "R0801", "W0718", "C0301"]
 
 [tool.isort]
 profile = 'black'
@@ -35,6 +35,7 @@ packages = [{include = "lontod", from = "src"}]
 black = "^25.1.0"
 isort = "^6.0.1"
 mypy = "^1.15.0"
+pylint = "^3.3.5"
 
 [tool.mypy]
 mypy_path = "typings/"

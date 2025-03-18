@@ -6,7 +6,7 @@ from os.path import isdir, isfile
 from typing import List, Optional, Sequence, Text
 
 from ..db import SqliteConnector
-from ..indexer import Indexer, Ingester
+from ..index import Indexer, Ingester
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:

@@ -8,7 +8,7 @@ from uvicorn import run as uv_run
 
 from ..daemon import Handler
 from ..db import SqliteConnector, SqliteMode
-from ..indexer import QueryPool
+from ..index import QueryPool
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
