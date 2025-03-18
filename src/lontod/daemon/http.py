@@ -1,3 +1,5 @@
+"""http utility functions for daemon"""
+
 from logging import Logger
 from typing import Any, Awaitable, Callable, Iterable, Optional
 

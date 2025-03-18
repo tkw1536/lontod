@@ -1,13 +1,16 @@
+"""query functionality"""
+
 from logging import Logger
 from sqlite3 import Connection
-from typing import Iterable, Optional, Tuple
+from typing import Any, Iterable, Optional, Tuple, TypeGuard
 
 from ..db import SqliteConnector
 from ..utils.pool import Pool
+from ..utils.strings import as_utf8
 
 
 class Query:
-    """Query holds all functionality for querying data from a given connection"""
+    """functionality for interacting with indexed ontologies"""
 
     conn: Connection
 
@@ -26,12 +29,15 @@ class Query:
                 row = cursor.fetchone()
                 if row is None:
                     return
-                (slug, uri) = row
-                yield (str(slug), str(uri))
+                if not _is_row_text_text(row):
+                    raise AssertionError("expected (TEXT,TEXT)")
+
+                yield row[0], row[1]
         finally:
             cursor.close()
 
     def get_data(self, slug: str, mime_type: str) -> Optional[bytes]:
+        """receives the encoding of the ontology with the given slug and mime_type"""
         cursor = self.conn.cursor()
         try:
             cursor.execute(
@@ -39,15 +45,14 @@ class Query:
                 (slug, mime_type),
             )
 
-            (data,) = cursor.fetchone()
-            if isinstance(data, str):
-                return data.encode("utf-8")
-            elif isinstance(data, bytes):
-                return data
-            else:
-                return None  # not sure what this is
-        except Exception:
-            return None
+            row = cursor.fetchone()
+            if row is None:
+                return None
+
+            if not _is_row_blob(row):
+                raise AssertionError("expected (BLOB)")
+
+            return as_utf8(row[0])
         finally:
             cursor.close()
 
@@ -69,12 +74,14 @@ class Query:
                 [str(u) for u in uris],
             )
 
-            result = cursor.fetchone()
-            if result is None:
+            row = cursor.fetchone()
+            if row is None:
                 return None
 
-            slug, fragment = result
-            return str(slug), (str(fragment) if fragment is not None else None)
+            if not _is_row_text_ntext(row):
+                raise AssertionError("expected (TEXT, TEXT OR NULL)")
+
+            return row
         finally:
             cursor.close()
 
@@ -89,8 +96,10 @@ class Query:
                 (slug,),
             )
 
-            for (mime_type,) in cursor.fetchall():
-                mime_types.add(str(mime_type))
+            for row in cursor.fetchall():
+                if not _is_row_text(row):
+                    raise AssertionError("expected (TEXT)")
+                mime_types.add(row[0])
         finally:
             cursor.close()
 
@@ -115,3 +124,32 @@ class QueryPool(Pool[Query]):
     def __teardown(self, query: Query) -> None:
         self._logger.debug("closing database connection")
         query.conn.close()
+
+
+def _is_row_text_text(value: Any) -> TypeGuard[Tuple[str, str]]:
+    return (
+        isinstance(value, tuple)
+        and len(value) == 2
+        and isinstance(value[0], str)
+        and isinstance(value[1], str)
+    )
+
+
+def _is_row_blob(value: Any) -> TypeGuard[Tuple[bytes]]:
+    return isinstance(value, tuple) and len(value) == 1 and isinstance(value[0], bytes)
+
+
+def _is_row_text(value: Any) -> TypeGuard[Tuple[str]]:
+    return isinstance(value, tuple) and len(value) == 1 and isinstance(value[0], str)
+
+
+def _is_row_text_ntext(value: Any) -> TypeGuard[Tuple[str, Optional[str]]]:
+    return (
+        isinstance(value, tuple)
+        and len(value) == 2
+        and isinstance(value[0], str)
+        and (value[1] is None or isinstance(value[1], str))
+    )
+
+
+# spellchecker:words ntext

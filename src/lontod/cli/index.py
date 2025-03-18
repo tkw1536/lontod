@@ -1,7 +1,9 @@
+"""Entrypoint for lontod_index"""
+
 import argparse
 import logging
 from os.path import isdir, isfile
-from typing import Optional, Sequence, Text
+from typing import List, Optional, Sequence, Text
 
 from ..db import SqliteConnector
 from ..indexer import Indexer, Ingester
@@ -43,16 +45,16 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     )
     parser.add_argument(
         "-L",
-        "--language",
-        default=None,
-        help="Limit html output to the given language",
+        "--languages",
+        nargs="*",
+        help="Specify language preferences for the given ontology",
     )
 
     result = parser.parse_args(args)
     run(
         result.input,
         result.clean,
-        result.language,
+        result.languages or [],
         result.simulate,
         result.database,
         result.log,
@@ -62,7 +64,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
 def run(
     paths: str,
     clean: bool,
-    html_language: Optional[str],
+    html_languages: List[str],
     simulate: bool,
     db: str,
     log_level: str,
@@ -78,7 +80,7 @@ def run(
     conn = connector.connect()
 
     indexer = Indexer(conn)
-    ingester = Ingester(indexer, html_language, logger)
+    ingester = Ingester(indexer, html_languages, logger)
 
     try:
         # create a transaction

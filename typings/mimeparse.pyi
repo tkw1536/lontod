@@ -1,3 +1,4 @@
+# pylint: skip-file
 __version__: str
 __credits__: str
 

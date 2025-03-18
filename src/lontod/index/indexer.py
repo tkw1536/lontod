@@ -1,3 +1,5 @@
+"""indexing functionality"""
+
 from sqlite3 import Connection
 from typing import Optional
 
@@ -27,9 +29,7 @@ CREATE INDEX IF NOT EXISTS "INDEX_ONTOLOGIES" ON "ONTOLOGIES" ("URI", "MIME_TYPE
 
 
 class Indexer:
-    """
-    Implements indexing functionality.
-    """
+    """Low-level database-interacting indexing functionality"""
 
     conn: Connection
 

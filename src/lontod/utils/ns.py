@@ -1,11 +1,16 @@
+"""implements a custom namespace manager"""
+
 from typing import Tuple, override
 
-from rdflib import URIRef
+from rdflib import Graph, URIRef
 from rdflib.namespace import NamespaceManager
 
 
 class BrokenSplitNamespaceManager(NamespaceManager):
     """Implements a NamespaceManager for when .split() is broken because of a trailing '/'"""
+
+    def __init__(self, graph: Graph):
+        super().__init__(graph, graph._bind_namespaces)
 
     @override
     def compute_qname(self, uri: str, generate: bool = True) -> Tuple[str, URIRef, str]:

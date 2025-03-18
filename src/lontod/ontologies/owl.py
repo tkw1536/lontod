@@ -1,25 +1,16 @@
 """OWL Ontology Parsing"""
 
 from itertools import chain
-from typing import Generator, Optional, Tuple, Union
+from typing import Generator, List, Optional, Tuple
 
 from bs4 import BeautifulSoup, Tag
 from pylode.profiles.ontpub import OntPub
 from rdflib import Graph, Literal, Node
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 
-from ..utils.graph import only_object_lang, sanitize
+from ..utils.graph import restrict_languages
+from ..utils.strings import as_utf8
 from .ontology import NoOntologyFound, Ontology
-
-_DEFINIENDA = {
-    OWL.Class,
-    OWL.Ontology,
-    RDF.Property,
-    OWL.ObjectProperty,
-    OWL.DatatypeProperty,
-    OWL.AnnotationProperty,
-    OWL.FunctionalProperty,
-}
 
 _FORMAT_TO_MEDIA_TYPES_ = {
     "xml": "application/rdf+xml",
@@ -32,7 +23,7 @@ _FORMAT_TO_MEDIA_TYPES_ = {
 }
 
 
-def owl_ontology(graph: Graph, html_language: Optional[str] = None) -> Ontology:
+def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
     """Returns a new OWL Ontology"""
 
     # determine the URI of the ontology
@@ -44,24 +35,24 @@ def owl_ontology(graph: Graph, html_language: Optional[str] = None) -> Ontology:
 
     # encode the ontology in all different formats
     types = [
-        (media_type, _as_utf8(graph.serialize(None, format)))
+        (media_type, as_utf8(graph.serialize(None, format)))
         for (format, media_type) in _FORMAT_TO_MEDIA_TYPES_.items()
     ]
 
     # prepare graph for use in OntPub
 
     # remove all other languages
-    if isinstance(html_language, str):
-        only_object_lang(graph, html_language)
+    if len(html_languages) > 0:
+        restrict_languages(graph, html_languages)
 
-    # make sure
+    # make sure that there is a fallback title
     insert_fallback_title(graph, Literal("", datatype=XSD.string))
 
     # cleanup, to prevent at least some html injections!
-    sanitize(graph)
+    # sanitize(graph)
 
     # make html
-    html = _as_utf8(OntPub(graph).make_html())
+    html = as_utf8(OntPub(graph).make_html())
     types.append(("text/html", html))
 
     return Ontology(
@@ -90,13 +81,6 @@ def insert_fallback_title(g: Graph, *titles: Node) -> None:
         for title in titles:
             g.add((uri, DCTERMS.title, title))
         return
-
-
-def _as_utf8(value: Union[str, bytes]) -> bytes:
-    """Turns a value into a utf-8 encoded set of bytes, unless it already is"""
-    if isinstance(value, str):
-        return value.encode("utf-8")
-    return value
 
 
 def definienda_of(

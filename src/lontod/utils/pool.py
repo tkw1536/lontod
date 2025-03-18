@@ -1,6 +1,4 @@
-"""
-Implements a pool that recycles objects when needed
-"""
+"""Implements a pool that recycles objects when needed"""
 
 from collections import deque
 from threading import Lock

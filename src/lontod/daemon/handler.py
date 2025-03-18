@@ -1,8 +1,10 @@
+"""http http handler"""
+
 from functools import wraps
 from html import escape
 from logging import Logger
 from traceback import format_exception
-from typing import Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, Optional
 from urllib.parse import quote
 
 from starlette.applications import Starlette
@@ -57,7 +59,9 @@ class Handler(Starlette):
         """Wraps a handler to safely catch all errors"""
 
         @wraps(func)
-        def wrapper(self: "Handler", req: Request, *args, **kwargs) -> Response:
+        def wrapper(
+            self: "Handler", req: Request, *args: Any, **kwargs: Any
+        ) -> Response:
             try:
                 return func(self, req, *args, **kwargs)
             except Exception as err:

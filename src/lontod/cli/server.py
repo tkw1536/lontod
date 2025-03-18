@@ -1,3 +1,5 @@
+"""Entrypoint for lontod_server"""
+
 import argparse
 import logging
 from typing import Optional, Sequence, Text

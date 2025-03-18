@@ -26,15 +26,17 @@ class SqliteConnector:
 
     @property
     def connect_url(self) -> str:
+        """URL used to connect to the database"""
         return f"file:{self.filename}?mode={self.mode.value}"
 
     @property
     def connect_kwargs(self) -> dict[str, Any]:
+        """kwargs used for connect call"""
         kwargs = self.kwargs.copy()
         kwargs["check_same_thread"] = self.check_same_thread
         return kwargs
 
     def connect(self) -> Connection:
-        """Creates a connection to the given database"""
+        """call connect with the given arguments"""
         conn = connect(self.connect_url, **self.connect_kwargs)  # type: Connection
         return conn
