@@ -20,9 +20,16 @@ These are all installed as development dependencies by poetry.
 To run all formatting and linting do:
 
 ```bash
-black src/
-isort src/
+black src/ tests/
+isort src/ tests/
 
-pylint src/
-mypy src/
+pylint src/ tests/
+mypy src/ tests/
+```
+
+Some functionality (mostly the utility functions) is also tested. 
+You can run the tests with:
+
+```bash
+pytest
 ```

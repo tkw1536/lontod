@@ -6,15 +6,45 @@ from typing import (
     Generator,
     List,
     Optional,
+    Sequence,
     Tuple,
     TypeGuard,
 )
 
-from html_sanitizer import Sanitizer  # type: ignore
+from html_sanitizer.sanitizer import Sanitizer, sanitize_href  # type: ignore
 from rdflib import Graph, Literal
 from rdflib.graph import _PredicateType, _SubjectType, _TripleType
 
-_SANITIZE_SETTINGS = {"keep_typographic_whitespace": True}
+_SANITIZE_SETTINGS = {
+    "tags": [
+        "a",
+        "b",
+        "br",
+        "em",
+        "h1",
+        "h2",
+        "h3",
+        "hr",
+        "i",
+        "li",
+        "ol",
+        "p",
+        "strong",
+        "sub",
+        "sup",
+        "ul",
+    ],
+    "attributes": {"a": ("href", "name", "target", "title", "rel")},
+    "empty": {"hr", "a", "br"},
+    "separate": {"a", "p", "li"},
+    "whitespace": {"br"},
+    "keep_typographic_whitespace": True,
+    "add_nofollow": False,
+    "autolink": False,
+    "sanitize_href": sanitize_href,
+    "element_preprocessors": [],
+    "element_postprocessors": [],
+}
 
 
 def sanitize(g: Graph, settings: Optional[Dict[str, Any]] = None) -> None:
@@ -24,7 +54,6 @@ def sanitize(g: Graph, settings: Optional[Dict[str, Any]] = None) -> None:
         g (Graph): Graph to be sanitized
         settings (Optional[Dict[str,Any]], optional): Settings for sanitization to be passed to the 'html_sanitizer' module. Defaults to None.
     """
-
     sanitizer = Sanitizer(settings if settings is not None else _SANITIZE_SETTINGS)
 
     cleaned_edges: List[_TripleType] = []
@@ -53,7 +82,7 @@ def sanitize(g: Graph, settings: Optional[Dict[str, Any]] = None) -> None:
         g.add(edge)
 
 
-def restrict_languages(g: Graph, preferences: Optional[List[str]] = None) -> None:
+def restrict_languages(g: Graph, preferences: Optional[Sequence[str]] = None) -> None:
     """Restricts the available internationalized object values per (subject, predicate) pair in the graph.
     In particular, it picks all values that are of the first available language in preferences, or the
     alphabetically first language if None matches.
@@ -82,18 +111,17 @@ def restrict_languages(g: Graph, preferences: Optional[List[str]] = None) -> Non
 
             if o.language == choice:
                 continue
-
             g.remove((s, p, o))
 
 
 def _pick_language(
-    offers: set[Optional[str]], preferences: Optional[List[str]]
+    offers: set[Optional[str]], preferences: Optional[Sequence[str]]
 ) -> Optional[str]:
     """Picks a language from the given set of offers (or None).
 
     Args:
         offers (set[Optional[str]]): Set of available languages.
-        preferences (Optional[List[str]]): List of preferred languages, or None.
+        preferences (Optional[Sequence[str]]): Sequence of preferred languages, or None.
 
     Returns:
         Optional[str]: A language from offers, or None if no languages are available.

@@ -11,6 +11,7 @@ ndjson
 noproto
 Ontopub
 ontpub
+postprocessors
 pylint
 pylode
 rdflib
