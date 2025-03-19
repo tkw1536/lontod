@@ -4,7 +4,7 @@ from logging import Logger
 from sqlite3 import Connection
 from typing import Any, Iterable, Optional, Tuple, TypeGuard
 
-from ..db import SqliteConnector
+from ..db import LoggingCursorContext, SqliteConnector
 from ..utils.pool import Pool
 from ..utils.strings import as_utf8
 
@@ -13,15 +13,19 @@ class Query:
     """functionality for interacting with indexed ontologies"""
 
     conn: Connection
+    _logger: Logger
 
-    def __init__(self, conn: Connection):
+    def __init__(self, conn: Connection, logger: Logger):
         """Creates a new Query instance"""
         self.conn = conn
+        self._logger = logger
+
+    def _cursor(self) -> LoggingCursorContext:
+        return LoggingCursorContext(self.conn, self._logger)
 
     def list_ontologies(self) -> Iterable[Tuple[str, str]]:
         """Lists all (slug, name) ontologies found in the database"""
-        cursor = self.conn.cursor()
-        try:
+        with self._cursor() as cursor:
             cursor.execute(
                 "SELECT NAMES.SLUG, NAMES.URI FROM NAMES ORDER BY NAMES.SLUG"
             )
@@ -33,13 +37,10 @@ class Query:
                     raise AssertionError("expected (TEXT,TEXT)")
 
                 yield row[0], row[1]
-        finally:
-            cursor.close()
 
     def get_data(self, slug: str, mime_type: str) -> Optional[bytes]:
         """receives the encoding of the ontology with the given slug and mime_type"""
-        cursor = self.conn.cursor()
-        try:
+        with self._cursor() as cursor:
             cursor.execute(
                 "SELECT ONTOLOGIES.DATA FROM ONTOLOGIES INNER JOIN NAMES ON ONTOLOGIES.URI = NAMES.URI WHERE NAMES.SLUG = ? AND ONTOLOGIES.MIME_TYPE = ? LIMIT 1",
                 (slug, mime_type),
@@ -53,8 +54,6 @@ class Query:
                 raise AssertionError("expected (BLOB)")
 
             return as_utf8(row[0])
-        finally:
-            cursor.close()
 
     def get_definiendum(
         self, *uris: Iterable[str]
@@ -65,8 +64,7 @@ class Query:
         if len(uris) == 0:
             return None
 
-        cursor = self.conn.cursor()
-        try:
+        with self._cursor() as cursor:
             cursor.execute(
                 "SELECT NAMES.SLUG, DEFINIENDA.FRAGMENT FROM DEFINIENDA INNER JOIN NAMES ON DEFINIENDA.ONTOLOGY = NAMES.URI WHERE DEFINIENDA.URI IN ("
                 + ",".join(["?"] * len(uris))
@@ -82,15 +80,12 @@ class Query:
                 raise AssertionError("expected (TEXT, TEXT OR NULL)")
 
             return row
-        finally:
-            cursor.close()
 
     def get_mime_types(self, slug: str) -> set[str]:
         """Returns a set containing all available mime types representations for the given slug"""
         mime_types = set()
 
-        cursor = self.conn.cursor()
-        try:
+        with self._cursor() as cursor:
             cursor.execute(
                 "SELECT DISTINCT ONTOLOGIES.MIME_TYPE FROM ONTOLOGIES INNER JOIN NAMES ON ONTOLOGIES.URI = NAMES.URI WHERE NAMES.SLUG = ?",
                 (slug,),
@@ -100,8 +95,6 @@ class Query:
                 if not _is_row_text(row):
                     raise AssertionError("expected (TEXT)")
                 mime_types.add(row[0])
-        finally:
-            cursor.close()
 
         return mime_types
 
@@ -119,7 +112,7 @@ class QueryPool(Pool[Query]):
     def __setup(self) -> Query:
         self._logger.debug("establishing new database connection")
         conn = self._connector.connect()
-        return Query(conn)
+        return Query(conn, self._logger)
 
     def __teardown(self, query: Query) -> None:
         self._logger.debug("closing database connection")

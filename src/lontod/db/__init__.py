@@ -1,5 +1,5 @@
 """Sqlite functionality"""
 
-from .sqlite import SqliteConnector, SqliteMode
+from .sqlite import LoggingCursorContext, SqliteConnector, SqliteMode
 
-__all__ = ["SqliteMode", "SqliteConnector"]
+__all__ = ["SqliteMode", "SqliteConnector", "LoggingCursorContext"]

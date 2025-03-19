@@ -1,7 +1,6 @@
 """Entrypoint for lontod_server"""
 
 import argparse
-import logging
 from typing import Optional, Sequence, Text
 
 from uvicorn import run as uv_run
@@ -9,6 +8,7 @@ from uvicorn import run as uv_run
 from ..daemon import Handler
 from ..db import SqliteConnector, SqliteMode
 from ..index import QueryPool
+from ._common import add_logging_arg, setup_logging
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -40,12 +40,8 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         default=None,
         help="Public URL to assume for IRI redirects",
     )
-    parser.add_argument(
-        "-l",
-        "--log",
-        default="info",
-        help="Set logging level (and enable debug mode)",
-    )
+
+    add_logging_arg(parser)
 
     result = parser.parse_args(args)
     run(result.database, result.port, result.host, result.public_url, result.log)
@@ -57,8 +53,7 @@ def run(
     """Starts the lontod server"""
 
     # setup logging
-    logging.basicConfig(level="logging.{log_level}")
-    logger = logging.getLogger("lontod")
+    logger = setup_logging("lontod_server", log_level)
 
     # setup the handler
     app = Handler(
@@ -70,7 +65,7 @@ def run(
 
     try:
         logger.info("Starting server at %s:%s", host, port)
-        uv_run(app, log_level="critical", host=host, port=port)
+        uv_run(app, log_level="error", host=host, port=port)
     finally:
         app.pool.teardown()
 

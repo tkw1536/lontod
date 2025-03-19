@@ -1,8 +1,10 @@
 """indexing functionality"""
 
+from logging import Logger
 from sqlite3 import Connection
 from typing import Optional
 
+from ..db import LoggingCursorContext
 from ..ontologies import Ontology
 
 _TABLE_SCHEMA_ = """
@@ -10,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "NAMES" (
     "SLUG"    TEXT NOT NULL PRIMARY KEY,
     "URI"   TEXT NOT NULL
 ) STRICT;
-CREATE INDEX IF NOT EXISTS "INDEX_NAMES" ON "NAMES" ("ID");
+CREATE INDEX IF NOT EXISTS "INDEX_NAMES" ON "NAMES" ("URI");
 
 CREATE TABLE IF NOT EXISTS "DEFINIENDA" (
     "URI"       TEXT NOT NULL,
@@ -32,33 +34,35 @@ class Indexer:
     """Low-level database-interacting indexing functionality"""
 
     conn: Connection
+    _logger: Logger
 
-    def __init__(self, conn: Connection):
+    def __init__(self, conn: Connection, logger: Logger):
         self.conn = conn
+        self._logger = logger
+
+    def _cursor(self) -> LoggingCursorContext:
+        return LoggingCursorContext(self.conn, self._logger)
 
     def initialize_schema(self) -> None:
         """
         Initializes the database schema, unless if already exists.
         Automatically commits any pending changes.
         """
-        self.conn.executescript(_TABLE_SCHEMA_)
+        with self._cursor() as cursor:
+            cursor.executescript(_TABLE_SCHEMA_)
 
     def truncate(self) -> None:
         """Removes all indexed data from the database"""
 
-        cursor = self.conn.cursor()
-        try:
+        with self._cursor() as cursor:
             cursor.execute("DELETE FROM DEFINIENDA")
             cursor.execute("DELETE FROM ONTOLOGIES")
             cursor.execute("DELETE FROM NAMES")
-        finally:
-            cursor.close()
 
     def remove(self, slug: Optional[str] = None, uri: Optional[str] = None) -> None:
         """Remove any indexed data from the database which match either the slug or the URI"""
 
-        cursor = self.conn.cursor()
-        try:
+        with self._cursor() as cursor:
             # delete by slug
             if slug is not None:
                 cursor.execute(
@@ -76,16 +80,13 @@ class Indexer:
                 cursor.execute("DELETE FROM DEFINIENDA WHERE ONTOLOGY = ?", (uri,))
                 cursor.execute("DELETE FROM ONTOLOGIES WHERE URI = ?", (uri,))
                 cursor.execute("DELETE FROM NAMES WHERE URI = ?", (uri,))
-        finally:
-            cursor.close()
 
     def upsert(self, slug: str, ontology: Ontology) -> None:
         """Inserts the given ontology into the database, removing any old references as necessary"""
 
         self.remove(slug, ontology.uri)
 
-        cursor = self.conn.cursor()
-        try:
+        with self._cursor() as cursor:
             cursor.execute(
                 "INSERT INTO NAMES (SLUG, URI) VALUES (?, ?)", (slug, ontology.uri)
             )
@@ -103,5 +104,3 @@ class Indexer:
                     for (definiendum, fragment) in ontology.definienda
                 ],
             )
-        finally:
-            cursor.close()
