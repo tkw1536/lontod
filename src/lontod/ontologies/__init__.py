@@ -1,4 +1,5 @@
-""" ontology parsing """
+"""ontology parsing"""
+
 from .ontology import NoOntologyFound, Ontology
 from .owl import owl_ontology
 

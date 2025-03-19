@@ -73,3 +73,7 @@ def run(
         uv_run(app, log_level="critical", host=host, port=port)
     finally:
         app.pool.teardown()
+
+
+if __name__ == "__main__":
+    main()
