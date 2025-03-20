@@ -2,8 +2,8 @@
 
 from collections import deque
 from threading import Lock
-from types import TracebackType
-from typing import Callable, Generic, Literal, Optional, Type, TypeVar
+from typing import Callable, Generic, Optional, TypeVar, Iterator
+from contextlib import contextmanager
 
 T = TypeVar("T")
 
@@ -39,9 +39,12 @@ class Pool(Generic[T]):
         self._reset = reset if reset is not None else lambda _: None
         self._teardown = teardown if teardown is not None else lambda _: None
 
-    def use(self) -> "PoolContextManager[T]":
+    @contextmanager
+    def use(self) -> Iterator[T]:
         """A context manager that allows using an item from a pool"""
-        return PoolContextManager(self)
+        item = self.get()
+        yield item
+        self.put(item)
 
     def get(self) -> T:
         """Gets an object from the pool, or (if empty) creates a new object"""
@@ -65,29 +68,6 @@ class Pool(Generic[T]):
         with self._lock:
             if len(self._q) > 0:
                 self._teardown(self._q.popleft())
-
-
-class PoolContextManager(Generic[T]):
-    """Allows a Pool to be used as a Context Manager"""
-
-    _item: T
-    _pool: Pool[T]
-
-    def __init__(self, pool: Pool[T]):
-        self._pool = pool
-
-    def __enter__(self) -> T:
-        self._item = self._pool.get()
-        return self._item
-
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
-    ) -> Literal[False]:
-        self._pool.put(self._item)
-        return False
 
 
 # spellchecker:words popleft

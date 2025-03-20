@@ -4,7 +4,7 @@ from logging import Logger
 from sqlite3 import Connection
 from typing import Any, Iterable, Optional, Tuple, TypeGuard
 
-from ..db import LoggingCursorContext, SqliteConnector
+from ..sqlite import LoggingCursorContext, Connector
 from ..utils.pool import Pool
 from ..utils.strings import as_utf8
 
@@ -102,7 +102,7 @@ class Query:
 class QueryPool(Pool[Query]):
     """Represents a pool of Query objects"""
 
-    def __init__(self, max_size: int, logger: Logger, connector: SqliteConnector):
+    def __init__(self, max_size: int, logger: Logger, connector: Connector):
         super().__init__(
             size=max_size, setup=self.__setup, reset=None, teardown=self.__teardown
         )

@@ -4,7 +4,7 @@ import argparse
 from os.path import isdir, isfile
 from typing import List, Optional, Sequence, Text
 
-from ..db import SqliteConnector
+from ..sqlite import Connector
 from ..index import Indexer, Ingester
 from ._common import add_logging_arg, setup_logging
 
@@ -78,7 +78,7 @@ def run(
     # setup logging
     logger = setup_logging("lontod_index", log_level)
 
-    connector = SqliteConnector(db)
+    connector = Connector(db)
     logger.info("Opening database at %r", connector.connect_url)
     conn = connector.connect()
 

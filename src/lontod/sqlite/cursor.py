@@ -1,9 +1,7 @@
 """Implements Connections to an sqlite database"""
 
-from dataclasses import dataclass, field
-from enum import Enum
 from logging import DEBUG, Logger
-from sqlite3 import Connection, Cursor, connect
+from sqlite3 import Connection, Cursor
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -20,42 +18,6 @@ from typing import (
 _Parameters: TypeAlias = Any
 if TYPE_CHECKING:
     from sqlite3 import _Parameters
-
-
-class SqliteMode(Enum):
-    """Modes for connecting to an sqlite database"""
-
-    READ_ONLY = "ro"
-    READ_WRITE = "rw"
-    READ_WRITE_CREATE = "rwc"
-    MEMORY = "memory"
-
-
-@dataclass
-class SqliteConnector:
-    """Represents connection parameter for an sqlite database"""
-
-    filename: str
-    mode: SqliteMode = SqliteMode.READ_WRITE_CREATE
-    check_same_thread: bool = False
-    kwargs: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def connect_url(self) -> str:
-        """URL used to connect to the database"""
-        return f"file:{self.filename}?mode={self.mode.value}"
-
-    @property
-    def connect_kwargs(self) -> dict[str, Any]:
-        """kwargs used for connect call"""
-        kwargs = self.kwargs.copy()
-        kwargs["check_same_thread"] = self.check_same_thread
-        return kwargs
-
-    def connect(self) -> Connection:
-        """call connect with the given arguments"""
-        conn = connect(self.connect_url, **self.connect_kwargs)  # type: Connection
-        return conn
 
 
 class LoggingCursorContext:

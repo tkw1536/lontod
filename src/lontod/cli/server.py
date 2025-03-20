@@ -6,9 +6,10 @@ from typing import Optional, Sequence, Text
 from uvicorn import run as uv_run
 
 from ..daemon import Handler
-from ..db import SqliteConnector, SqliteMode
+from ..sqlite import Connector, Mode
 from ..index import QueryPool
 from ._common import add_logging_arg, setup_logging
+from os import environ
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -24,7 +25,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     parser.add_argument(
         "-H",
         "--host",
-        default="localhost",
+        default=environ.get("LONTOD_HOST") or "localhost",
         help="Host to listen on",
     )
     parser.add_argument(
@@ -57,7 +58,7 @@ def run(
 
     # setup the handler
     app = Handler(
-        pool=QueryPool(10, logger, SqliteConnector(db, mode=SqliteMode.READ_ONLY)),
+        pool=QueryPool(10, logger, Connector(db, mode=Mode.READ_ONLY)),
         public_url=public_url,
         logger=logger,
         debug=log_level == "debug",

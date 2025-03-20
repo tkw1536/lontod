@@ -4,7 +4,7 @@ from logging import Logger
 from sqlite3 import Connection
 from typing import Optional
 
-from ..db import LoggingCursorContext
+from ..sqlite import LoggingCursorContext
 from ..ontologies import Ontology
 
 _TABLE_SCHEMA_ = """
