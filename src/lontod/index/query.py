@@ -4,7 +4,7 @@ from logging import Logger
 from sqlite3 import Connection
 from typing import Any, Iterable, Optional, Tuple, TypeGuard
 
-from ..sqlite import LoggingCursorContext, Connector
+from ..sqlite import Connector, LoggingCursorContext
 from ..utils.pool import Pool
 from ..utils.strings import as_utf8
 

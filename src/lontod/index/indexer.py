@@ -4,8 +4,8 @@ from logging import Logger
 from sqlite3 import Connection
 from typing import Optional
 
-from ..sqlite import LoggingCursorContext
 from ..ontologies import Ontology
+from ..sqlite import LoggingCursorContext
 
 _TABLE_SCHEMA_ = """
 CREATE TABLE IF NOT EXISTS "NAMES" (

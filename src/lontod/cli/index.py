@@ -4,8 +4,8 @@ import argparse
 from os.path import isdir, isfile
 from typing import List, Optional, Sequence, Text
 
-from ..sqlite import Connector
 from ..index import Indexer, Ingester
+from ..sqlite import Connector
 from ._common import add_logging_arg, setup_logging
 
 

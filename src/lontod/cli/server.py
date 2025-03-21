@@ -1,15 +1,15 @@
 """Entrypoint for lontod_server"""
 
 import argparse
+from os import environ
 from typing import Optional, Sequence, Text
 
 from uvicorn import run as uv_run
 
 from ..daemon import Handler
-from ..sqlite import Connector, Mode
 from ..index import QueryPool
+from ..sqlite import Connector, Mode
 from ._common import add_logging_arg, setup_logging
-from os import environ
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:

@@ -1,8 +1,8 @@
 """tests the check module"""
 
-from lontod.sqlite.check import diff_database, make_test_database, DatabaseDiff
-from typing import Any
 import pytest
+
+from lontod.sqlite.check import DatabaseDiff, diff_database, make_test_database
 
 _sample_one: str = """
 CREATE TABLE users (
@@ -65,24 +65,25 @@ EMPTY_DIFF: DatabaseDiff = {
     "diff": [],
 }
 
+
 @pytest.mark.parametrize(
-    "left_src, right_src, wantEqual",
+    "left_src, right_src, want_equal",
     [
         (_sample_one, _sample_one, True),
         (_sample_one, _sample_one_half, False),
         (_sample_one, _sample_two, False),
         (_sample_two, _sample_one, False),
         (_sample_two, _sample_two, True),
-    ]
+    ],
 )
-def test_assert_table_equals(left_src: str, right_src: str, wantEqual: bool) -> None:
+def test_assert_table_equals(left_src: str, right_src: str, want_equal: bool) -> None:
     """tests that two tables are identical"""
     try:
         left = make_test_database(left_src)
         right = make_test_database(right_src)
 
         got = diff_database(left, right)
-        if wantEqual:
+        if want_equal:
             assert got == EMPTY_DIFF
         else:
             assert got != EMPTY_DIFF

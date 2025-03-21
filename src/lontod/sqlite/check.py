@@ -1,3 +1,5 @@
+"""test utilities for sqlite"""
+
 from sqlite3 import Connection, connect
 from typing import Any, TypedDict
 
@@ -11,7 +13,7 @@ def make_test_database(sql_script: str) -> Connection:
 
 def _table_names(conn: Connection) -> set[str]:
     cursor = conn.cursor().execute("SELECT name FROM sqlite_master WHERE type='table'")
-    return set([table[0] for table in cursor.fetchall()])
+    return {table[0] for table in cursor.fetchall()}
 
 
 def _table_schema(conn: Connection, table: str) -> list[Any]:
@@ -23,19 +25,24 @@ def _table_data(conn: Connection, table: str) -> list[Any]:
     cursor = conn.cursor().execute(f"SELECT * FROM {table}")
     return cursor.fetchall()
 
+
 class TableDiff(TypedDict):
-    """ diff of two tables """
+    """diff of two tables"""
+
     table: str
     schema_left: list[Any]
     schema_right: list[Any]
     left: list[Any]
     right: list[Any]
 
+
 class DatabaseDiff(TypedDict):
-    """ diff of two databases """
+    """diff of two databases"""
+
     left: set[str]
     right: set[str]
     diff: list[TableDiff]
+
 
 def diff_database(left: Connection, right: Connection) -> DatabaseDiff:
     """performs a diff on two databases"""

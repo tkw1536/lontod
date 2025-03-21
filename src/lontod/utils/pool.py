@@ -1,9 +1,9 @@
 """Implements a pool that recycles objects when needed"""
 
 from collections import deque
-from threading import Lock
-from typing import Callable, Generic, Optional, TypeVar, Iterator
 from contextlib import contextmanager
+from threading import Lock
+from typing import Callable, Generic, Iterator, Optional, TypeVar
 
 T = TypeVar("T")
 

@@ -1,7 +1,8 @@
 # pylint: skip-file
-from _typeshed import Incomplete
-from typing import overload
 from pathlib import Path
+from typing import overload
+
+from _typeshed import Incomplete
 from rdflib import Graph
 
 RDF_FOLDER: Incomplete
