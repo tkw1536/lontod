@@ -113,24 +113,17 @@ These are stored in the `DEFINIENDA` table.
 ## Development
 
 Dependencies are managed via [poetry](https://python-poetry.org). 
+We use [Poe the Poet](https://poethepoet.natn.io) as a task runner. 
 
-Source code should be formated using `black` and `isort`. 
-It should be linted using `pylint` and `mypy`.
-These are all installed as development dependencies by poetry.
+Source code be linted using `pylint` and `mypy`.
+It should be formated using `black` and `isort`. 
+Tests are run using `pytest`. 
 
-To run all formatting and linting do:
+To run all of these, the following tasks are defined.
+Assuming development dependencies are installed, simply run:
 
-```bash
-black src/ tests/
-isort src/ tests/
+- `poe format` to format code in-place.
+- `poe lint`: to run all linters
+- `poe test`: to run all the tests
 
-pylint src/ tests/
-mypy src/ tests/
-```
-
-Some functionality (mostly the utility functions) is also tested. 
-You can run the tests with:
-
-```bash
-pytest
-```
+See `pyproject.toml` for details on which task runs which exact underlying commands. 

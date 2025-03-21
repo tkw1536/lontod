@@ -21,6 +21,36 @@ dependencies = [
 lontod_index = 'lontod.cli.index:main'
 lontod_server = 'lontod.cli.server:main'
 
+[tool.poe.tasks]
+
+format = [
+    "_format_black",
+    "_format_isort"
+]
+_format_black = "black src/ tests/"
+_format_isort = "isort src/ tests/"
+
+lint = [
+    "_lint_black",
+    "_lint_isort",
+    "_lint_pylint",
+    "_lint_mypy"
+]
+_lint_black = "black --check src/ tests/"
+_lint_isort = "isort --check src/ tests/"
+_lint_pylint = "pylint src/ tests/"
+_lint_mypy = "mypy src/ tests/"
+
+test = [
+    "_test_pytest"
+]
+_test_pytest = "pytest"
+
+ci = [
+    "lint",
+    "test"
+]
+
 [tool.pylint]
 disable = ["R0903", "R0913", "R0917", "R0801", "W0718", "C0301"]
 
@@ -36,6 +66,7 @@ isort = "^6.0.1"
 mypy = "^1.15.0"
 pylint = "^3.3.5"
 pytest = "^8.3.5"
+poethepoet = "^0.33.1"
 
 [tool.mypy]
 mypy_path = "typings/"
