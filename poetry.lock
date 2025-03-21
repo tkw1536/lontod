@@ -509,17 +509,6 @@ files = [
 ]
 
 [[package]]
-name = "mimeparse"
-version = "0.1.3"
-description = "A module provides basic functions for parsing mime-type names and matching them against a list of media-ranges."
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "mimeparse-0.1.3.tar.gz", hash = "sha256:534ff6feefe1cd03984f444e6415aacc79c0a85f3b868ec41a2fd5003004c31e"},
-]
-
-[[package]]
 name = "mypy"
 version = "1.15.0"
 description = "Optional static typing for Python"
@@ -870,4 +859,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "2c3f57feec047daeb857041376443ea307bff72c62837c4087c4afbef31fc743"
+content-hash = "8e6d0b6c71db0e4c3d30bc8ce28f19cd9bac7464fbe286dad823a61b890c025c"
