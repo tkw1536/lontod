@@ -8,7 +8,7 @@ from pylode.profiles.ontpub import OntPub
 from rdflib import Graph, Literal, Node
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 
-from ..utils.graph import restrict_languages
+from ..utils.graph import restrict_languages, sanitize
 from ..utils.strings import as_utf8
 from .ontology import NoOntologyFound, Ontology
 
@@ -49,7 +49,7 @@ def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
     insert_fallback_title(graph, Literal("", datatype=XSD.string))
 
     # cleanup, to prevent at least some html injections!
-    # sanitize(graph)
+    sanitize(graph)
 
     # make html
     html = as_utf8(OntPub(graph).make_html())
