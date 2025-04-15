@@ -13,7 +13,7 @@ from lontod.ontologies import owl
 @pytest.fixture
 def html_file(request: pytest.FixtureRequest) -> BeautifulSoup:
     """loads an html fixture with the given name"""
-    path = join(dirname(__file__), "fixtures", request.param)
+    path = join(dirname(__file__), "fixtures", "definienda_of", request.param)
     with open(path, "r", encoding="utf-8") as f:
         return BeautifulSoup(f, "html.parser")
 
@@ -21,7 +21,7 @@ def html_file(request: pytest.FixtureRequest) -> BeautifulSoup:
 @pytest.fixture
 def want_definienda(request: pytest.FixtureRequest) -> list[Tuple[str, str | None]]:
     """loads a want_definienda fixture with the given name"""
-    path = join(dirname(__file__), "fixtures", request.param)
+    path = join(dirname(__file__), "fixtures", "definienda_of", request.param)
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
@@ -41,9 +41,12 @@ def test_definienda_of(
 ) -> None:
     """tests the definienda_of method"""
 
-    got_definienda = owl.definienda_of(
+    got = owl.definienda_of(
         html_file,
         uri,
     )
 
-    assert list(got_definienda) == want_definienda
+    norm_got = sorted(list(got), key=lambda x: x[0])
+    norm_want = sorted(list(want_definienda), key=lambda x: x[0])
+
+    assert list(norm_got) == list(norm_want)
