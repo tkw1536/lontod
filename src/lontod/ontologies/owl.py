@@ -62,8 +62,8 @@ def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
     )
 
 
-def insert_fallback_title(g: Graph, *titles: Node) -> None:
-    """Inserts a fallback title for an ontology if none is found"""
+def insert_fallback_title(g: Graph, *titles: Node) -> bool:
+    """Inserts a fallback title for an ontology, and returns if one has been inserted"""
 
     uri = None
     for s in chain(
@@ -75,12 +75,14 @@ def insert_fallback_title(g: Graph, *titles: Node) -> None:
 
         # if we have some title, we don't need to add one!
         for _ in g.objects(s, DCTERMS.title):
-            return
+            return False
 
         # insert all the titles
         for title in titles:
             g.add((uri, DCTERMS.title, title))
-        return
+        return True
+
+    raise AssertionError("no ontology found in graph")
 
 
 def definienda_of(

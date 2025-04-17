@@ -34,7 +34,7 @@ class Handler(Starlette):
                 Route("/ontology/{slug}", self.handle_ontology),
                 Route("/ontology/{slug}/", self.remove_trailing_slash),
                 # for security!
-                Route("/.well-known/{path:path}", Response("Forbidden", 403)),
+                Route("/.well-known/{path:path}", Response("Not Found", 404)),
                 # for speed - don't bother with these
                 Route("/favicon.ico", Response("Not Found", 404)),
                 Route("/robots.txt", Response("Not Found", 404)),
