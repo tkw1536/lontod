@@ -15,7 +15,7 @@ jobs:
       - name: Install poetry
         run: pip install poetry
       - name: Install dependencies
-        run: poetry Install
+        run: poetry install
       - name: Lint
         run: poe lint
       - name: Test
