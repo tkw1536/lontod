@@ -15,6 +15,7 @@ class Mode(Enum):
     READ_WRITE = "rw"
     READ_WRITE_CREATE = "rwc"
     MEMORY = "memory"
+    MEMORY_SHARED_CACHE = "memory&cache=shared"
 
 
 @dataclass

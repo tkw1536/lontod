@@ -79,7 +79,7 @@ def run(
     logger = setup_logging("lontod_index", log_level)
 
     connector = Connector(db)
-    logger.info("Opening database at %r", connector.connect_url)
+    logger.info("opening database at %r", connector.connect_url)
     conn = connector.connect()
 
     indexer = Indexer(conn, logger)
@@ -89,12 +89,12 @@ def run(
         # create a transaction
         conn.execute("BEGIN;")
 
-        logger.info("Initializing schema")
+        logger.info("initializing schema")
         indexer.initialize_schema()
 
         if not remove:
             if clean:
-                logger.info("Cleaning up database")
+                logger.info("cleaning up database")
                 indexer.truncate()
 
             for path in paths:
@@ -104,7 +104,7 @@ def run(
                     ingester.ingest_directory(path)
                 else:
                     logger.error(
-                        "Unable to ingest %r: Neither a path nor a directory", path
+                        "unable to ingest %r: Neither a path nor a directory", path
                     )
         else:
             for slug in paths:
@@ -112,11 +112,11 @@ def run(
                 indexer.remove(slug, slug)
 
         if simulate:
-            logger.info("Simulate was provided, rolling back transaction")
+            logger.info("simulate was provided, rolling back transaction")
             conn.rollback()
             return
 
-        logger.info("Committing changes")
+        logger.info("committing changes")
         conn.commit()
 
         return
