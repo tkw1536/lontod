@@ -87,7 +87,7 @@ The index consists of an SQLITE databse with the following schema (omitting inde
 CREATE TABLE IF NOT EXISTS "NAMES" (
     "SLUG"    TEXT NOT NULL PRIMARY KEY, -- "name" of the ontology
     "URI"   TEXT NOT NULL
-) STRICT;
+);
 
 -- encoding of ontology in various different formats
 -- each indexed ontology will be stored in the formats listed below.
@@ -95,14 +95,14 @@ CREATE TABLE IF NOT EXISTS "ONTOLOGIES" (
     "URI"        TEXT NOT NULL,
     "MIME_TYPE" TEXT NOT NULL,
     "DATA"      BLOB NOT NULL
-) STRICT;
+);
 
 -- defienda found in ontologies
 CREATE TABLE IF NOT EXISTS "DEFINIENDA" (
     "URI"       TEXT NOT NULL, -- URI of defiendum
     "ONTOLOGY"  TEXT NOT NULL, -- ontology it is defined in
     "FRAGMENT"  TEXT -- html fragment identifier (without #) that the definition is found in
-) STRICT;
+);
 ```
 
 Each indexed ontology is first loaded and then converted into each of the following formats:

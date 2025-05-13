@@ -9,7 +9,7 @@ from uvicorn import run as uv_run
 from ..daemon import Handler
 from ..index import QueryPool, Watcher
 from ..sqlite import Connector, Mode
-from ._common import add_logging_arg, setup_logging
+from ._common import add_logging_arg, lang_or_environment, setup_logging
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -64,7 +64,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         result.public_url,
         result.log,
         result.watch,
-        result.language or [],
+        lang_or_environment(result.language),
     )
 
 

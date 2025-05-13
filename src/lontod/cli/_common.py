@@ -1,7 +1,18 @@
 """Shared cli functionality"""
 
 from argparse import ArgumentParser
-from logging import WARNING, Logger, getLogger
+from logging import INFO, WARNING, Logger, getLogger
+from os import environ
+
+
+def lang_or_environment(langs: list[str] | None) -> list[str]:
+    """returns the set languages argument, or the default one form the environment if unset."""
+    if langs:
+        return langs
+    arg = environ.get("LONTOD_LANGUAGES", "")
+    if arg == "":
+        return []
+    return arg.split(",")
 
 
 def add_logging_arg(parser: ArgumentParser) -> None:
@@ -18,6 +29,7 @@ def add_logging_arg(parser: ArgumentParser) -> None:
 def setup_logging(name: str, level: str) -> Logger:
     """perform global logging config and setup a new logger with the given name and level for the"""
     getLogger("asyncio").setLevel(WARNING)
+    getLogger("watchdog").setLevel(INFO)
 
     logger = getLogger(name)
     logger.setLevel(level)

@@ -5,7 +5,7 @@ from typing import List, Optional, Sequence, Text
 
 from ..index import Indexer, Ingester
 from ..sqlite import Connector
-from ._common import add_logging_arg, setup_logging
+from ._common import add_logging_arg, lang_or_environment, setup_logging
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -55,7 +55,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     run(
         result.input,
         result.clean,
-        result.languages or [],
+        lang_or_environment(result.language),
         result.simulate,
         result.database,
         result.remove,
