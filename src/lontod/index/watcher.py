@@ -1,7 +1,6 @@
 """implements a watcher for indexing"""
 
 from logging import Logger
-from os.path import isdir, isfile
 from sqlite3 import Connection
 from threading import Lock
 from typing import Callable
@@ -10,8 +9,9 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
 
-from ..index import Indexer, Ingester
 from ..utils.debounce import debounce
+from .indexer import Indexer
+from .ingester import Ingester
 
 
 class Watcher:
@@ -115,17 +115,13 @@ class ReIndexingHandler(FileSystemEventHandler):
     def _reindex(self) -> None:
         self.indexer.truncate()
 
-        failed = False
-        if isfile(self.path):
-            slug = self.ingester.ingest_file(self.path)
-            failed = slug is not None
-        elif isdir(self.path):
-            _, failures = self.ingester.ingest_directory(self.path)
-            failed = len(failures) > 0
-        else:
-            self.logger.error(
-                "Unable to ingest %r: Neither a path nor a directory", self.path
-            )
+        failures: list[str] = []
+        try:
+            _, failures = self.ingester.ingest(self.path)
+        except AssertionError as err:
+            self.logger.error("unable to ingest %r: %s", self.path, err)
 
-        if failed:
-            raise AssertionError("at least one ontology failed to be ingested")
+        if len(failures) > 0:
+            raise AssertionError(
+                f"failed to ingest {",".join([repr(f) for f in failures])}"
+            )

@@ -1,7 +1,6 @@
 """Entrypoint for lontod_index"""
 
 import argparse
-from os.path import isdir, isfile
 from typing import List, Optional, Sequence, Text
 
 from ..index import Indexer, Ingester
@@ -98,14 +97,10 @@ def run(
                 indexer.truncate()
 
             for path in paths:
-                if isfile(path):
-                    ingester.ingest_file(path)
-                elif isdir(path):
-                    ingester.ingest_directory(path)
-                else:
-                    logger.error(
-                        "unable to ingest %r: Neither a path nor a directory", path
-                    )
+                try:
+                    ingester.ingest(path)
+                except AssertionError as err:
+                    logger.error("unable to ingest %r: %s", path, err)
         else:
             for slug in paths:
                 logger.info("removing %r", slug)

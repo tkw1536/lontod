@@ -2,7 +2,7 @@
 
 from logging import Logger
 from os import listdir
-from os.path import isfile, join
+from os.path import isdir, isfile, join
 from typing import List, Optional
 
 from rdflib import Graph
@@ -24,7 +24,21 @@ class Ingester:
         self._logger = logger
         self.html_languages = html_languages
 
-    def ingest_directory(self, directory: str) -> tuple[list[str], list[str]]:
+    def ingest(self, path: str) -> tuple[list[str], list[str]]:
+        """Ingests a file or a directory and return a tuple of successful indexes and failed indexes"""
+
+        if isfile(path):
+            slug = self._ingest_file(path)
+            if isinstance(slug, str):
+                return [slug], []
+            else:
+                return [], [path]
+        elif isdir(path):
+            return self._ingest_directory(path)
+        else:
+            raise AssertionError(f"{path!r} is neither a file nor a directory")
+
+    def _ingest_directory(self, directory: str) -> tuple[list[str], list[str]]:
         """Ingests all ontologies from the given directory"""
         ingested = []
         failed = []
@@ -33,16 +47,17 @@ class Ingester:
             # skip file that starts with "."
             if file.startswith("."):
                 continue
-            slug = self.ingest_file(join(directory, file))
+            path = join(directory, file)
+            slug = self._ingest_file(path)
             if slug is None:
-                failed.append(file)
+                failed.append(path)
                 continue
 
             ingested.append(slug)
 
         return ingested, failed
 
-    def ingest_file(self, path: str) -> Optional[str]:
+    def _ingest_file(self, path: str) -> Optional[str]:
         """Ingests an ontology from a single file"""
         if not isfile(path):
             self._logger.info("skipping import of %r: Not a file", path)
