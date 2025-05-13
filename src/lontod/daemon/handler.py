@@ -4,7 +4,7 @@ from functools import wraps
 from html import escape
 from logging import Logger
 from traceback import format_exception
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, Optional, final
 from urllib.parse import quote
 
 from starlette.applications import Starlette
@@ -18,6 +18,7 @@ from ..utils.pool import Pool
 from .http import LoggingMiddleware, negotiate
 
 
+@final
 class Handler(Starlette):
     """Handler class for the ontology serving daemon"""
 

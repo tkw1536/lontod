@@ -3,11 +3,10 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from sqlite3 import Connection, connect
-from typing import (
-    Any,
-)
+from typing import Any, final
 
 
+@final
 class Mode(Enum):
     """Modes for connecting to an sqlite database"""
 
@@ -18,6 +17,7 @@ class Mode(Enum):
     MEMORY_SHARED_CACHE = "memory&cache=shared"
 
 
+@final
 @dataclass
 class Connector:
     """Represents connection parameter for an sqlite database"""

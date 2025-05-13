@@ -12,6 +12,7 @@ from typing import (
     Self,
     Type,
     TypeAlias,
+    final,
     override,
 )
 
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from sqlite3 import _Parameters
 
 
+@final
 class LoggingCursorContext:
     """A context that automatically closes a cursor and logs all output"""
 
@@ -47,6 +49,7 @@ class LoggingCursorContext:
         return False
 
 
+@final
 class LoggingCursor(Cursor):
     """a cursor function that logs all calls that execute sql code"""
 

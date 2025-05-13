@@ -2,9 +2,10 @@
 
 from dataclasses import dataclass
 from os.path import basename, splitext
-from typing import Optional, Tuple
+from typing import Optional, Tuple, final
 
 
+@final
 @dataclass
 class Ontology:
     """Represents an ontology that can be indexed"""

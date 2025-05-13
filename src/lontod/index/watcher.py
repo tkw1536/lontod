@@ -3,7 +3,7 @@
 from logging import Logger
 from sqlite3 import Connection
 from threading import Lock
-from typing import Callable
+from typing import Callable, final
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
@@ -14,112 +14,110 @@ from .indexer import Indexer
 from .ingester import Ingester
 
 
+@final
 class Watcher:
     """Watches a file or directory for changes and re-indexes when needed"""
 
-    conn: Connection
-    observer: BaseObserver | None = None
-    path: str
-    logger: Logger
-    html_languages: list[str]
+    __conn: Connection
+    __observer: BaseObserver | None = None
+    __path: str
+    __logger: Logger
+    __html_languages: list[str]
 
     def __init__(
         self, conn: Connection, path: str, html_languages: list[str], logger: Logger
     ):
-        self.conn = conn
-        self.logger = logger
-        self.path = path
-        self.html_languages = html_languages
+        self.__conn = conn
+        self.__logger = logger
+        self.__path = path
+        self.__html_languages = html_languages
 
     def start(self) -> None:
         """starts watching the given directory"""
 
-        if self.observer is not None:
+        if self.__observer is not None:
             raise AssertionError("observer already started")
 
-        self.logger.info("initializing database")
-        indexer = Indexer(self.conn, self.logger)
-        indexer.initialize_schema()
+        ingester = Ingester(
+            Indexer(self.__conn, self.__logger), self.__html_languages, self.__logger
+        )
 
-        ingester = Ingester(indexer, self.html_languages, self.logger)
+        self.__logger.info(f"performing initial index of {self.__path!r}")
+        handler = ReIndexingHandler(ingester, self.__path, self.__logger)
+        handler.reindex_now(initialize=True, force=True)
 
-        self.logger.info(f"performing initial index of {self.path!r}")
-        handler = ReIndexingHandler(indexer, ingester, self.path, self.logger)
-        handler.reindex_now(force=True)
-
-        self.logger.info(f"starting to watch {self.path!r}")
-        self.observer = Observer()
-        self.observer.schedule(handler, self.path, recursive=True)
-        self.observer.start()
+        self.__logger.info(f"starting to watch {self.__path!r}")
+        self.__observer = Observer()
+        self.__observer.schedule(handler, self.__path, recursive=True)
+        self.__observer.start()
 
     def close(self) -> None:
         """closes the observer and the connection"""
-        self.conn.close()
+        self.__conn.close()
 
-        if self.observer is not None:
-            self.logger.info(f"stopping watch of {self.path!r}")
-            self.observer.stop()
+        if self.__observer is not None:
+            self.__logger.info(f"stopping watch of {self.__path!r}")
+            self.__observer.stop()
 
 
+@final
 class ReIndexingHandler(FileSystemEventHandler):
     """triggers re-indexing"""
 
-    logger: Logger
-    lock: Lock
-    ingester: Ingester
-    indexer: Indexer
-    debounce_seconds: float
-    path: str
-    reindex: Callable[[], None]
+    __logger: Logger
+    __lock: Lock
+    __ingester: Ingester
+    __path: str
+    __reindex: Callable[[], None]
 
     def __init__(
         self,
-        indexer: Indexer,
         ingester: Ingester,
         path: str,
         logger: Logger,
         debounce_seconds: float = 1.0,
     ):
-        self.indexer = indexer
-        self.ingester = ingester
-        self.logger = logger
-        self.lock = Lock()
-        self.path = path
-        self.debounce_seconds = debounce_seconds
-        self.reindex = debounce(debounce_seconds)(self.reindex_now)
+        self.__ingester = ingester
+        self.__logger = logger
+        self.__lock = Lock()
+        self.__path = path
+        self.__reindex = debounce(debounce_seconds)(self.reindex_now)
 
     def on_any_event(self, event: FileSystemEvent) -> None:
         """called when any event occurs"""
-        self.reindex()
+        self.__reindex()
 
-    def reindex_now(self, force: bool = False) -> None:
-        """triggers a reindexing procedure, and logs in case of failure"""
+    def reindex_now(self, initialize: bool = False, force: bool = False) -> None:
+        """triggers a re-indexing procedure, and logs in case of failure"""
 
-        with self.lock:
-            self.indexer.conn.execute("BEGIN;")
+        with self.__lock:
+            conn = self.__ingester.conn
+            conn.execute("BEGIN;")
 
             ok = True
             try:
-                self._reindex()
+                self.__reindex_impl(initialize=initialize)
             except Exception as e:
-                self.logger.error(f"failed to ingest: {e}")
+                self.__logger.error(f"failed to ingest: {e}")
                 ok = False
 
             if ok or force:
-                self.logger.info("committing indexed ontologies")
-                self.indexer.conn.commit()
+                self.__logger.info("committing indexed ontologies")
+                conn.commit()
             else:
-                self.logger.error("rolling back indexed ontologies")
-                self.indexer.conn.rollback()
+                self.__logger.error("rolling back indexed ontologies")
+                conn.rollback()
 
-    def _reindex(self) -> None:
-        self.indexer.truncate()
+    def __reindex_impl(self, initialize: bool = False) -> None:
+        """re-indexing implementation"""
 
         failures: list[str] = []
         try:
-            _, failures = self.ingester.ingest(self.path)
+            _, failures = self.__ingester(
+                self.__path, initialize=initialize, truncate=True
+            )
         except AssertionError as err:
-            self.logger.error("unable to ingest %r: %s", self.path, err)
+            self.__logger.error("unable to ingest %r: %s", self.__path, err)
 
         if len(failures) > 0:
             raise AssertionError(

@@ -1,11 +1,12 @@
 """implements a custom namespace manager"""
 
-from typing import Tuple, override
+from typing import Tuple, final, override
 
 from rdflib import Graph, URIRef
 from rdflib.namespace import NamespaceManager
 
 
+@final
 class BrokenSplitNamespaceManager(NamespaceManager):
     """Implements a NamespaceManager for when .split() is broken because of a trailing '/'"""
 

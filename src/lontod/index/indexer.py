@@ -2,7 +2,7 @@
 
 from logging import Logger
 from sqlite3 import Connection
-from typing import Optional
+from typing import Optional, final
 
 from ..ontologies import Ontology
 from ..sqlite import LoggingCursorContext
@@ -30,6 +30,7 @@ CREATE INDEX IF NOT EXISTS "INDEX_ONTOLOGIES" ON "ONTOLOGIES" ("URI", "MIME_TYPE
 """
 
 
+@final
 class Indexer:
     """Low-level database-interacting indexing functionality"""
 

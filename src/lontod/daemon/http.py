@@ -1,7 +1,7 @@
 """http utility functions for daemon"""
 
 from logging import Logger
-from typing import Any, Awaitable, Callable, Iterable, Optional
+from typing import Any, Awaitable, Callable, Iterable, Optional, final
 
 from mimeparse import MimeTypeParseException, best_match
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -32,6 +32,7 @@ def negotiate(
         return default
 
 
+@final
 class LoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log all requests into the given logger"""
 

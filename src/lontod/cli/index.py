@@ -88,33 +88,24 @@ def run(
         # create a transaction
         conn.execute("BEGIN;")
 
-        logger.info("initializing schema")
-        indexer.initialize_schema()
-
-        if not remove:
-            if clean:
-                logger.info("cleaning up database")
-                indexer.truncate()
-
-            for path in paths:
-                try:
-                    ingester.ingest(path)
-                except AssertionError as err:
-                    logger.error("unable to ingest %r: %s", path, err)
-        else:
-            for slug in paths:
-                logger.info("removing %r", slug)
-                indexer.remove(slug, slug)
+        ingest_ok = False
+        try:
+            ingester(*paths, initialize=True, truncate=clean, remove=remove)
+            ingest_ok = True
+        except Exception as err:
+            logger.error("ingestion failed %s", err)
 
         if simulate:
             logger.info("simulate was provided, rolling back transaction")
             conn.rollback()
             return
 
-        logger.info("committing changes")
-        conn.commit()
-
-        return
+        if ingest_ok:
+            logger.info("committing changes")
+            conn.commit()
+        else:
+            logger.info("rolling back changes")
+            conn.rollback()
     finally:
         conn.close()
 

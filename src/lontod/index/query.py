@@ -2,26 +2,32 @@
 
 from logging import Logger
 from sqlite3 import Connection
-from typing import Any, Iterable, Optional, Tuple, TypeGuard
+from typing import Any, Iterable, Optional, Tuple, TypeGuard, final
 
 from ..sqlite import Connector, LoggingCursorContext
 from ..utils.pool import Pool
 from ..utils.strings import as_utf8
 
 
+@final
 class Query:
     """functionality for interacting with indexed ontologies"""
 
-    conn: Connection
-    _logger: Logger
+    __conn: Connection
+    __logger: Logger
 
     def __init__(self, conn: Connection, logger: Logger):
         """Creates a new Query instance"""
-        self.conn = conn
-        self._logger = logger
+        self.__conn = conn
+        self.__logger = logger
+
+    @property
+    def conn(self) -> Connection:
+        """connection used by this query object"""
+        return self.__conn
 
     def _cursor(self) -> LoggingCursorContext:
-        return LoggingCursorContext(self.conn, self._logger)
+        return LoggingCursorContext(self.__conn, self.__logger)
 
     def list_ontologies(self) -> Iterable[Tuple[str, str]]:
         """Lists all (slug, name) ontologies found in the database"""
