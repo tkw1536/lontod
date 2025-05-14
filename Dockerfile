@@ -28,10 +28,9 @@ USER nonroot
 EXPOSE 8080
 
 ENV LONTOD_HOST=0.0.0.0\
-    LONTOD_PORT=8080
-
-ENV LONTOD_LANGUAGES=en
-ENV LONTOD_PATHS=/data/
+    LONTOD_PORT=8080\
+    LONTOD_LANGUAGES=en\
+    LONTOD_PATHS=/data/
 
 ENTRYPOINT ["python", "-m", "lontod.cli.server"]
 CMD []

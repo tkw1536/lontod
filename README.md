@@ -149,11 +149,7 @@ See `pyproject.toml` for details on which task runs which exact underlying comma
 # Deployment
 
 The included [Dockerfile](./Dockerfile) contains a docker file with all required libraries. 
-To build the docker image, run something like:
-
-```bash
-docker build -t lontod .
-```
+It is also deployed as a [GitHub Package](https://github.com/tkw1536/lontod/pkgs/container/lontod). 
 
 It starts `lontod_server` and indexes the directory `/data/` by default.
 It uses the following environment variables:
@@ -172,8 +168,8 @@ To run the docker image you can use something like:
 
 ```bash
 # to index once and serve it
-docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro lontod
+docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lontod:latest
 
 # to index and watch the directory
-docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro lontod --watch
+docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lontod:latest --watch
 ```
