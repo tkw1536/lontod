@@ -47,7 +47,7 @@ The server additionally supports the following environment variables:
 | `LONTOD_PORT`              | (none)      | The port to listen on                                          |
 | `LONTOD_DB`                | (in-memory) | Database filename                                              |
 | `LONTOD_PATHS`             | (none)      | The set of paths to index, separated by `;`                    |
-| `LONTOD_LANGS`             | (none)      | (Spoken) languages to present defienanda for, separated by `;` |
+| `LONTOD_LANGUAGES`         | (none)      | (Spoken) languages to present defienanda for, separated by `;` |
 | `LONTOD_INDEX_HTML_HEADER` | (none)      | Path to a html file to prefix index html responses with        |
 | `LONTOD_INDEX_HTML_FOOTER` | (none)      | Path to a html file to suffix index html responses with        |
 | `LONTOD_INDEX_TXT_HEADER`  | (none)      | Path to a text file to prefix index txt responses with         |
@@ -78,7 +78,7 @@ The indexer supports the following environment variables:
 |----------------------------|------------------|----------------------------------------------------------------|
 | `LONTOD_DB`                | `./lontod.index` | Database filename                                              |
 | `LONTOD_PATHS`             | (none)           | The set of paths to index, separated by `;`                    |
-| `LONTOD_LANGS`             | (none)           | (Spoken) languages to present defienanda for, separated by `;` |
+| `LONTOD_LANGUAGES`         | (none)           | (Spoken) languages to present defienanda for, separated by `;` |
 | `LONTOD_INDEX_HTML_HEADER` | (none)           | Path to a html file to prefix index html responses with        |
 | `LONTOD_INDEX_HTML_FOOTER` | (none)           | Path to a html file to suffix index html responses with        |
 | `LONTOD_INDEX_TXT_HEADER`  | (none)           | Path to a text file to prefix index txt responses with         |
@@ -182,7 +182,7 @@ It starts `lontod_server` and indexes the directory `/data/` by default.
 It also supports the environment variables read by the server with the following defaults:
 - `LONTOD_HOST`: `0.0.0.0` (listen on all interfaces)
 - `LONTOD_PATHS`: `/data/`
-- `LONTOD_LANGS`: `en`
+- `LONTOD_LANGUAGES`: `en`
 
 To run the docker image you can use something like:
 
