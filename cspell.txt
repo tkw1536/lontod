@@ -12,9 +12,11 @@ noproto
 Ontopub
 ontpub
 postprocessors
+preprocessors
 pylint
 pylode
 rdflib
+reindexing
 SKOS
 starlette
 uvicorn

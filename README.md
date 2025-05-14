@@ -6,7 +6,7 @@ It consists of two main executables:
 - lontod_server (`python -m lontod.cli.server`): Exposes ontologies via http to users. 
 - lontod_index (`python -m lontod.cli.index`): Adds or updates an OWL ontology into an sqlite-powered database index. 
 
-These are described in the 'Server' and 'Indexing' sections below. 
+These are described in detail the 'Server' and 'Indexing' sections below.
 
 ## Server
 
@@ -39,10 +39,24 @@ lontod_server --watch "ontologies/"
 lontod_server --host 0.0.0.0 --port 3000 --database my_index.db
 ```
 
+The server additionally supports the following environment variables:
+
+| Name                       | Default     | Description                                                    |
+|----------------------------|-------------|----------------------------------------------------------------|
+| `LONTOD_HOST`              | (none)      | The hostname to listen on                                      |
+| `LONTOD_PORT`              | (none)      | The port to listen on                                          |
+| `LONTOD_DB`                | (in-memory) | Database filename                                              |
+| `LONTOD_PATHS`             | (none)      | The set of paths to index, separated by `;`                    |
+| `LONTOD_LANGS`             | (none)      | (Spoken) languages to present defienanda for, separated by `;` |
+| `LONTOD_INDEX_HTML_HEADER` | (none)      | Path to a html file to prefix index html responses with        |
+| `LONTOD_INDEX_HTML_FOOTER` | (none)      | Path to a html file to suffix index html responses with        |
+| `LONTOD_INDEX_TXT_HEADER`  | (none)      | Path to a text file to prefix index txt responses with         |
+| `LONTOD_INDEX_TXT_FOOTER`  | (none)      | Path to a text file to suffix index txt responses with         |
+
 ## Indexing
 
 To enable the server, ontologies have to first be indexed. 
-The index is stored in an sqlite database called `onto.db` in the current directory by default. 
+The index is stored in an sqlite database called `lontod.index` in the current directory by default. 
 
 This can be achieved using the `lontod_index` program:
 
@@ -56,6 +70,19 @@ lontod_index my_ontology.owl second_ontology.owl
 # index a directory (not recursive)
 lontod_index ontologies/
 ```
+
+The indexer supports the following environment variables:
+
+
+| Name                       | Default          | Description                                                    |
+|----------------------------|------------------|----------------------------------------------------------------|
+| `LONTOD_DB`                | `./lontod.index` | Database filename                                              |
+| `LONTOD_PATHS`             | (none)           | The set of paths to index, separated by `;`                    |
+| `LONTOD_LANGS`             | (none)           | (Spoken) languages to present defienanda for, separated by `;` |
+| `LONTOD_INDEX_HTML_HEADER` | (none)           | Path to a html file to prefix index html responses with        |
+| `LONTOD_INDEX_HTML_FOOTER` | (none)           | Path to a html file to suffix index html responses with        |
+| `LONTOD_INDEX_TXT_HEADER`  | (none)           | Path to a text file to prefix index txt responses with         |
+| `LONTOD_INDEX_TXT_FOOTER`  | (none)           | Path to a text file to suffix index txt responses with         |
 
 Ontologies are indexed using the filename as a name. 
 For example `my_ontology.owl` will be indexed under the name `my_ontology`.
@@ -78,7 +105,7 @@ When indexing, the format is selected based on the file extension:
 | [HexTuples](https://github.com/ontola/hextuples)                             | `.hext`                        |
 | [N-Quads](https://www.w3.org/TR/n-quads/)                                    | `.nq`, `.nquads`               |
 
-## Indexing internals
+### Indexing internals
 
 This section briefly describes the internals of the indexing process.
 
@@ -149,20 +176,13 @@ See `pyproject.toml` for details on which task runs which exact underlying comma
 # Deployment
 
 The included [Dockerfile](./Dockerfile) contains a docker file with all required libraries. 
-It is also deployed as a [GitHub Package](https://github.com/tkw1536/lontod/pkgs/container/lontod). 
+It is also deployed as a [GitHub Package](https://github.com/tkw1536/lontod/pkgs/container/lontod) 
 
 It starts `lontod_server` and indexes the directory `/data/` by default.
-It uses the following environment variables:
-
-- `LONTOD_HOST`: The host to listen on. Defaults to `0.0.0.0`
-- `LONTOD_DB`: Database to store index in. Default to being in-memory . 
-- `LONTOD_PATHS`: The set of paths to index, separated by `;`. Defaults to `/data/`.
-- `LONTOD_LANG`: (Spoken) languages to index, separated by `;`. Defaults to `en`.
-
-- `LONTOD_INDEX_HTML_HEADER`: Path to a html file to prefix index html responses with.
-- `LONTOD_INDEX_HTML_FOOTER`: Path to a html file to suffix index html responses with.
-- `LONTOD_INDEX_TXT_HEADER`: Path to a text file to prefix index txt responses with.
-- `LONTOD_INDEX_TXT_FOOTER`: Path to a text file to suffix index txt responses with.
+It also supports the environment variables read by the server with the following defaults:
+- `LONTOD_HOST`: `0.0.0.0` (listen on all interfaces)
+- `LONTOD_PATHS`: `/data/`
+- `LONTOD_LANGS`: `en`
 
 To run the docker image you can use something like:
 

@@ -49,7 +49,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         "-p",
         "--port",
         type=int,
-        default=8080,
+        default=environ.get("LONTOD_PORT", "8080"),
         help="Host to listen on",
     )
     parser.add_argument(
@@ -90,7 +90,7 @@ def run(
 
     # set the default database
     if db is None and len(paths) == 0:
-        db = environ.get("LONTOD_DB", "./onto.db")
+        db = environ.get("LONTOD_DB", "./lontod.index")
 
     if watch and len(paths) == 0:
         logger.fatal("--watch given, but no paths to watch provided")

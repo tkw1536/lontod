@@ -17,6 +17,8 @@ from ..index import Query
 from ..utils.pool import Pool
 from .http import LoggingMiddleware, negotiate
 
+# spellchecker:words noopener noreferer
+
 DEFAULT_INDEX_HTML_HEADER: Final[
     str
 ] = """

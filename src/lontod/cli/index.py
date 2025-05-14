@@ -20,7 +20,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     parser.add_argument(
         "-d",
         "--database",
-        default=environ.get("LONTOD_DB", "./onto.db"),
+        default=environ.get("LONTOD_DB", "./lontod.index"),
         help="Database file to index into",
     )
     parser.add_argument(
@@ -56,7 +56,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     run(
         list_or_environment(result.input, "LONTOD_PATHS"),
         result.clean,
-        list_or_environment(result.language, "LONTOD_LANG"),
+        list_or_environment(result.language, "LONTOD_LANGS"),
         result.simulate,
         result.database,
         result.remove,
