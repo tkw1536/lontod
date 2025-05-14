@@ -90,7 +90,7 @@ def run(
 
     # set the default database
     if db is None and len(paths) == 0:
-        db = "./onto.db"
+        db = environ.get("LONTOD_DB", "./onto.db")
 
     if watch and len(paths) == 0:
         logger.fatal("--watch given, but no paths to watch provided")

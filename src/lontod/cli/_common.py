@@ -8,13 +8,13 @@ from os import environ
 
 
 def list_or_environment(values: list[str] | None, env: str) -> list[str]:
-    """returns the set languages argument, or the default one form the environment if unset."""
+    """returns the values set, or the default one from the environment if unset."""
     if values:
         return values
     arg = environ.get(env, "")
     if arg == "":
         return []
-    return arg.split(",")
+    return arg.split(";")
 
 
 def add_logging_arg(parser: ArgumentParser) -> None:

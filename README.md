@@ -145,3 +145,30 @@ Assuming development dependencies are installed, simply run:
 - `poe test`: to run all the tests
 
 See `pyproject.toml` for details on which task runs which exact underlying commands. 
+
+# Deployment
+
+The included [Dockerfile](./Dockerfile) contains a docker file with all required libraries. 
+To build the docker image, run something like:
+
+```bash
+docker build -t lontod .
+```
+
+It starts `lontod_server` and indexes the directory `/data/` by default.
+It uses the following environment variables:
+
+- `LONTOD_HOST`: The host to listen on. Defaults to `0.0.0.0`
+- `LONTOD_DB`: Database to store index in. Default to being in-memory. 
+- `LONTOD_PATHS`: The set of paths to index, separated by `;`. Defaults to `/data/`.
+- `LONTOD_LANG`: (Spoken) languages to index, separated by `;`. Defaults to `en`.
+
+To run the docker image you can use something like:
+
+```bash
+# to index once and serve it
+docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro lontod
+
+# to watch the mounted directory
+docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro lontod --watch
+```

@@ -1,6 +1,7 @@
 """Entrypoint for lontod_index"""
 
 import argparse
+from os import environ
 from typing import List, Optional, Sequence, Text
 
 from ..index import Indexer, Ingester
@@ -19,7 +20,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     parser.add_argument(
         "-d",
         "--database",
-        default="./onto.db",
+        default=environ.get("LONTOD_DB", "./onto.db"),
         help="Database file to index into",
     )
     parser.add_argument(
