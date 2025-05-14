@@ -1,4 +1,4 @@
-"""implements a watcher for indexing"""
+"""implements high level functionality for ingestion"""
 
 from logging import Logger
 from sqlite3 import Connection
@@ -15,48 +15,58 @@ from .ingester import Ingester
 
 
 @final
-class Watcher:
-    """Watches a file or directory for changes and re-indexes when needed"""
+class Controller:
+    """ controls indexing and optionally watches the given directories """
 
     __conn: Connection
     __observer: BaseObserver | None = None
-    __path: str
+    __paths: list[str]
     __logger: Logger
+    __lock: Lock
     __html_languages: list[str]
+    __ingester: Ingester
 
     def __init__(
-        self, conn: Connection, path: str, html_languages: list[str], logger: Logger
+        self, conn: Connection, paths: list[str], html_languages: list[str], logger: Logger
     ):
         self.__conn = conn
         self.__logger = logger
-        self.__path = path
+        self.__paths = paths
         self.__html_languages = html_languages
-
-    def start(self) -> None:
-        """starts watching the given directory"""
-
-        if self.__observer is not None:
-            raise AssertionError("observer already started")
-
-        ingester = Ingester(
+        self.__lock = Lock()
+        self.__ingester = Ingester(
             Indexer(self.__conn, self.__logger), self.__html_languages, self.__logger
         )
 
-        self.__logger.info(f"performing initial index of {self.__path!r}")
-        handler = ReIndexingHandler(ingester, self.__path, self.__logger)
-        handler.reindex_now(initialize=True, force=True)
+    def index_and_commit(self) -> None:
+        """ Performs an indexing operation, and always commits the result """
 
-        self.__logger.info(f"starting to watch {self.__path!r}")
+        with self.__lock:
+            self.__logger.info(f"ingesting paths {self.__paths!r}")
+            self.__conn.execute("BEGIN;")
+            self.__ingester(*self.__paths, initialize=True, truncate=False)
+            self.__conn.commit()
+
+    def start_watching(self) -> None:
+        """starts watching and automatically reindexing """
+
+        if self.__observer is not None:
+            raise AssertionError("already started")
+
+        handler = ReIndexingHandler(self.__ingester, self.__lock, self.__paths, self.__logger)
+
         self.__observer = Observer()
-        self.__observer.schedule(handler, self.__path, recursive=True)
+        for path in self.__paths:
+            self.__logger.info(f"starting to watch {path!r}")
+            self.__observer.schedule(handler, path, recursive=True)
         self.__observer.start()
 
     def close(self) -> None:
-        """closes the observer and the connection"""
+        """closes the connection (and any possible observers)"""
         self.__conn.close()
 
         if self.__observer is not None:
-            self.__logger.info(f"stopping watch of {self.__path!r}")
+            self.__logger.info(f"stopping watch of {self.__paths!r}")
             self.__observer.stop()
 
 
@@ -67,20 +77,21 @@ class ReIndexingHandler(FileSystemEventHandler):
     __logger: Logger
     __lock: Lock
     __ingester: Ingester
-    __path: str
+    __paths: list[str]
     __reindex: Callable[[], None]
 
     def __init__(
         self,
         ingester: Ingester,
-        path: str,
+        lock: Lock,
+        paths: list[str],
         logger: Logger,
         debounce_seconds: float = 1.0,
     ):
         self.__ingester = ingester
         self.__logger = logger
-        self.__lock = Lock()
-        self.__path = path
+        self.__lock = lock
+        self.__paths = paths
         self.__reindex = debounce(debounce_seconds)(self.reindex_now)
 
     def on_any_event(self, event: FileSystemEvent) -> None:
@@ -114,10 +125,10 @@ class ReIndexingHandler(FileSystemEventHandler):
         failures: list[str] = []
         try:
             _, failures = self.__ingester(
-                self.__path, initialize=initialize, truncate=True
+                *self.__paths, initialize=initialize, truncate=True
             )
         except AssertionError as err:
-            self.__logger.error("unable to ingest %r: %s", self.__path, err)
+            self.__logger.error("unable to ingest %r: %s", self.__paths, err)
 
         if len(failures) > 0:
             raise AssertionError(

@@ -7,7 +7,7 @@ from typing import Optional, Sequence, Text
 from uvicorn import run as uv_run
 
 from ..daemon import Handler
-from ..index import QueryPool, Watcher
+from ..index import QueryPool, Controller
 from ..sqlite import Connector, Mode
 from ._common import add_logging_arg, lang_or_environment, setup_logging
 
@@ -17,6 +17,11 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
+        "input",
+        nargs="*",
+        help="Path(s) to input file(s) or directories(s) to index or watch",
+    )
+    parser.add_argument(
         "-d",
         "--database",
         default=None,
@@ -25,8 +30,8 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     parser.add_argument(
         "-w",
         "--watch",
-        default=None,
-        help="Watch specific folder for changes in ontology files",
+        action=argparse.BooleanOptionalAction,
+        help="Instead of only indexing once, re-index the files and folder every time they change",
     )
     parser.add_argument(
         "-L",
@@ -59,6 +64,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     result = parser.parse_args(args)
     run(
         result.database,
+        result.input,
         result.port,
         result.host,
         result.public_url,
@@ -70,42 +76,52 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
 
 def run(
     db: Optional[str],
+    paths: list[str], 
     port: int,
     host: str,
     public_url: Optional[str],
     log_level: str,
-    watch: Optional[str],
+    watch: bool,
     languages: list[str],
 ) -> None:
     """Starts the lontod server"""
-
-    # set the default database
-    if watch is None and db is None:
-        db = "./onto.db"
-
-    connector_server: Connector
-    connector_watcher: Connector
-    if isinstance(db, str):
-        connector_server = Connector(db, mode=Mode.READ_ONLY)
-        connector_watcher = Connector(db, mode=Mode.READ_WRITE_CREATE)
-    else:
-        connector_server = Connector("lontod", mode=Mode.MEMORY_SHARED_CACHE)
-        connector_watcher = connector_server
-
     # setup logging
     logger = setup_logging("lontod_server", log_level)
 
-    watcher = None
-    if watch is not None:
-        logger.info("opening database at %r", connector_watcher.connect_url)
-        conn = connector_watcher.connect()
+    # set the default database
+    if db is None and len(paths) == 0:
+        db = "./onto.db"
 
-        watcher = Watcher(conn, watch, languages, logger)
-        watcher.start()
+    if watch and len(paths) == 0:
+        logger.fatal('--watch given, but no paths to watch provided')
+        return
+
+    server_conn: Connector
+    index_conn: Connector
+    if isinstance(db, str):
+        server_conn = Connector(db, mode=Mode.READ_ONLY)
+        index_conn = Connector(db, mode=Mode.READ_WRITE_CREATE)
+    else:
+        server_conn = Connector("lontod", mode=Mode.MEMORY_SHARED_CACHE)
+        index_conn = server_conn
+
+    # an optional controller
+    controller: Controller | None = None
+    if len(paths) > 0:
+        logger.info("opening database at %r", index_conn.connect_url)
+        conn = index_conn.connect()
+
+        # create a watcher and use the ingester to ingest!
+        controller = Controller(conn, paths, languages, logger)
+        controller.index_and_commit()
+
+        # start the watcher if given
+        if watch:
+            controller.start_watching()
 
     # setup the handler
     app = Handler(
-        pool=QueryPool(10, logger, connector_server),
+        pool=QueryPool(10, logger, server_conn),
         public_url=public_url,
         logger=logger,
         debug=log_level == "debug",
@@ -115,8 +131,8 @@ def run(
         logger.info("starting server at %s:%s", host, port)
         uv_run(app, log_level="error", host=host, port=port)
     finally:
-        if watcher is not None:
-            watcher.close()
+        if controller is not None:
+            controller.close()
         app.pool.teardown()
 
 

@@ -117,7 +117,7 @@ class Ingester:
             self.__logger.info("skipping import of %r: Not a file", path)
             return None
 
-        self.__logger.info("parsing graph data at %r", path)
+        self.__logger.debug("parsing graph data at %r", path)
         g = Graph()
         g.namespace_manager = BrokenSplitNamespaceManager(g)
         try:
@@ -134,15 +134,15 @@ class Ingester:
             self.__logger.error("unable to read OWL ontology at %r: %s", path, err)
             return None
 
-        self.__logger.debug("inserting ontology %s from %r", owl.uri, path)
+        self.__logger.debug("inserting ontology %r from %r", owl.uri, path)
         slug = slug_from_path(path)
         try:
             self.__indexer.upsert(slug, owl)
         except Exception as err:
             self.__logger.error(
-                "unable to index ontology %s from %r: %s", owl.uri, path, err
+                "unable to index ontology %r from %r: %s", owl.uri, path, err
             )
             raise
 
-        self.__logger.info("indexed ontology %s from %r as %r", owl.uri, path, slug)
+        self.__logger.info("indexed ontology %r from %r as %r", owl.uri, path, slug)
         return slug
