@@ -7,6 +7,15 @@ from os import environ
 # spellchecker:words fsevents
 
 
+def file_or_none(env: str) -> str | None:
+    """reads a file from the given environment variable or None"""
+
+    if env not in environ:
+        return None
+    with open(environ.get(env, ""), "r", encoding="utf-8") as f:
+        return f.read()
+
+
 def list_or_environment(values: list[str] | None, env: str) -> list[str]:
     """returns the values set, or the default one from the environment if unset."""
     if values:

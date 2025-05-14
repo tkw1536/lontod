@@ -9,7 +9,7 @@ from uvicorn import run as uv_run
 from ..daemon import Handler
 from ..index import Controller, QueryPool
 from ..sqlite import Connector, Mode
-from ._common import add_logging_arg, list_or_environment, setup_logging
+from ._common import add_logging_arg, file_or_none, list_or_environment, setup_logging
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -120,11 +120,16 @@ def run(
             controller.start_watching()
 
     # setup the handler
+    pool = QueryPool(10, logger, server_conn)
     app = Handler(
-        pool=QueryPool(10, logger, server_conn),
+        pool=pool,
         public_url=public_url,
         logger=logger,
         debug=log_level == "debug",
+        index_html_header=file_or_none("LONTOD_INDEX_HTML_HEADER"),
+        index_html_footer=file_or_none("LONTOD_INDEX_HTML_FOOTER"),
+        index_txt_header=file_or_none("LONTOD_INDEX_TXT_HEADER"),
+        index_txt_footer=file_or_none("LONTOD_INDEX_TXT_FOOTER"),
     )
 
     try:
@@ -133,7 +138,7 @@ def run(
     finally:
         if controller is not None:
             controller.close()
-        app.pool.teardown()
+        pool.teardown()
 
 
 if __name__ == "__main__":

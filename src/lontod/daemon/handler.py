@@ -4,7 +4,7 @@ from functools import wraps
 from html import escape
 from logging import Logger
 from traceback import format_exception
-from typing import Any, Callable, Iterable, Optional, final
+from typing import Any, Callable, Final, Iterable, Optional, final
 from urllib.parse import quote
 
 from starlette.applications import Starlette
@@ -17,16 +17,60 @@ from ..index import Query
 from ..utils.pool import Pool
 from .http import LoggingMiddleware, negotiate
 
+DEFAULT_INDEX_HTML_HEADER: Final[
+    str
+] = """
+<!DOCTYPE html>
+<style>
+    ul a, ul a:visited{ color:blue; }
+    footer{ font-size:small; color: gray; }
+    footer a, footer a:visited { color: black; }
+</style>
+<h1>Ontologies</h1>
+"""
+
+DEFAULT_INDEX_TXT_HEADER: Final[
+    str
+] = """Ontologies:
+"""
+
+DEFAULT_INDEX_HTML_FOOTER: Final[
+    str
+] = """
+<footer>
+    Powered by <a href='https://github.com/tkw1536/lontod' target='_blank' rel='noopener noreferer'>lontod</a>
+</footer>
+"""
+
+DEFAULT_INDEX_TXT_FOOTER: Final[
+    str
+] = """
+---
+Powered by lontod: https://github.com/tkw1536/lontod
+"""
+
 
 @final
 class Handler(Starlette):
     """Handler class for the ontology serving daemon"""
+
+    __public_url: str | None
+    __index_txt_header: str
+    __index_txt_footer: str
+    __index_html_header: str
+    __index_html_footer: str
+    __pool: Pool[Query]
+    __logger: Logger
 
     def __init__(
         self,
         pool: Pool[Query],
         logger: Logger,
         public_url: Optional[str] = None,
+        index_html_header: Optional[str] = None,
+        index_html_footer: Optional[str] = None,
+        index_txt_header: Optional[str] = None,
+        index_txt_footer: Optional[str] = None,
         debug: bool = False,
     ):
         super().__init__(
@@ -48,10 +92,20 @@ class Handler(Starlette):
             debug=debug,
         )
 
-        self.public_url = public_url
+        self.__public_url = public_url
         self.debug = debug
-        self.pool = pool
-        self.logger = logger
+        self.__pool = pool
+        self.__logger = logger
+
+        self.__index_html_header = index_html_header or DEFAULT_INDEX_HTML_HEADER
+        self.__index_html_footer = index_html_footer or DEFAULT_INDEX_HTML_FOOTER
+        self.__index_txt_header = index_txt_header or DEFAULT_INDEX_TXT_HEADER
+        self.__index_txt_footer = index_txt_footer or DEFAULT_INDEX_TXT_FOOTER
+
+    @property
+    def logger(self) -> Logger:
+        """logger associated with this handler"""
+        return self.__logger
 
     @staticmethod
     def _catch_handler_error(
@@ -82,7 +136,9 @@ class Handler(Starlette):
 
         # find the hostname to use for URI lookup!
         prefix = (
-            self.public_url if isinstance(self.public_url, str) else req.url.hostname
+            self.__public_url
+            if isinstance(self.__public_url, str)
+            else req.url.hostname
         )
         if prefix is None:
             return self.error_response(404, "not found")
@@ -90,7 +146,7 @@ class Handler(Starlette):
         # find the exact IRI requested
         iri_noproto = "://" + prefix + req.url.path.rstrip("/")
 
-        self.logger.debug(f"looking up IRIs {iri_noproto!r}")
+        self.__logger.debug(f"looking up IRIs {iri_noproto!r}")
 
         candidates = (
             f"http{iri_noproto}",
@@ -99,7 +155,7 @@ class Handler(Starlette):
             f"https{iri_noproto}/",
         )
 
-        with self.pool.use() as query:
+        with self.__pool.use() as query:
             defs = query.get_definiendum(*candidates)
             if defs is None:
                 return self.error_response(404, "not found")
@@ -147,20 +203,14 @@ class Handler(Starlette):
             self._stream_root(media_type == "text/html"), media_type=media_type
         )
 
-    __root_html_head = """
-    <!DOCTYPE html>
-    <ul>
-    """
-
-    __root_html_foot = """
-    </ul>
-    """
-
     def _stream_root(self, html: bool) -> Iterable[str]:
         if html:
-            yield Handler.__root_html_head
+            yield self.__index_html_header
+            yield "<ul>"
+        else:
+            yield self.__index_txt_header
 
-        with self.pool.use() as query:
+        with self.__pool.use() as query:
             for slug, uri in query.list_ontologies():
                 link = "/ontology/" + slug + "/"
                 if html:
@@ -169,7 +219,10 @@ class Handler(Starlette):
                     yield f"* {link}: <{uri}>\n"
 
         if html:
-            yield Handler.__root_html_foot
+            yield "</ul>"
+            yield self.__index_html_footer
+        else:
+            yield self.__index_txt_footer
 
     @_catch_handler_error
     def handle_ontology(self, req: Request) -> Response:
@@ -179,7 +232,7 @@ class Handler(Starlette):
         if not isinstance(slug, str):
             raise AssertionError("expected slug parameter to be a string")
 
-        with self.pool.use() as query:
+        with self.__pool.use() as query:
 
             # find the mime times we can serve for this ontology
             offers = query.get_mime_types(slug)
@@ -194,7 +247,7 @@ class Handler(Starlette):
             if decision is None:
                 return self.error_response(406, "No available content type")
 
-            self.logger.debug("ontology %r: decided on %s", slug, decision)
+            self.__logger.debug("ontology %r: decided on %s", slug, decision)
             result = query.get_data(slug, decision)
             if result is None:
                 return self.error_response(500, "Negotiated content type went away")

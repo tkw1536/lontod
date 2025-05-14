@@ -159,9 +159,14 @@ It starts `lontod_server` and indexes the directory `/data/` by default.
 It uses the following environment variables:
 
 - `LONTOD_HOST`: The host to listen on. Defaults to `0.0.0.0`
-- `LONTOD_DB`: Database to store index in. Default to being in-memory. 
+- `LONTOD_DB`: Database to store index in. Default to being in-memory . 
 - `LONTOD_PATHS`: The set of paths to index, separated by `;`. Defaults to `/data/`.
 - `LONTOD_LANG`: (Spoken) languages to index, separated by `;`. Defaults to `en`.
+
+- `LONTOD_INDEX_HTML_HEADER`: Path to a html file to prefix index html responses with.
+- `LONTOD_INDEX_HTML_FOOTER`: Path to a html file to suffix index html responses with.
+- `LONTOD_INDEX_TXT_HEADER`: Path to a text file to prefix index txt responses with.
+- `LONTOD_INDEX_TXT_FOOTER`: Path to a text file to suffix index txt responses with.
 
 To run the docker image you can use something like:
 
@@ -169,6 +174,6 @@ To run the docker image you can use something like:
 # to index once and serve it
 docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro lontod
 
-# to watch the mounted directory
+# to index and watch the directory
 docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro lontod --watch
 ```
