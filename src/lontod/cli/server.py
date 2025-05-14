@@ -7,9 +7,9 @@ from typing import Optional, Sequence, Text
 from uvicorn import run as uv_run
 
 from ..daemon import Handler
-from ..index import QueryPool, Controller
+from ..index import Controller, QueryPool
 from ..sqlite import Connector, Mode
-from ._common import add_logging_arg, lang_or_environment, setup_logging
+from ._common import add_logging_arg, list_or_environment, setup_logging
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -64,19 +64,19 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     result = parser.parse_args(args)
     run(
         result.database,
-        result.input,
+        list_or_environment(result.input, "LONTOD_PATHS"),
         result.port,
         result.host,
         result.public_url,
         result.log,
         result.watch,
-        lang_or_environment(result.language),
+        list_or_environment(result.language, "LONTOD_LANG"),
     )
 
 
 def run(
     db: Optional[str],
-    paths: list[str], 
+    paths: list[str],
     port: int,
     host: str,
     public_url: Optional[str],
@@ -93,7 +93,7 @@ def run(
         db = "./onto.db"
 
     if watch and len(paths) == 0:
-        logger.fatal('--watch given, but no paths to watch provided')
+        logger.fatal("--watch given, but no paths to watch provided")
         return
 
     server_conn: Connector

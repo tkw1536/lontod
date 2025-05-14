@@ -1,16 +1,17 @@
 """Shared cli functionality"""
 
 from argparse import ArgumentParser
-from logging import INFO, WARNING, CRITICAL, Logger, getLogger
+from logging import CRITICAL, INFO, WARNING, Logger, getLogger
 from os import environ
 
-#spellchecker:words fsevents
+# spellchecker:words fsevents
 
-def lang_or_environment(langs: list[str] | None) -> list[str]:
+
+def list_or_environment(values: list[str] | None, env: str) -> list[str]:
     """returns the set languages argument, or the default one form the environment if unset."""
-    if langs:
-        return langs
-    arg = environ.get("LONTOD_LANGUAGES", "")
+    if values:
+        return values
+    arg = environ.get(env, "")
     if arg == "":
         return []
     return arg.split(",")

@@ -5,7 +5,7 @@ from typing import List, Optional, Sequence, Text
 
 from ..index import Indexer, Ingester
 from ..sqlite import Connector
-from ._common import add_logging_arg, lang_or_environment, setup_logging
+from ._common import add_logging_arg, list_or_environment, setup_logging
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -53,9 +53,9 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
 
     result = parser.parse_args(args)
     run(
-        result.input,
+        list_or_environment(result.input, "LONTOD_PATHS"),
         result.clean,
-        lang_or_environment(result.language),
+        list_or_environment(result.language, "LONTOD_LANG"),
         result.simulate,
         result.database,
         result.remove,
@@ -64,7 +64,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
 
 
 def run(
-    paths: str,
+    paths: list[str],
     clean: bool,
     html_languages: List[str],
     simulate: bool,

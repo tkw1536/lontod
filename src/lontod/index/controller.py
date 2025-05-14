@@ -16,7 +16,7 @@ from .ingester import Ingester
 
 @final
 class Controller:
-    """ controls indexing and optionally watches the given directories """
+    """controls indexing and optionally watches the given directories"""
 
     __conn: Connection
     __observer: BaseObserver | None = None
@@ -27,7 +27,11 @@ class Controller:
     __ingester: Ingester
 
     def __init__(
-        self, conn: Connection, paths: list[str], html_languages: list[str], logger: Logger
+        self,
+        conn: Connection,
+        paths: list[str],
+        html_languages: list[str],
+        logger: Logger,
     ):
         self.__conn = conn
         self.__logger = logger
@@ -39,7 +43,7 @@ class Controller:
         )
 
     def index_and_commit(self) -> None:
-        """ Performs an indexing operation, and always commits the result """
+        """Performs an indexing operation, and always commits the result"""
 
         with self.__lock:
             self.__logger.info(f"ingesting paths {self.__paths!r}")
@@ -48,12 +52,14 @@ class Controller:
             self.__conn.commit()
 
     def start_watching(self) -> None:
-        """starts watching and automatically reindexing """
+        """starts watching and automatically reindexing"""
 
         if self.__observer is not None:
             raise AssertionError("already started")
 
-        handler = ReIndexingHandler(self.__ingester, self.__lock, self.__paths, self.__logger)
+        handler = ReIndexingHandler(
+            self.__ingester, self.__lock, self.__paths, self.__logger
+        )
 
         self.__observer = Observer()
         for path in self.__paths:

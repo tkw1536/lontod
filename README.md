@@ -1,13 +1,43 @@
 # lontod
-
-(Documentation work in progress)
-
 lontod is a daemon that serves OWL ontologies as linked open data.
 
 It consists of two main executables:
 
+- lontod_server (`python -m lontod.cli.server`): Exposes ontologies via http to users. 
 - lontod_index (`python -m lontod.cli.index`): Adds or updates an OWL ontology into an sqlite-powered database index. 
-- lontod_server (`python -m lontod.cli.server`): Exposes indexed ontologies via http to users
+
+These are described in the 'Server' and 'Indexing' sections below. 
+
+## Server
+
+The server provides a set of ontologies to users. 
+It implements three routes:
+
+- an overview page, providing a list of all ontologies (under the root url `/`)
+- one page for each ontology (under `/ontology/${ontology_name}`)
+- redirects from the URI of defined concepts to the appropriate documentation page (everywhere else)
+
+The ontology pages perform [Content Negotiation](https://en.wikipedia.org/wiki/Content_negotiation) using the standard HTTP `Accept` header. 
+Each ontology can be returned using different formats, some human-readable and some machine-readable (see the Indexing Internals section below for a list of supported formats).
+
+The server can be started using:
+
+```bash
+
+# index the 'ontologies' direcory in-memory and start exposing any contained ontologies
+lontod_server ontologies/
+
+# start the server - listens on localhost:8080 by default
+# by default this serves a previously indexed ontology - see indexing below.
+lontod_server
+
+# start the server in 'watch mode': Automatically index the directory whenever anything changes.
+# This maintains an index in memory by default.
+lontod_server --watch "ontologies/"
+
+# load an index from the file 'my_index.db' and listen on host 0.0.0.0 and port 3000
+lontod_server --host 0.0.0.0 --port 3000 --database my_index.db
+```
 
 ## Indexing
 
@@ -47,34 +77,6 @@ When indexing, the format is selected based on the file extension:
 | [JSON-LD](https://json-ld.org/)                                              | `.json`, `.jsonld`, `.json-ld` |
 | [HexTuples](https://github.com/ontola/hextuples)                             | `.hext`                        |
 | [N-Quads](https://www.w3.org/TR/n-quads/)                                    | `.nq`, `.nquads`               |
-
-
-
-## Server
-
-The server provides a set of ontologies to users. 
-It implements three routes:
-
-- an overview page, providing a list of all ontologies (under the root url `/`)
-- one page for each ontology (under `/ontology/${ontology_name}`)
-- redirects from the URI of defined concepts to the appropriate documentation page (everywhere else)
-
-The ontology pages perform [Content Negotiation](https://en.wikipedia.org/wiki/Content_negotiation) using the standard HTTP `Accept` header. 
-Each ontology can be returned using different formats, some human-readable and some machine-readable (see the Indexing Internals section below for a list of supported formats).
-
-The server can be started using:
-
-```bash
-# start the server - listens on localhost:8080 by default
-lontod_server
-
-# start the server in 'watch mode': Automatically index the directory whenever anything changes.
-# This maintains an index in memory by default.
-lontod_server --watch "ontologies/"
-
-# load an index from the file 'my_index.db' and listen on host 0.0.0.0 and port 3000
-lontod_server --host 0.0.0.0 --port 3000 --database my_index.db
-```
 
 ## Indexing internals
 
