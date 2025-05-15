@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --without dev --n
 
 FROM python:3.13-slim-bullseye as runtime
 
-RUN adduser --system --no-create-home nonroot
+# RUN adduser --system --no-create-home nonroot
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
@@ -24,7 +24,7 @@ COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 COPY src/lontod ./lontod
 
-USER nonroot
+# USER nonroot
 EXPOSE 8080
 
 ENV LONTOD_HOST=0.0.0.0\
