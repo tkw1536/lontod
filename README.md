@@ -114,7 +114,7 @@ The index consists of an SQLITE databse with the following schema (omitting inde
 ```sql
 -- names of indexed ontologies for use in server URLs
 CREATE TABLE IF NOT EXISTS "NAMES" (
-    "SLUG"    TEXT NOT NULL PRIMARY KEY, -- "name" of the ontology
+    "SLUG"    TEXT NOT NULL PRIMARY KEY, -- internal identifier of the ontology
     "URI"   TEXT NOT NULL
 );
 

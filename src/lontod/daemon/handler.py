@@ -10,7 +10,7 @@ from urllib.parse import quote
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response, StreamingResponse
+from starlette.responses import Response, StreamingResponse
 from starlette.routing import Route
 
 from ..index import Query
@@ -78,8 +78,7 @@ class Handler(Starlette):
         super().__init__(
             routes=[
                 Route("/", self.handle_root),
-                Route("/ontology/{slug}", self.handle_ontology),
-                Route("/ontology/{slug}/", self.remove_trailing_slash),
+                Route("/.well-known/lontod/get", self.handle_ontology),
                 # for security!
                 Route("/.well-known/{path:path}", Response("Not Found", 404)),
                 # for speed - don't bother with these
@@ -162,16 +161,21 @@ class Handler(Starlette):
             if defs is None:
                 return self.error_response(404, "not found")
 
-            (slug, fragment) = defs
-            url = "/ontology/" + slug
-            if isinstance(fragment, str):
-                url += "#" + quote(fragment)
+            (slug, uri, fragment) = defs
+            url = self._public_url(slug, uri, None, fragment=fragment)
             return self.redirect_response(url, status_code=303)
 
     @_catch_handler_error
-    def redirect_response(self, dest: str, status_code: int = 307) -> RedirectResponse:
+    def redirect_response(self, dest: str, status_code: int = 307) -> Response:
         """Creates a generic response that redirects the user to the given destination"""
-        return RedirectResponse(dest, status_code)
+
+        return Response(
+            content=f"Redirecting to {dest}...",
+            status_code=status_code,
+            headers={
+                "location": quote(dest, safe=":/%#?=@[]!$&'()*+,;"),
+            },
+        )
 
     def error_response(self, code: int, message: str) -> Response:
         """Creates a generic error response with the given message and code"""
@@ -214,7 +218,7 @@ class Handler(Starlette):
 
         with self.__pool.use() as query:
             for slug, uri in query.list_ontologies():
-                link = "/ontology/" + slug + "/"
+                link = self._public_url(slug, uri, None)
                 if html:
                     yield f'<li><a href="{escape(link, True)}">{escape(uri)}</a></li>\n'
                 else:
@@ -228,30 +232,57 @@ class Handler(Starlette):
 
     @_catch_handler_error
     def handle_ontology(self, req: Request) -> Response:
-        """Handles the '/ontology/:slug/' route"""
+        """Handles the '/_/get?uri=...&format=...' route"""
 
-        slug = req.path_params.get("slug")
-        if not isinstance(slug, str):
-            raise AssertionError("expected slug parameter to be a string")
+        uri = req.query_params.get("uri")
+        if not isinstance(uri, str):
+            return self.error_response(400, "Missing URI")
+
+        typ = req.query_params.get("type")
 
         with self.__pool.use() as query:
+            if not isinstance(typ, str):
+                # find the mime times we can serve for this ontology
+                offers = query.get_mime_types(uri)
+                if len(offers) == 0:
+                    return self.error_response(404, "Ontology not found")
 
-            # find the mime times we can serve for this ontology
-            offers = query.get_mime_types(slug)
-            if len(offers) == 0:
-                return self.error_response(404, "Ontology not found")
+                # decide on the actual content type
+                decision = negotiate(req, offers)
+                if decision is None or decision not in offers:
+                    decision = "text/plain" if "text/plain" in offers else None
 
-            # decide on the actual content type
-            decision = negotiate(req, offers)
-            if decision is None or decision not in offers:
-                decision = "text/plain" if "text/plain" in offers else None
+                if decision is None:
+                    return self.error_response(406, "No available content type")
+            else:
+                if not query.has_mime_type(uri, typ):
+                    return self.error_response(404, "Ontology not found")
+                decision = typ
 
-            if decision is None:
-                return self.error_response(406, "No available content type")
+            self.__logger.debug("ontology %r: decided on %s", uri, typ)
+            return self.serve_ontology(query, uri, decision)
 
-            self.__logger.debug("ontology %r: decided on %s", slug, decision)
-            result = query.get_data(slug, decision)
-            if result is None:
-                return self.error_response(500, "Negotiated content type went away")
+    def serve_ontology(self, query: Query, uri: str, typ: str) -> Response:
+        """Serves an ontology with the given URI and format"""
+        result = query.get_data(uri, typ)
 
-            return Response(status_code=200, media_type=decision, content=result)
+        # This shouldn't happen.
+        # but there is a race condition: if the db changes between the decision
+        # and this query, it might disappear.
+        if result is None:
+            return self.error_response(500, "Negotiated content type went away")
+
+        return Response(status_code=200, media_type=typ, content=result)
+
+    def _public_url(
+        self, slug: str, uri: str, typ: str | None = None, fragment: str | None = None
+    ) -> str:
+        """returns the (server-local) url to retrieve a specific ontology"""
+        _ = slug  # unused
+
+        url = f"/.well-known/lontod/get?uri={quote(uri)}"
+        if isinstance(typ, str):
+            url += "&type=" + quote(typ)
+        if isinstance(fragment, str):
+            url += "#" + fragment
+        return url
