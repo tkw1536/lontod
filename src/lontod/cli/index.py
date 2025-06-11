@@ -56,7 +56,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     run(
         list_or_environment(result.input, "LONTOD_PATHS"),
         result.clean,
-        list_or_environment(result.language, "LONTOD_LANGUAGES"),
+        list_or_environment(result.languages, "LONTOD_LANGUAGES"),
         result.simulate,
         result.database,
         result.remove,

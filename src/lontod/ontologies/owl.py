@@ -11,16 +11,7 @@ from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 from ..utils.graph import restrict_languages, sanitize
 from ..utils.strings import as_utf8
 from .ontology import NoOntologyFound, Ontology
-
-_FORMAT_TO_MEDIA_TYPES_ = {
-    "xml": "application/rdf+xml",
-    "n3": "text/n3",
-    "turtle": "text/turtle",
-    "nt": "text/plain",
-    "trig": "application/trig",
-    "json-ld": "application/ld+json",
-    "hext": "application/x-ndjson",
-}
+from .types import media_types
 
 
 def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
@@ -35,8 +26,8 @@ def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
 
     # encode the ontology in all different formats
     types = [
-        (media_type, as_utf8(graph.serialize(None, format)))
-        for (format, media_type) in _FORMAT_TO_MEDIA_TYPES_.items()
+        (typ, as_utf8(graph.serialize(None, extension)))
+        for (extension, typ) in media_types()
     ]
 
     # prepare graph for use in OntPub

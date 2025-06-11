@@ -1,5 +1,6 @@
 """http http handler"""
 
+from collections import OrderedDict
 from functools import wraps
 from html import escape
 from logging import Logger
@@ -11,34 +12,45 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import Response, StreamingResponse
-from starlette.routing import Route
+from starlette.routing import BaseRoute, Route
 
 from ..index import Query
+from ..ontologies.types import extension_from_type
 from ..utils.pool import Pool
 from .http import LoggingMiddleware, negotiate
 
-# spellchecker:words noopener noreferer
+# spellchecker:words noopener noreferer tabindex
 
 DEFAULT_INDEX_HTML_HEADER: Final[
     str
 ] = """
 <!DOCTYPE html>
+<html lang="en">
+<head>
 <style>
-    ul a, ul a:visited{ color:blue; }
-    footer{ font-size:small; color: gray; }
+    main { margin: 1em }
+    span { display: block; margin-bottom: 1em; }
+    ul { margin-top: 0; margin-bottom: 0; }
+    main a, main a:visited{ color:blue; }
+    footer { font-size:small; color: gray; }
     footer a, footer a:visited { color: black; }
+    fieldset { margin-bottom: 1em; }
 </style>
+<title>Ontologies</title>
+</head>
 <h1>Ontologies</h1>
+<main>
 """
 
 DEFAULT_INDEX_TXT_HEADER: Final[
     str
-] = """Ontologies:
+] = """# Ontologies:
 """
 
 DEFAULT_INDEX_HTML_FOOTER: Final[
     str
 ] = """
+</main>
 <footer>
     Powered by <a href='https://github.com/tkw1536/lontod' target='_blank' rel='noopener noreferer'>lontod</a>
 </footer>
@@ -57,6 +69,8 @@ class Handler(Starlette):
     """Handler class for the ontology serving daemon"""
 
     __public_url: str | None
+    __ontology_route: str
+    __insecure_skip_routes: bool
     __index_txt_header: str
     __index_txt_footer: str
     __index_html_header: str
@@ -68,40 +82,77 @@ class Handler(Starlette):
         self,
         pool: Pool[Query],
         logger: Logger,
+        ontology_route: str = "/",
         public_url: Optional[str] = None,
+        insecure_skip_routes: bool = False,
         index_html_header: Optional[str] = None,
         index_html_footer: Optional[str] = None,
         index_txt_header: Optional[str] = None,
         index_txt_footer: Optional[str] = None,
         debug: bool = False,
     ):
+        self.__public_url = public_url
+        self.__ontology_route = ontology_route
+        self.debug = debug
+        self.__pool = pool
+        self.__logger = logger
+        self.__insecure_skip_routes = insecure_skip_routes
+
+        self.__index_html_header = index_html_header or DEFAULT_INDEX_HTML_HEADER
+        self.__index_html_footer = index_html_footer or DEFAULT_INDEX_HTML_FOOTER
+        self.__index_txt_header = index_txt_header or DEFAULT_INDEX_TXT_HEADER
+        self.__index_txt_footer = index_txt_footer or DEFAULT_INDEX_TXT_FOOTER
+
         super().__init__(
-            routes=[
-                Route("/", self.handle_root),
-                Route("/.well-known/lontod/get", self.handle_ontology),
-                # for security!
-                Route("/.well-known/{path:path}", Response("Not Found", 404)),
-                # for speed - don't bother with these
-                Route("/favicon.ico", Response("Not Found", 404)),
-                Route("/robots.txt", Response("Not Found", 404)),
-                # do the actual lookup
-                Route("/{path:path}", self.handle_fallback),
-            ],
+            routes=list(self.__routes),
             middleware=[
                 Middleware(LoggingMiddleware, logger=logger),
             ],
             debug=debug,
         )
 
-        self.__public_url = public_url
-        self.debug = debug
-        self.__pool = pool
-        self.__logger = logger
+    @property
+    def __routes(self) -> Iterable[BaseRoute]:
+        yield Route(self.__ontology_route, self.handle)
 
-        self.__index_html_header = index_html_header or DEFAULT_INDEX_HTML_HEADER
-        self.__index_html_footer = index_html_footer or DEFAULT_INDEX_HTML_FOOTER
-        self.__index_txt_header = index_txt_header or DEFAULT_INDEX_TXT_HEADER
-        self.__index_txt_footer = index_txt_footer or DEFAULT_INDEX_TXT_FOOTER
+        if not self.__insecure_skip_routes:
+            # for safety
+            yield Route("/.well-known/{path:path}", Response("Not Found", 404))
+
+            # for speed - don't bother with these
+            yield Route("/favicon.ico", Response("Not Found", 404))
+            yield Route("/robots.txt", Response("Not Found", 404))
+
+        yield Route("/{path:path}", self.handle_fallback)
+
+    def reverse_url(
+        self,
+        uri: str | None = None,
+        typ: str | None = None,
+        fragment: str | None = None,
+        download: bool = False,
+    ) -> str:
+        """returns the (server-local) url to retrieve a specific ontology"""
+        params: OrderedDict[str, Optional[str]] = OrderedDict()
+        params["uri"] = uri
+        params["format"] = typ
+        params["download"] = "1" if download else None
+
+        path = self.__ontology_route
+
+        query = "&".join(
+            [
+                f"{key}={quote(value)}"
+                for (key, value) in params.items()
+                if isinstance(value, str)
+            ]
+        )
+        if query != "":
+            query = "?" + query
+
+        frag = "#" + fragment if isinstance(fragment, str) else ""
+
+        return path + query + frag
 
     @property
     def logger(self) -> Logger:
@@ -159,13 +210,21 @@ class Handler(Starlette):
         with self.__pool.use() as query:
             defs = query.get_definiendum(*candidates)
             if defs is None:
-                return self.error_response(404, "not found")
+                return self.__serve_final_fallback(req)
 
-            (slug, uri, fragment) = defs
-            url = self._public_url(slug, uri, None, fragment=fragment)
+            (_, uri, fragment) = defs
+            url = self.reverse_url(uri, None, fragment=fragment)
             return self.redirect_response(url, status_code=303)
 
-    @_catch_handler_error
+    def __serve_final_fallback(self, req: Request) -> Response:
+        if req.url.path != "/":
+            return self.error_response(404, "not found")
+
+        return self.redirect_response(
+            self.reverse_url(uri=None, typ=None, fragment=None, download=False),
+            status_code=303,
+        )
+
     def redirect_response(self, dest: str, status_code: int = 307) -> Response:
         """Creates a generic response that redirects the user to the given destination"""
 
@@ -186,59 +245,39 @@ class Handler(Starlette):
             content=message,
         )
 
-    def remove_trailing_slash(self, req: Request) -> Response:
-        """Redirects to the same url without a trailing slash.
-        If the URL doesn't change as a result, returns 500"""
-
-        path = req.url.path
-        clean = path.rstrip("/")
-
-        if path == clean:
-            return self.error_response(
-                500, "remove_trailing_slash on url without slash"
-            )
-
-        return self.redirect_response(clean)
-
     @_catch_handler_error
-    def handle_root(self, req: Request) -> Response:
+    def handle(self, req: Request) -> Response:
+        """Handles a request to the main route"""
+
+        typ = req.query_params.get("format")
+        uri = req.query_params.get("uri")
+        download = req.query_params.get("download") == "1"
+
+        if not isinstance(uri, str):
+            return self.handle_root(req, typ)
+
+        return self.handle_ontology(req, uri, typ, download)
+
+    def handle_root(self, req: Request, typ: str | None = None) -> Response:
         """Handles the "/" url"""
 
-        media_type = negotiate(req, ("text/html", "text/plain"), default="text/plain")
-        return StreamingResponse(
-            self._stream_root(media_type == "text/html"), media_type=media_type
+        self.__logger.debug("handle_root(typ=%r)", typ)
+
+        if not isinstance(typ, str):
+            typ = negotiate(req, ("text/plain", "text/html"), default="text/plain")
+            if typ is None:
+                raise AssertionError("negotiate returned None")
+
+        return self.serve_index(typ)
+
+    def handle_ontology(
+        self, req: Request, uri: str, typ: str | None, download: bool
+    ) -> Response:
+        """Handles the get ontology rendering route"""
+
+        self.__logger.debug(
+            "handle_ontology(uri=%r, typ=%r,download=%r)", uri, typ, download
         )
-
-    def _stream_root(self, html: bool) -> Iterable[str]:
-        if html:
-            yield self.__index_html_header
-            yield "<ul>"
-        else:
-            yield self.__index_txt_header
-
-        with self.__pool.use() as query:
-            for slug, uri in query.list_ontologies():
-                link = self._public_url(slug, uri, None)
-                if html:
-                    yield f'<li><a href="{escape(link, True)}">{escape(uri)}</a></li>\n'
-                else:
-                    yield f"* {link}: <{uri}>\n"
-
-        if html:
-            yield "</ul>"
-            yield self.__index_html_footer
-        else:
-            yield self.__index_txt_footer
-
-    @_catch_handler_error
-    def handle_ontology(self, req: Request) -> Response:
-        """Handles the '/_/get?uri=...&format=...' route"""
-
-        uri = req.query_params.get("uri")
-        if not isinstance(uri, str):
-            return self.error_response(400, "Missing URI")
-
-        typ = req.query_params.get("type")
 
         with self.__pool.use() as query:
             if not isinstance(typ, str):
@@ -259,30 +298,97 @@ class Handler(Starlette):
                     return self.error_response(404, "Ontology not found")
                 decision = typ
 
-            self.__logger.debug("ontology %r: decided on %s", uri, typ)
-            return self.serve_ontology(query, uri, decision)
+            return self.serve_ontology(query, uri, decision, download)
 
-    def serve_ontology(self, query: Query, uri: str, typ: str) -> Response:
+    def serve_ontology(
+        self, query: Query, uri: str, typ: str, download: bool
+    ) -> Response:
         """Serves an ontology with the given URI and format"""
-        result = query.get_data(uri, typ)
 
+        self.__logger.debug(
+            "serve_ontology(uri=%r, typ=%r,download=%r)", uri, typ, download
+        )
+
+        result = query.get_data(uri, typ)
         # This shouldn't happen.
         # but there is a race condition: if the db changes between the decision
         # and this query, it might disappear.
         if result is None:
             return self.error_response(500, "Negotiated content type went away")
 
-        return Response(status_code=200, media_type=typ, content=result)
+        (content, slug) = result
 
-    def _public_url(
-        self, slug: str, uri: str, typ: str | None = None, fragment: str | None = None
-    ) -> str:
-        """returns the (server-local) url to retrieve a specific ontology"""
-        _ = slug  # unused
+        ext = extension_from_type(typ)
+        filename = f"{slug}.{ext}" if isinstance(ext, str) else slug
 
-        url = f"/.well-known/lontod/get?uri={quote(uri)}"
-        if isinstance(typ, str):
-            url += "&type=" + quote(typ)
-        if isinstance(fragment, str):
-            url += "#" + fragment
-        return url
+        disposition = (
+            f"{"attachment" if download else "inline"}; filename*=UTF-8''{filename}"
+        )
+        return Response(
+            status_code=200,
+            media_type=typ,
+            headers={"Content-Disposition": disposition},
+            content=content,
+        )
+
+    def serve_index(self, typ: str) -> Response:
+        """Serves the index document"""
+
+        self.__logger.debug("serve_index(%r)", typ)
+
+        if typ not in ("text/plain", "text/html"):
+            return self.error_response(404, "Not Found")
+
+        is_html = typ == "text/html"
+        return StreamingResponse(self.__stream_root(is_html), media_type=typ)
+
+    def __stream_root(self, html: bool) -> Iterable[str]:
+        if html:
+            yield self.__index_html_header
+        else:
+            yield self.__index_txt_header
+
+        with self.__pool.use() as query:
+            for _, uri, types, definienda in query.list_ontologies():
+
+                if html:
+                    yield "<fieldset>"
+
+                    yield "<legend>"
+                    yield escape(uri)
+                    yield "</legend>"
+
+                    yield "<span>"
+                    yield f'<a href="{escape(self.reverse_url(uri), True)}">View In Default Format</a>'
+                    yield "<br>"
+                    yield f"{definienda} Definienda"
+                    yield "</span>"
+
+                    yield "Download in other formats:"
+
+                    yield "<ul>"
+                    for typ in types:
+                        yield "<li>"
+                        link = self.reverse_url(uri, typ, download=True)
+                        yield f'<a href="{escape(link, True)}">{escape(typ)}</a>'
+                        yield "</li>"
+                    yield "</ul>"
+
+                    yield "</fieldset>"
+                else:
+                    yield f"## Ontology {uri}:\n"
+
+                    yield f"[{self.reverse_url(uri, None, download=False)}]\n"
+                    yield f"{definienda} Definienda\n"
+                    yield "\n"
+
+                    yield "Available Formats:\n"
+                    for typ in types:
+                        yield f"* {typ} [{self.reverse_url(uri, typ, download=True)}]\n"
+
+                    yield "\n"
+
+        if html:
+            yield self.__index_html_footer
+        else:
+            yield self.__index_txt_footer

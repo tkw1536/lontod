@@ -1,5 +1,6 @@
 """query functionality"""
 
+import json
 from logging import Logger
 from sqlite3 import Connection
 from typing import Any, Iterable, Optional, Tuple, TypeGuard, final
@@ -29,22 +30,27 @@ class Query:
     def _cursor(self) -> LoggingCursorContext:
         return LoggingCursorContext(self.__conn, self.__logger)
 
-    def list_ontologies(self) -> Iterable[Tuple[str, str]]:
-        """Lists all (slug, name) ontologies found in the database"""
+    def list_ontologies(self) -> Iterable[Tuple[str, str, list[str], int]]:
+        """Lists all (slug, uri, list[types], len(definienda)) ontologies found in the database"""
         with self._cursor() as cursor:
             cursor.execute(
-                "SELECT NAMES.SLUG, NAMES.URI FROM NAMES ORDER BY NAMES.SLUG"
+                "SELECT NAMES.SLUG, NAMES.URI, JSON_GROUP_ARRAY(ONTOLOGIES.MIME_TYPE), (SELECT COUNT(DISTINCT DEFINIENDA.URI) FROM DEFINIENDA WHERE ONTOLOGY=NAMES.URI) FROM NAMES INNER JOIN ONTOLOGIES ON ONTOLOGIES.URI = NAMES.URI GROUP BY NAMES.SLUG, NAMES.URI ORDER BY NAMES.SLUG, ONTOLOGIES.MIME_TYPE"
             )
+
             while True:
                 row = cursor.fetchone()
                 if row is None:
                     return
-                if not _is_row_text_text(row):
-                    raise AssertionError("expected (TEXT,TEXT)")
+                if not _is_row_text_text_text_int(row):
+                    raise AssertionError("expected (TEXT,TEXT,TEXT,INT)")
 
-                yield row[0], row[1]
+                types = json.loads(row[2])
+                if not _is_list_str(types):
+                    raise AssertionError("expected LIST[str]")
 
-    def get_data(self, uri: str, mime_type: str) -> Optional[bytes]:
+                yield row[0], row[1], types, row[3]
+
+    def get_data(self, uri: str, mime_type: str) -> Optional[Tuple[bytes, str]]:
         """receives the encoding of the ontology with the given uri and mime_type"""
         with self._cursor() as cursor:
             cursor.execute(
@@ -59,7 +65,12 @@ class Query:
             if not _is_row_blob(row):
                 raise AssertionError("expected (BLOB)")
 
-            return as_utf8(row[0])
+            cursor.execute("SELECT SLUG FROM NAMES WHERE NAMES.URI = ? LIMIT 1", (uri,))
+            row2 = cursor.fetchone()
+            if row2 is None or not _is_row_text(row2):
+                return None
+
+            return as_utf8(row[0]), row2[0]
 
     def get_definiendum(
         self, *uris: Iterable[str]
@@ -83,7 +94,6 @@ class Query:
                 return None
 
             if not _is_row_text_text_ntext(row):
-                print(row)
                 raise AssertionError("expected (TEXT, TEXT, TEXT OR NULL)")
 
             return row
@@ -111,7 +121,7 @@ class Query:
 
         with self._cursor() as cursor:
             cursor.execute(
-                "SELECT DISTINCT ONTOLOGIES.MIME_TYPE FROM ONTOLOGIES WHERE ONTOLOGIES.URI = ?",
+                "SELECT DISTINCT ONTOLOGIES.MIME_TYPE FROM ONTOLOGIES WHERE ONTOLOGIES.URI = ? ORDER BY ONTOLOGIES.MIME_TYPE",
                 (uri,),
             )
 
@@ -143,13 +153,19 @@ class QueryPool(Pool[Query]):
         query.conn.close()
 
 
-def _is_row_text_text(value: Any) -> TypeGuard[Tuple[str, str]]:
+def _is_row_text_text_text_int(value: Any) -> TypeGuard[Tuple[str, str, str, int]]:
     return (
         isinstance(value, tuple)
-        and len(value) == 2
+        and len(value) == 4
         and isinstance(value[0], str)
         and isinstance(value[1], str)
+        and isinstance(value[2], str)
+        and isinstance(value[3], int)
     )
+
+
+def _is_list_str(value: Any) -> TypeGuard[list[str]]:
+    return isinstance(value, list) and all(isinstance(x, str) for x in value)
 
 
 def _is_row_blob(value: Any) -> TypeGuard[Tuple[bytes]]:

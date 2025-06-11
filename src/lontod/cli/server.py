@@ -58,6 +58,18 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         default=None,
         help="Public URL to assume for IRI redirects",
     )
+    parser.add_argument(
+        "-r",
+        "--ontology-route",
+        default=environ.get("LONTOD_ROUTE", "/"),
+        help="Route to serve ontologies from. Must start with a slash",
+    )
+    parser.add_argument(
+        "--insecure-skip-routes",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Skip adding routes blocking dangerous paths",
+    )
 
     add_logging_arg(parser)
 
@@ -68,6 +80,8 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         result.port,
         result.host,
         result.public_url,
+        result.ontology_route,
+        result.insecure_skip_routes,
         result.log,
         result.watch,
         list_or_environment(result.language, "LONTOD_LANG"),
@@ -80,6 +94,8 @@ def run(
     port: int,
     host: str,
     public_url: Optional[str],
+    ontology_route: str,
+    insecure_skip_routes: bool,
     log_level: str,
     watch: bool,
     languages: list[str],
@@ -119,11 +135,16 @@ def run(
         if watch:
             controller.start_watching()
 
+    if insecure_skip_routes:
+        logger.warning("skipping routes blocked for safety, use with caution")
+
     # setup the handler
     pool = QueryPool(10, logger, server_conn)
     app = Handler(
         pool=pool,
+        ontology_route=ontology_route,
         public_url=public_url,
+        insecure_skip_routes=insecure_skip_routes,
         logger=logger,
         debug=log_level == "debug",
         index_html_header=file_or_none("LONTOD_INDEX_HTML_HEADER"),

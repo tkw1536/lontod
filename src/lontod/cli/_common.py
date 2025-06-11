@@ -18,6 +18,7 @@ def file_or_none(env: str) -> str | None:
 
 def list_or_environment(values: list[str] | None, env: str) -> list[str]:
     """returns the values set, or the default one from the environment if unset."""
+
     if values:
         return values
     arg = environ.get(env, "")

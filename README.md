@@ -47,6 +47,7 @@ The server additionally supports the following environment variables:
 | `LONTOD_PORT`              | (none)      | The port to listen on                                          |
 | `LONTOD_DB`                | (in-memory) | Database filename                                              |
 | `LONTOD_PATHS`             | (none)      | The set of paths to index, separated by `;`                    |
+| `LONTOD_ROUTE`             | `/`         | The URL route to server ontologies from, must start with a `/` |
 | `LONTOD_LANGUAGES`         | (none)      | (Spoken) languages to present defienanda for, separated by `;` |
 | `LONTOD_INDEX_HTML_HEADER` | (none)      | Path to a html file to prefix index html responses with        |
 | `LONTOD_INDEX_HTML_FOOTER` | (none)      | Path to a html file to suffix index html responses with        |
@@ -114,7 +115,7 @@ The index consists of an SQLITE databse with the following schema (omitting inde
 ```sql
 -- names of indexed ontologies for use in server URLs
 CREATE TABLE IF NOT EXISTS "NAMES" (
-    "SLUG"    TEXT NOT NULL PRIMARY KEY, -- internal identifier of the ontology
+    "SLUG"    TEXT NOT NULL PRIMARY KEY, -- "filename" of the ontology -- must be unique
     "URI"   TEXT NOT NULL
 );
 
