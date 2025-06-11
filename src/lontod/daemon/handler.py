@@ -68,7 +68,7 @@ Powered by lontod: https://github.com/tkw1536/lontod
 class Handler(Starlette):
     """Handler class for the ontology serving daemon"""
 
-    __public_url: str | None
+    __public_domain: str | None
     __ontology_route: str
     __insecure_skip_routes: bool
     __index_txt_header: str
@@ -83,7 +83,7 @@ class Handler(Starlette):
         pool: Pool[Query],
         logger: Logger,
         ontology_route: str = "/",
-        public_url: Optional[str] = None,
+        public_domain: Optional[str] = None,
         insecure_skip_routes: bool = False,
         index_html_header: Optional[str] = None,
         index_html_footer: Optional[str] = None,
@@ -91,7 +91,7 @@ class Handler(Starlette):
         index_txt_footer: Optional[str] = None,
         debug: bool = False,
     ):
-        self.__public_url = public_url
+        self.__public_domain = public_domain
         self.__ontology_route = ontology_route
         self.debug = debug
         self.__pool = pool
@@ -188,8 +188,8 @@ class Handler(Starlette):
 
         # find the hostname to use for URI lookup!
         prefix = (
-            self.__public_url
-            if isinstance(self.__public_url, str)
+            self.__public_domain
+            if isinstance(self.__public_domain, str)
             else req.url.hostname
         )
         if prefix is None:

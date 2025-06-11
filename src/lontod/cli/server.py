@@ -53,10 +53,10 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         help="Host to listen on",
     )
     parser.add_argument(
-        "-u",
-        "--public-url",
+        "-D",
+        "--public-domain",
         default=None,
-        help="Public URL to assume for IRI redirects",
+        help="Public Domain to assume for IRI redirects",
     )
     parser.add_argument(
         "-r",
@@ -79,7 +79,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
         list_or_environment(result.input, "LONTOD_PATHS"),
         result.port,
         result.host,
-        result.public_url,
+        result.public_domain,
         result.ontology_route,
         result.insecure_skip_routes,
         result.log,
@@ -93,7 +93,7 @@ def run(
     paths: list[str],
     port: int,
     host: str,
-    public_url: Optional[str],
+    public_domain: Optional[str],
     ontology_route: str,
     insecure_skip_routes: bool,
     log_level: str,
@@ -143,7 +143,7 @@ def run(
     app = Handler(
         pool=pool,
         ontology_route=ontology_route,
-        public_url=public_url,
+        public_domain=public_domain,
         insecure_skip_routes=insecure_skip_routes,
         logger=logger,
         debug=log_level == "debug",
