@@ -13,12 +13,17 @@ These are described in detail the 'Server' and 'Indexing' sections below.
 The server provides a set of ontologies to users. 
 It implements three routes:
 
-- an overview page, providing a list of all ontologies (under the root url `/`)
-- one page for each ontology (under `/ontology/${ontology_name}`)
+- an overview page, providing a list of all ontologies (by default under the root url `/`)
+- one page for each ontology (by default also under the root url at `/?uri=${ontology_uri}`)
 - redirects from the URI of defined concepts to the appropriate documentation page (everywhere else)
 
-The ontology pages perform [Content Negotiation](https://en.wikipedia.org/wiki/Content_negotiation) using the standard HTTP `Accept` header. 
+The ontology pages perform [Content Negotiation](https://en.wikipedia.org/wiki/Content_negotiation) using the standard HTTP `Accept` header by default.
 Each ontology can be returned using different formats, some human-readable and some machine-readable (see the Indexing Internals section below for a list of supported formats).
+Alternatively, a specific content type can be specified using a `format` URL parameter.
+
+The Base URL for the overview page and ontology pages can be configured using a command line flag or the `LONTOD_ROUTE` environment variable.
+It defaults to `/`. 
+When not the root URL, the root URL with redirect to the base URL. 
 
 The server can be started using:
 
