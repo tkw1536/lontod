@@ -199,3 +199,7 @@ docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lo
 # to index and watch the directory
 docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lontod:latest --watch
 ```
+
+## LICENSE
+
+None, the code is provided only so that you may inspect it.
