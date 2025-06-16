@@ -5,7 +5,7 @@ from functools import wraps
 from html import escape
 from logging import Logger
 from traceback import format_exception
-from typing import Any, Callable, Final, Iterable, Optional, final
+from typing import Any, Callable, Final, Generator, Optional, final
 from urllib.parse import quote
 
 from starlette.applications import Starlette
@@ -31,6 +31,7 @@ DEFAULT_INDEX_HTML_HEADER: Final[
     main { margin: 1em }
     span { display: block; margin-bottom: 1em; }
     ul { margin-top: 0; margin-bottom: 0; }
+    ul:not(:last-child) { margin-bottom: 1em; }
     main a, main a:visited{ color:blue; }
     footer { font-size:small; color: gray; }
     footer a, footer a:visited { color: black; }
@@ -112,7 +113,7 @@ class Handler(Starlette):
         )
 
     @property
-    def __routes(self) -> Iterable[BaseRoute]:
+    def __routes(self) -> Generator[BaseRoute, None, None]:
         yield Route(self.__ontology_route, self.handle)
 
         if not self.__insecure_skip_routes:
@@ -127,14 +128,14 @@ class Handler(Starlette):
 
     def reverse_url(
         self,
-        uri: str | None = None,
+        identifier: str | None = None,
         typ: str | None = None,
         fragment: str | None = None,
         download: bool = False,
     ) -> str:
         """returns the (server-local) url to retrieve a specific ontology"""
         params: OrderedDict[str, Optional[str]] = OrderedDict()
-        params["uri"] = uri
+        params["identifier"] = identifier
         params["format"] = typ
         params["download"] = "1" if download else None
 
@@ -208,12 +209,17 @@ class Handler(Starlette):
         )
 
         with self.__pool.use() as query:
-            defs = query.get_definiendum(*candidates)
-            if defs is None:
+            defs = query.get_definienda(*candidates)
+
+            try:
+                first_def = next(defs)
+            except StopIteration:
                 return self.__serve_final_fallback(req)
 
-            (_, uri, fragment) = defs
-            url = self.reverse_url(uri, None, fragment=fragment)
+            # pick the last URL, ordered by slug!
+            url = self.reverse_url(
+                first_def.ontology_identifier, None, fragment=first_def.fragment
+            )
             return self.redirect_response(url, status_code=303)
 
     def __serve_final_fallback(self, req: Request) -> Response:
@@ -221,7 +227,7 @@ class Handler(Starlette):
             return self.error_response(404, "not found")
 
         return self.redirect_response(
-            self.reverse_url(uri=None, typ=None, fragment=None, download=False),
+            self.reverse_url(identifier=None, typ=None, fragment=None, download=False),
             status_code=303,
         )
 
@@ -250,13 +256,13 @@ class Handler(Starlette):
         """Handles a request to the main route"""
 
         typ = req.query_params.get("format")
-        uri = req.query_params.get("uri")
+        identifier = req.query_params.get("identifier")
         download = req.query_params.get("download") == "1"
 
-        if not isinstance(uri, str):
+        if not isinstance(identifier, str):
             return self.handle_root(req, typ)
 
-        return self.handle_ontology(req, uri, typ, download)
+        return self.handle_ontology(req, identifier, typ, download)
 
     def handle_root(self, req: Request, typ: str | None = None) -> Response:
         """Handles the "/" url"""
@@ -271,18 +277,21 @@ class Handler(Starlette):
         return self.serve_index(typ)
 
     def handle_ontology(
-        self, req: Request, uri: str, typ: str | None, download: bool
+        self, req: Request, identifier: str, typ: str | None, download: bool
     ) -> Response:
         """Handles the get ontology rendering route"""
 
         self.__logger.debug(
-            "handle_ontology(uri=%r, typ=%r,download=%r)", uri, typ, download
+            "handle_ontology(identifier=%r, typ=%r,download=%r)",
+            identifier,
+            typ,
+            download,
         )
 
         with self.__pool.use() as query:
             if not isinstance(typ, str):
                 # find the mime times we can serve for this ontology
-                offers = query.get_mime_types(uri)
+                offers = list(query.get_mime_types(identifier))
                 if len(offers) == 0:
                     return self.error_response(404, "Ontology not found")
 
@@ -294,32 +303,33 @@ class Handler(Starlette):
                 if decision is None:
                     return self.error_response(406, "No available content type")
             else:
-                if not query.has_mime_type(uri, typ):
+                if not query.has_mime_type(identifier, typ):
                     return self.error_response(404, "Ontology not found")
                 decision = typ
 
-            return self.serve_ontology(query, uri, decision, download)
+            return self.serve_ontology(query, identifier, decision, download)
 
     def serve_ontology(
-        self, query: Query, uri: str, typ: str, download: bool
+        self, query: Query, identifier: str, typ: str, download: bool
     ) -> Response:
-        """Serves an ontology with the given URI and format"""
+        """Serves an ontology with the given identifier and format"""
 
         self.__logger.debug(
-            "serve_ontology(uri=%r, typ=%r,download=%r)", uri, typ, download
+            "serve_ontology(identifier=%r, typ=%r,download=%r)",
+            identifier,
+            typ,
+            download,
         )
 
-        result = query.get_data(uri, typ)
+        content = query.get_data(identifier, typ)
         # This shouldn't happen.
         # but there is a race condition: if the db changes between the decision
         # and this query, it might disappear.
-        if result is None:
+        if content is None:
             return self.error_response(500, "Negotiated content type went away")
 
-        (content, slug) = result
-
         ext = extension_from_type(typ)
-        filename = f"{slug}.{ext}" if isinstance(ext, str) else slug
+        filename = f"{identifier}.{ext}" if isinstance(ext, str) else identifier
 
         disposition = (
             f"{"attachment" if download else "inline"}; filename*=UTF-8''{filename}"
@@ -342,49 +352,62 @@ class Handler(Starlette):
         is_html = typ == "text/html"
         return StreamingResponse(self.__stream_root(is_html), media_type=typ)
 
-    def __stream_root(self, html: bool) -> Iterable[str]:
+    def __stream_root(self, html: bool) -> Generator[str, None, None]:
         if html:
             yield self.__index_html_header
         else:
             yield self.__index_txt_header
 
         with self.__pool.use() as query:
-            for _, uri, types, definienda in query.list_ontologies():
+            for onto in query.list_ontologies():
 
                 if html:
                     yield "<fieldset>"
 
                     yield "<legend>"
-                    yield escape(uri)
+                    yield escape(onto.uri)
                     yield "</legend>"
 
                     yield "<span>"
-                    yield f'<a href="{escape(self.reverse_url(uri), True)}">View In Default Format</a>'
+                    yield f'<a href="{escape(self.reverse_url(onto.identifier), True)}">View In Default Format</a>'
                     yield "<br>"
-                    yield f"{definienda} Definienda"
+                    yield f"{onto.definienda_count} Definienda"
                     yield "</span>"
+
+                    yield "Alternate URIs:"
+                    yield "<ul>"
+                    for uri in onto.alternate_uris:
+                        yield "<li>"
+                        yield f"<code>{escape(uri)}</code>"
+                        yield "</li>"
+                    yield "</ul>"
 
                     yield "Download in other formats:"
 
                     yield "<ul>"
-                    for typ in types:
+                    for typ in onto.mime_types:
                         yield "<li>"
-                        link = self.reverse_url(uri, typ, download=True)
+                        link = self.reverse_url(onto.identifier, typ, download=True)
                         yield f'<a href="{escape(link, True)}">{escape(typ)}</a>'
                         yield "</li>"
                     yield "</ul>"
 
                     yield "</fieldset>"
                 else:
-                    yield f"## Ontology {uri}:\n"
+                    yield f"## Ontology {onto.uri}:\n"
 
-                    yield f"[{self.reverse_url(uri, None, download=False)}]\n"
-                    yield f"{definienda} Definienda\n"
+                    yield f"[{self.reverse_url(onto.identifier, None, download=False)}]\n"
+                    yield f"{onto.definienda_count} Definienda\n"
+                    yield "\n"
+
+                    yield "Available URIs:\n"
+                    for uri in onto.alternate_uris:
+                        yield f"* {uri}\n"
                     yield "\n"
 
                     yield "Available Formats:\n"
-                    for typ in types:
-                        yield f"* {typ} [{self.reverse_url(uri, typ, download=True)}]\n"
+                    for typ in onto.mime_types:
+                        yield f"* {typ} [{self.reverse_url(onto.identifier, typ, download=True)}]\n"
 
                     yield "\n"
 

@@ -14,7 +14,7 @@ The server provides a set of ontologies to users.
 It implements three routes:
 
 - an overview page, providing a list of all ontologies (by default under the root url `/`)
-- one page for each ontology (by default also under the root url at `/?uri=${ontology_uri}`)
+- one page for each ontology (by default also under the root url at `/?identifier=${ontology_identifier}`)
 - redirects from the URI of defined concepts to the appropriate documentation page (everywhere else)
 
 The ontology pages perform [Content Negotiation](https://en.wikipedia.org/wiki/Content_negotiation) using the standard HTTP `Accept` header by default.
@@ -118,25 +118,21 @@ This section briefly describes the internals of the indexing process.
 The index consists of an SQLITE databse with the following schema (omitting indexes):
 
 ```sql
--- names of indexed ontologies for use in server URLs
-CREATE TABLE IF NOT EXISTS "NAMES" (
-    "SLUG"    TEXT NOT NULL PRIMARY KEY, -- "filename" of the ontology -- must be unique
-    "URI"   TEXT NOT NULL
-);
 
--- encoding of ontology in various different formats
--- each indexed ontology will be stored in the formats listed below.
-CREATE TABLE IF NOT EXISTS "ONTOLOGIES" (
-    "URI"        TEXT NOT NULL,
-    "MIME_TYPE" TEXT NOT NULL,
-    "DATA"      BLOB NOT NULL
-);
-
--- defienda found in ontologies
+-- indexed concepts and ontologies
 CREATE TABLE IF NOT EXISTS "DEFINIENDA" (
-    "URI"       TEXT NOT NULL, -- URI of defiendum
-    "ONTOLOGY"  TEXT NOT NULL, -- ontology it is defined in
-    "FRAGMENT"  TEXT -- html fragment identifier (without #) that the definition is found in
+    "URI"           TEXT NOT NULL, -- uri of the indexed concept (or ontology)
+    "ONTOLOGY_ID"   TEXT NOT NULL, -- internal identifier of the ontology (usually filename, used in some server URIs)
+    "CANONICAL"     INTEGER NOT NULL, -- is the URI a canonical URI or derived (e.g. via a versionIRI)
+    "FRAGMENT"      TEXT -- html fragment identifier (without #) that the definition is found in, or NULL in case of ONTOLOGY
+);
+
+-- encoding of ontologies in various different formats
+-- each indexed ontology will be stored in the formats listed below.
+CREATE TABLE IF NOT EXISTS "DATA" (
+    "ONTOLOGY_ID"   TEXT NOT NULL,
+    "MIME_TYPE"     TEXT NOT NULL,
+    "DATA"          BLOB NOT NULL
 );
 ```
 

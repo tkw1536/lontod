@@ -1,6 +1,6 @@
 """media types and mappings"""
 
-from typing import Iterable, Tuple
+from typing import Generator, Tuple
 
 _FORMAT_TO_MEDIA_TYPES_ = {
     "xml": "application/rdf+xml",
@@ -15,7 +15,7 @@ _FORMAT_TO_MEDIA_TYPES_ = {
 _MEDIA_TYPE_TO_FORMATS = {v: k for (k, v) in _FORMAT_TO_MEDIA_TYPES_.items()}
 
 
-def media_types() -> Iterable[Tuple[str, str]]:
+def media_types() -> Generator[Tuple[str, str], None, None]:
     """Iterates over all (extension, media_type) pairs"""
 
     yield from _FORMAT_TO_MEDIA_TYPES_.items()

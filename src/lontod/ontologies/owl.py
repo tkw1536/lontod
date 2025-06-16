@@ -1,7 +1,7 @@
 """OWL Ontology Parsing"""
 
 from itertools import chain
-from typing import Generator, List, Optional, Tuple
+from typing import Generator, List, Tuple
 
 from bs4 import BeautifulSoup, Tag
 from pylode.profiles.ontpub import OntPub
@@ -48,8 +48,9 @@ def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
 
     return Ontology(
         uri=uri,
+        alternate_uris=list(get_alternate_uris(graph)),
         encodings=dict(types),
-        definienda=list(definienda_of(BeautifulSoup(html, "html.parser"), uri)),
+        definienda=list(definienda_of(BeautifulSoup(html, "html.parser"))),
     )
 
 
@@ -76,9 +77,24 @@ def insert_fallback_title(g: Graph, *titles: Node) -> bool:
     raise AssertionError("no ontology found in graph")
 
 
+def get_alternate_uris(g: Graph) -> Generator[str, None, None]:
+    """gets the alternate URIS for a given graph"""
+    for s in chain(
+        g.subjects(RDF.type, OWL.Ontology),
+        g.subjects(RDF.type, PROF.Profile),
+        g.subjects(RDF.type, SKOS.ConceptScheme),
+    ):
+        for obj in g.objects(s, OWL.versionIRI):
+            yield str(obj)
+
+        return
+
+    return
+
+
 def definienda_of(
-    html: BeautifulSoup, uri: str
-) -> Generator[Tuple[str, Optional[str]]]:
+    html: BeautifulSoup,
+) -> Generator[Tuple[str, str]]:
     """finds all (definiendum, fragment) identifiers in the given ontopub profile."""
 
     # This finds all definienda defined in the ontopub profile.
@@ -89,8 +105,6 @@ def definienda_of(
     # - the tr must have exactly two child elements
     # - the first one must say "IRI"
     # - the second one must contain the code element (text used as definiendum)
-
-    yield (uri, None)
 
     for code in html.find_all("code"):
         td_elem = code.parent

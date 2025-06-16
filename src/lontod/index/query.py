@@ -1,13 +1,80 @@
 """query functionality"""
 
 import json
+from dataclasses import dataclass
 from logging import Logger
 from sqlite3 import Connection
-from typing import Any, Iterable, Optional, Tuple, TypeGuard, final
+from typing import Any, Final, Generator, Iterable, Optional, Tuple, TypeGuard, final
 
 from ..sqlite import Connector, LoggingCursorContext
 from ..utils.pool import Pool
 from ..utils.strings import as_utf8
+
+
+@dataclass
+class Ontology:
+    """an ontology as stored in the database"""
+
+    identifier: str
+    uri: str
+
+    alternate_uris: list[str]
+    mime_types: list[str]
+    definienda_count: int
+
+
+@dataclass
+class Definiendum:
+    """a definiendum result"""
+
+    uri: str
+    ontology_identifier: str
+    canonical: bool
+    fragment: str | None
+
+
+_QUERY_ONTOLOGY: Final[
+    str
+] = """
+SELECT
+  NAMES.ONTOLOGY_ID, 
+  NAMES.URI,
+  (
+	SELECT
+		JSON_GROUP_ARRAY(DEFINIENDA.URI)
+	FROM
+		DEFINIENDA
+	WHERE
+		DEFINIENDA.ONTOLOGY_ID = NAMES.ONTOLOGY_ID
+		AND DEFINIENDA.CANONICAL IS FALSE
+		AND DEFINIENDA.FRAGMENT IS NULL
+	ORDER BY DEFINIENDA.URI
+  ) AS ALTERNATE_URIS,
+  (
+	SELECT
+		COUNT(*)
+	FROM
+		DEFINIENDA
+	WHERE
+		DEFINIENDA.CANONICAL IS TRUE
+		AND DEFINIENDA.ONTOLOGY_ID = NAMES.ONTOLOGY_ID
+  ) AS DEFINIENDA_COUNT,
+  (
+	SELECT
+		JSON_GROUP_ARRAY(DATA.MIME_TYPE)
+		FROM
+			DATA
+		WHERE
+			DATA.ONTOLOGY_ID = NAMES.ONTOLOGY_ID
+		ORDER BY
+			DATA.MIME_TYPE
+  ) AS MIME_TYPES
+FROM 
+  DEFINIENDA AS NAMES 
+WHERE
+	NAMES.FRAGMENT IS NULL
+	AND NAMES.CANONICAL IS TRUE
+"""
 
 
 @final
@@ -30,32 +97,43 @@ class Query:
     def _cursor(self) -> LoggingCursorContext:
         return LoggingCursorContext(self.__conn, self.__logger)
 
-    def list_ontologies(self) -> Iterable[Tuple[str, str, list[str], int]]:
-        """Lists all (slug, uri, list[types], len(definienda)) ontologies found in the database"""
+    def list_ontologies(self) -> Generator[Ontology, None, None]:
+        """Lists all (identifier, uri, list[types], len(definienda)) ontologies found in the database"""
         with self._cursor() as cursor:
-            cursor.execute(
-                "SELECT NAMES.SLUG, NAMES.URI, JSON_GROUP_ARRAY(ONTOLOGIES.MIME_TYPE), (SELECT COUNT(DISTINCT DEFINIENDA.URI) FROM DEFINIENDA WHERE ONTOLOGY=NAMES.URI) FROM NAMES INNER JOIN ONTOLOGIES ON ONTOLOGIES.URI = NAMES.URI GROUP BY NAMES.SLUG, NAMES.URI ORDER BY NAMES.SLUG, ONTOLOGIES.MIME_TYPE"
-            )
+
+            cursor.execute(_QUERY_ONTOLOGY)
 
             while True:
                 row = cursor.fetchone()
                 if row is None:
                     return
-                if not _is_row_text_text_text_int(row):
-                    raise AssertionError("expected (TEXT,TEXT,TEXT,INT)")
 
-                types = json.loads(row[2])
-                if not _is_list_str(types):
-                    raise AssertionError("expected LIST[str]")
+                if not _is_row_text_text_text_int_text(row):
+                    raise AssertionError("expected (TEXT,TEXT,TEXT,INT,TEXT)")
 
-                yield row[0], row[1], types, row[3]
+                alternate_uris = json.loads(row[2])
+                if not _is_list_str(alternate_uris):
+                    raise AssertionError("expected LIST[TEXT]")
 
-    def get_data(self, uri: str, mime_type: str) -> Optional[Tuple[bytes, str]]:
-        """receives the encoding of the ontology with the given uri and mime_type"""
+                mime_types = json.loads(row[4])
+                if not _is_list_str(mime_types):
+                    raise AssertionError("expected LIST[TEXT]")
+
+                yield Ontology(
+                    identifier=row[0],
+                    uri=row[1],
+                    alternate_uris=alternate_uris,
+                    mime_types=mime_types,
+                    definienda_count=row[3],
+                )
+
+    def get_data(self, identifier: str, mime_type: str) -> Optional[bytes]:
+        """receives the encoding of the ontology with the given slug and mime_type"""
+
         with self._cursor() as cursor:
             cursor.execute(
-                "SELECT ONTOLOGIES.DATA FROM ONTOLOGIES WHERE ONTOLOGIES.URI = ? AND ONTOLOGIES.MIME_TYPE = ? LIMIT 1",
-                (uri, mime_type),
+                "SELECT DATA.DATA FROM DATA WHERE DATA.ONTOLOGY_ID = ? AND DATA.MIME_TYPE = ? LIMIT 1",
+                (identifier, mime_type),
             )
 
             row = cursor.fetchone()
@@ -65,46 +143,59 @@ class Query:
             if not _is_row_blob(row):
                 raise AssertionError("expected (BLOB)")
 
-            cursor.execute("SELECT SLUG FROM NAMES WHERE NAMES.URI = ? LIMIT 1", (uri,))
-            row2 = cursor.fetchone()
-            if row2 is None or not _is_row_text(row2):
-                return None
+            return as_utf8(row[0])
 
-            return as_utf8(row[0]), row2[0]
-
-    def get_definiendum(
+    def get_definienda(
         self, *uris: Iterable[str]
-    ) -> Optional[Tuple[str, str, Optional[str]]]:
-        """Returns the slug and fragment any of the given URIs are defined in"""
+    ) -> Generator[Definiendum, None, None]:
+        """Returns in any of the given uris"""
 
         # nothing requested, nothing returned!
         if len(uris) == 0:
-            return None
+            return
 
         with self._cursor() as cursor:
             cursor.execute(
-                "SELECT NAMES.SLUG, NAMES.URI, DEFINIENDA.FRAGMENT FROM DEFINIENDA INNER JOIN NAMES ON DEFINIENDA.ONTOLOGY = NAMES.URI WHERE DEFINIENDA.URI IN ("
+                """
+SELECT
+	DEFINIENDA.URI,
+	DEFINIENDA.ONTOLOGY_ID,
+	DEFINIENDA.CANONICAL,
+	DEFINIENDA.FRAGMENT
+FROM
+	DEFINIENDA
+WHERE
+	DEFINIENDA.URI IN ("""
                 + ",".join(["?"] * len(uris))
-                + ")  LIMIT 1",
+                + """)
+ORDER BY
+	DEFINIENDA.CANONICAL DESC,
+	DEFINIENDA.ONTOLOGY_ID DESC""",
                 [str(u) for u in uris],
             )
 
-            row = cursor.fetchone()
-            if row is None:
-                return None
+            while True:
+                row = cursor.fetchone()
+                if row is None:
+                    return
 
-            if not _is_row_text_text_ntext(row):
-                raise AssertionError("expected (TEXT, TEXT, TEXT OR NULL)")
+                if not _is_row_text_text_int_ntext(row):
+                    raise AssertionError("expected (TEXT,TEXT,INTEGER,TEXT OR NULL)")
 
-            return row
+                yield Definiendum(
+                    uri=row[0],
+                    ontology_identifier=row[1],
+                    canonical=row[2] == 1,
+                    fragment=row[3],
+                )
 
-    def has_mime_type(self, uri: str, typ: str) -> bool:
-        """checks if the ontology with the given uri exits as the given slug"""
+    def has_mime_type(self, identifier: str, typ: str) -> bool:
+        """checks if the given ontology exists with the given identifier"""
 
         with self._cursor() as cursor:
             cursor.execute(
-                "SELECT COUNT(*) FROM ONTOLOGIES WHERE ONTOLOGIES.URI = ? AND ONTOLOGIES.MIME_TYPE = ? LIMIT 1",
-                (uri, typ),
+                """SELECT EXISTS (SELECT 1 FROM DATA WHERE DATA.MIME_TYPE = ? AND DATA.ONTOLOGY_ID = ?)""",
+                (typ, identifier),
             )
 
             row = cursor.fetchone()
@@ -115,22 +206,20 @@ class Query:
 
             return row[0] == 1
 
-    def get_mime_types(self, uri: str) -> set[str]:
-        """Returns a set containing all available mime types representations for the given uri"""
-        mime_types = set()
+    def get_mime_types(self, identifier: str) -> Generator[str, None, None]:
+        """Returns a set containing all available mime types representations for the given mime_type"""
 
         with self._cursor() as cursor:
             cursor.execute(
-                "SELECT DISTINCT ONTOLOGIES.MIME_TYPE FROM ONTOLOGIES WHERE ONTOLOGIES.URI = ? ORDER BY ONTOLOGIES.MIME_TYPE",
-                (uri,),
+                "SELECT DISTINCT DATA.MIME_TYPE FROM DATA WHERE DATA.ONTOLOGY_ID = ? ORDER BY DATA.MIME_TYPE",
+                (identifier,),
             )
 
             for row in cursor.fetchall():
                 if not _is_row_text(row):
                     raise AssertionError("expected (TEXT)")
-                mime_types.add(row[0])
 
-        return mime_types
+                yield row[0]
 
 
 class QueryPool(Pool[Query]):
@@ -153,14 +242,17 @@ class QueryPool(Pool[Query]):
         query.conn.close()
 
 
-def _is_row_text_text_text_int(value: Any) -> TypeGuard[Tuple[str, str, str, int]]:
+def _is_row_text_text_text_int_text(
+    value: Any,
+) -> TypeGuard[Tuple[str, str, str, int, str]]:
     return (
         isinstance(value, tuple)
-        and len(value) == 4
+        and len(value) == 5
         and isinstance(value[0], str)
         and isinstance(value[1], str)
         and isinstance(value[2], str)
         and isinstance(value[3], int)
+        and isinstance(value[4], str)
     )
 
 
@@ -180,13 +272,16 @@ def _is_row_int(value: Any) -> TypeGuard[Tuple[int]]:
     return isinstance(value, tuple) and len(value) == 1 and isinstance(value[0], int)
 
 
-def _is_row_text_text_ntext(value: Any) -> TypeGuard[Tuple[str, str, Optional[str]]]:
+def _is_row_text_text_int_ntext(
+    value: Any,
+) -> TypeGuard[tuple[str, str, int, Optional[str]]]:
     return (
         isinstance(value, tuple)
-        and len(value) == 3
+        and len(value) == 4
         and isinstance(value[0], str)
         and isinstance(value[1], str)
-        and (value[2] is None or isinstance(value[2], str))
+        and isinstance(value[2], int)
+        and (value[3] is None or isinstance(value[3], str))
     )
 
 

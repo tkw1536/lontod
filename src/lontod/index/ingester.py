@@ -62,7 +62,7 @@ class Ingester:
 
         if remove:
             for slug in paths:
-                self.__indexer.remove(slug, slug)
+                self.__indexer.remove(slug)
             return [], []
 
         successful: list[str] = []
