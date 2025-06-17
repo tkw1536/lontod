@@ -194,9 +194,10 @@ Each indexed ontology is first loaded and then converted into each of the follow
 | [HexTuples](https://github.com/ontola/hextuples) | `application/x-ndjson` |
 | HTML                                             | `text/html`            |
 
-The HTML representation is created using [pyLODE](https://github.com/rdflib/pyLODE/).
+The HTML representation is created using heavily adapted code from [pyLODE](https://github.com/rdflib/pyLODE/). 
+The original code requires including a [LICENSING INFORMATION](src/lontod/html/NOTICE).
 All other representations are created using rdflib.
-They are all stored in the `ONTOLOGIES` table.
+They are all stored in the `DATA` table.
 
 To allow for defienda-resolving, the generated html is additionally scanned for fragments in which each definiendum is shown.
 This makes use of [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/). 

@@ -9,7 +9,13 @@ from uvicorn import run as uv_run
 from ..daemon import Handler
 from ..index import Controller, QueryPool
 from ..sqlite import Connector, Mode
-from ._common import add_logging_arg, file_or_none, list_or_environment, setup_logging
+from ._common import (
+    add_logging_arg,
+    file_or_none,
+    legal_info,
+    list_or_environment,
+    setup_logging,
+)
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -103,6 +109,7 @@ def run(
     """Starts the lontod server"""
     # setup logging
     logger = setup_logging("lontod_server", log_level)
+    legal_info(logger)
 
     # set the default database
     if db is None and len(paths) == 0:

@@ -4,9 +4,10 @@ from itertools import chain
 from typing import Generator, List, Tuple
 
 from bs4 import BeautifulSoup, Tag
-from pylode.profiles.ontpub import OntPub
 from rdflib import Graph, Literal, Node
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
+
+from lontod.html import OntPub
 
 from ..utils.graph import restrict_languages, sanitize
 from ..utils.strings import as_utf8
@@ -43,7 +44,10 @@ def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
     sanitize(graph)
 
     # make html
-    html = as_utf8(OntPub(graph).make_html())
+    result = OntPub(graph).make_html()
+    if not isinstance(result, (str, bytes)):
+        raise AssertionError("OntPub did not return str or bytes")
+    html = as_utf8(result)
     types.append(("text/html", html))
 
     return Ontology(

@@ -1,10 +1,22 @@
 """Shared cli functionality"""
 
 from argparse import ArgumentParser
-from logging import CRITICAL, INFO, WARNING, Logger, getLogger
+from logging import CRITICAL, DEBUG, INFO, WARNING, Logger, getLogger
 from os import environ
+from pathlib import Path
 
 # spellchecker:words fsevents
+
+
+def legal_info(logger: Logger) -> None:
+    """Logs legal information"""
+    logger.info("LONTOD written by Dr. Tom Wiesing")
+    if logger.level > DEBUG:
+        logger.info(
+            "Enable DEBUG log level view licensing information about included code"
+        )
+    with (Path(__file__).parent.parent / "html" / "NOTICE").open("r") as file:
+        logger.debug(file.read())
 
 
 def file_or_none(env: str) -> str | None:

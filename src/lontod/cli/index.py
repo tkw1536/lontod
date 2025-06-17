@@ -6,7 +6,7 @@ from typing import List, Optional, Sequence, Text
 
 from ..index import Indexer, Ingester
 from ..sqlite import Connector
-from ._common import add_logging_arg, list_or_environment, setup_logging
+from ._common import add_logging_arg, legal_info, list_or_environment, setup_logging
 
 
 def main(args: Optional[Sequence[Text]] = None) -> None:
@@ -77,6 +77,7 @@ def run(
 
     # setup logging
     logger = setup_logging("lontod_index", log_level)
+    legal_info(logger)
 
     connector = Connector(db)
     logger.info("opening database at %r", connector.connect_url)
