@@ -115,7 +115,7 @@ When indexing, the format is selected based on the file extension:
 
 This section briefly describes the internals of the indexing process.
 
-The index consists of an SQLITE databse with the following schema (omitting indexes):
+The index consists of an SQLITE database with the following schema (omitting indexes):
 
 ```sql
 
@@ -134,6 +134,48 @@ CREATE TABLE IF NOT EXISTS "DATA" (
     "MIME_TYPE"     TEXT NOT NULL,
     "DATA"          BLOB NOT NULL
 );
+
+-- a view to list all existing ontologies
+CREATE VIEW IF NOT EXISTS
+    "ONTOLOGIES"
+AS SELECT
+  NAMES.ONTOLOGY_ID, -- the id of the ontology
+  NAMES.URI, -- the primary URI of the ontology 
+  (
+    SELECT
+        JSON_GROUP_ARRAY(DEFINIENDA.URI)
+    FROM
+        DEFINIENDA
+    WHERE
+        DEFINIENDA.ONTOLOGY_ID = NAMES.ONTOLOGY_ID
+        AND DEFINIENDA.CANONICAL IS FALSE
+        AND DEFINIENDA.FRAGMENT IS NULL
+    ORDER BY DEFINIENDA.URI
+  ) AS ALTERNATE_URIS, -- list of alternate URIS
+  (
+    SELECT
+        COUNT(*)
+    FROM
+        DEFINIENDA
+    WHERE
+        DEFINIENDA.CANONICAL IS TRUE
+        AND DEFINIENDA.ONTOLOGY_ID = NAMES.ONTOLOGY_ID
+  ) AS DEFINIENDA_COUNT,
+  (
+    SELECT
+        JSON_GROUP_ARRAY(DATA.MIME_TYPE)
+        FROM
+            DATA
+        WHERE
+            DATA.ONTOLOGY_ID = NAMES.ONTOLOGY_ID
+        ORDER BY
+            DATA.MIME_TYPE
+  ) AS MIME_TYPES -- the mime types the ontology is available as
+FROM 
+  DEFINIENDA AS NAMES 
+WHERE
+    NAMES.FRAGMENT IS NULL
+    AND NAMES.CANONICAL IS TRUE
 ```
 
 Each indexed ontology is first loaded and then converted into each of the following formats:
