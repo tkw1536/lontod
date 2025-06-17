@@ -236,10 +236,10 @@ To run the docker image you can use something like:
 
 ```bash
 # to index once and serve it
-docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lontod:latest
+docker run --tty --interactive --read-only  --publish 8080:8080 --volume /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lontod:latest
 
 # to index and watch the directory
-docker run -ti -p 8080:8080 -v /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lontod:latest --watch
+docker run --tty --interactive --read-only --publish 8080:8080 --volume /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lontod:latest --watch
 ```
 
 ## LICENSE

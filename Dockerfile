@@ -32,5 +32,8 @@ ENV LONTOD_HOST=0.0.0.0\
     LONTOD_LANGUAGES=en\
     LONTOD_PATHS=/data/
 
+RUN useradd lontod
+USER lontod
+
 ENTRYPOINT ["python", "-m", "lontod.cli.server"]
 CMD []
