@@ -2,21 +2,24 @@
 
 from logging import Logger
 from sqlite3 import Connection
-from typing import final
+from typing import Final, final
 
 from ..ontologies import Ontology
 from ..sqlite import LoggingCursorContext
 
-_TABLE_SCHEMA_ = """
+_TABLE_SCHEMA_: Final[
+    str
+] = """
 CREATE TABLE IF NOT EXISTS "DEFINIENDA" (
     "URI"           TEXT NOT NULL,
     "ONTOLOGY_ID"   TEXT NOT NULL,
+    "SORT_KEY"      TEXT NOT NULL,
     "CANONICAL"     INTEGER NOT NULL,
     "FRAGMENT"      TEXT
 );
 
-CREATE INDEX IF NOT EXISTS DEFINIENDA_ONTOLOGY ON DEFINIENDA ("ONTOLOGY_ID", "FRAGMENT");
-CREATE INDEX IF NOT EXISTS DEFINIENDA_FRAGMENT ON DEFINIENDA("FRAGMENT");
+CREATE INDEX IF NOT EXISTS DEFINIENDA_ONTOLOGY ON DEFINIENDA ("ONTOLOGY_ID", "FRAGMENT", "SORT_KEY");
+CREATE INDEX IF NOT EXISTS DEFINIENDA_FRAGMENT ON DEFINIENDA ("FRAGMENT");
 
 CREATE TABLE IF NOT EXISTS "DATA" (
     "ONTOLOGY_ID"   TEXT NOT NULL,
@@ -66,6 +69,8 @@ FROM
 WHERE
     NAMES.FRAGMENT IS NULL
     AND NAMES.CANONICAL IS TRUE
+ORDER BY
+    NAMES.SORT_KEY DESC
 """
 
 # Re-do the indexes once the queries are finished!
@@ -115,15 +120,21 @@ class Indexer:
                 (identifier,),
             )
 
-    def upsert(self, identifier: str, ontology: Ontology) -> None:
+    def upsert(
+        self, identifier: str, ontology: Ontology, sort_key: str | None = None
+    ) -> None:
         """Inserts the given ontology into the database, removing any old references to it"""
 
         self.remove(identifier)
+        sort_key = sort_key if isinstance(sort_key, str) else identifier
 
         with self._cursor() as cursor:
             cursor.executemany(
-                "INSERT INTO DEFINIENDA (URI, ONTOLOGY_ID, CANONICAL, FRAGMENT) VALUES (?, ?, ?, NULL)",
-                [(uri, identifier, canonical) for (uri, canonical) in ontology.uris],
+                "INSERT INTO DEFINIENDA (URI, ONTOLOGY_ID, CANONICAL, FRAGMENT, SORT_KEY) VALUES (?, ?, ?, NULL, ?)",
+                [
+                    (uri, identifier, canonical, sort_key)
+                    for (uri, canonical) in ontology.uris
+                ],
             )
             cursor.executemany(
                 "INSERT INTO DATA (ONTOLOGY_ID, MIME_TYPE, DATA) VALUES(?, ?, CAST(? AS BLOB))",
@@ -133,9 +144,9 @@ class Indexer:
                 ],
             )
             cursor.executemany(
-                "INSERT INTO DEFINIENDA (URI, ONTOLOGY_ID, CANONICAL, FRAGMENT) VALUES(?, ?, ?, ?)",
+                "INSERT INTO DEFINIENDA (URI, ONTOLOGY_ID, CANONICAL, FRAGMENT, SORT_KEY) VALUES(?, ?, ?, ?, ?)",
                 [
-                    (definiendum, identifier, canonical, fragment)
+                    (definiendum, identifier, canonical, fragment, sort_key)
                     for (definiendum, fragment, canonical) in ontology.all_definienda
                 ],
             )

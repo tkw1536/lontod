@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from logging import Logger
 from sqlite3 import Connection
-from typing import Any, Final, Generator, Iterable, Optional, Tuple, TypeGuard, final
+from typing import Any, Generator, Iterable, Optional, Tuple, TypeGuard, final
 
 from ..sqlite import Connector, LoggingCursorContext
 from ..utils.pool import Pool
@@ -31,14 +31,6 @@ class Definiendum:
     ontology_identifier: str
     canonical: bool
     fragment: str | None
-
-
-_QUERY_ONTOLOGY: Final[
-    str
-] = """
-SELECT ONTOLOGIES.ONTOLOGY_ID, ONTOLOGIES.URI, ONTOLOGIES.ALTERNATE_URIS, ONTOLOGIES.DEFINIENDA_COUNT, ONTOLOGIES.MIME_TYPES FROM ONTOLOGIES
-
-"""
 
 
 @final
@@ -74,7 +66,8 @@ SELECT
     ONTOLOGIES.DEFINIENDA_COUNT,
     ONTOLOGIES.MIME_TYPES
 FROM
-    ONTOLOGIES"""
+    ONTOLOGIES
+"""
             )
 
             while True:
@@ -144,7 +137,7 @@ WHERE
                 + """)
 ORDER BY
 	DEFINIENDA.CANONICAL DESC,
-	DEFINIENDA.ONTOLOGY_ID DESC""",
+	DEFINIENDA.SORT_KEY DESC""",
                 [str(u) for u in uris],
             )
 

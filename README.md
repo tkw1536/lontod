@@ -123,6 +123,7 @@ The index consists of an SQLITE database with the following schema (omitting ind
 CREATE TABLE IF NOT EXISTS "DEFINIENDA" (
     "URI"           TEXT NOT NULL, -- uri of the indexed concept (or ontology)
     "ONTOLOGY_ID"   TEXT NOT NULL, -- internal identifier of the ontology (usually filename, used in some server URIs)
+    "SORT_KEY"      TEXT NOT NULL, -- used for sorting different defienda and ontologies, in DESC order. 
     "CANONICAL"     INTEGER NOT NULL, -- is the URI a canonical URI or derived (e.g. via a versionIRI)
     "FRAGMENT"      TEXT -- html fragment identifier (without #) that the definition is found in, or NULL in case of ONTOLOGY
 );
@@ -176,6 +177,8 @@ FROM
 WHERE
     NAMES.FRAGMENT IS NULL
     AND NAMES.CANONICAL IS TRUE
+ORDER BY
+    NAMES.SORT_KEY DESC
 ```
 
 Each indexed ontology is first loaded and then converted into each of the following formats:
