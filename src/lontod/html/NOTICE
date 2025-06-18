@@ -2,8 +2,6 @@ Some of the code in the lontod.html module is based on pylode <https://github.co
 The original license requires that the distribution reproduce the following copyright and license terms. 
 Please be aware that the modified form is licensed under different terms, see top-level README.
 
-BSD 3-Clause License
-
 Copyright (c) 2002-2021, RDFLib Team
 All rights reserved.
 
