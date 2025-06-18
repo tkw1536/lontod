@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Callable, Collection, List, Optional, Tuple, TypeVar, Union, cast
 
 import markdown  # type: ignore
-from dominate import document  # type:ignore
 from dominate.tags import (  # type: ignore
     a,
     br,
@@ -27,7 +26,6 @@ from dominate.tags import (  # type: ignore
     h3,
     html_tag,
     li,
-    p,
     pre,
     span,
     sup,
@@ -55,6 +53,7 @@ from rdflib.term import BNode, Identifier, Literal, Node, URIRef
 
 def get_ns(ont: Graph) -> Tuple[str, str]:
     """Gets the default Namespace for the given graph (ontology)"""
+
     # if this ontology declares a preferred URI, use that
     pref_iri = None
     for s_, o in ont.subject_objects(predicate=VANN.preferredNamespaceUri):
@@ -366,7 +365,7 @@ def load_background_onts_titles(ont: Graph) -> dict[str, str]:
     return onts_titles
 
 
-def rdf_obj_html(
+def _rdf_obj_html(
     ont: Graph,
     back_onts: Graph,
     ns: Tuple[str, str],
@@ -775,7 +774,7 @@ def prop_obj_pair_html(
         _class="hover_property",
         href=str(prop_iri),
     )
-    o = rdf_obj_html(ont, back_onts, ns, obj, fids, rdf_type=obj_type, prop=prop_iri)
+    o = _rdf_obj_html(ont, back_onts, ns, obj, fids, rdf_type=obj_type, prop=prop_iri)
 
     if table_or_dl == "table":
         t = tr(th(prop), td(o))
@@ -932,27 +931,6 @@ def intersperse(lst: Collection[T], sep: T) -> list[T]:
     result = [sep] * (len(lst) * 2 - 1)
     result[0::2] = lst
     return result
-
-
-def make_pylode_logo(
-    doc: document, version: str, profile_name: str, profile_iri: str
-) -> div:
-    """makes the pylode logo"""
-    with doc:
-        with div(id="pylode"):
-            with p("made by "):
-                with a(href="https://github.com/rdflib/pyLODE"):
-                    span("p", id="p")
-                    span("y", id="y")
-                    span("LODE")
-                a(
-                    version,
-                    href="https://github.com/rdflib/pyLODE/release/" + version,
-                    id="version",
-                )
-                span(" with the ")
-                a(profile_name, href=profile_iri, id="profile")
-                span("profile")
 
 
 class PylodeError(Exception):
