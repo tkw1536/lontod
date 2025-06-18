@@ -95,7 +95,7 @@ def run(
             ingester(*paths, initialize=True, truncate=clean, remove=remove)
             ingest_ok = True
         except Exception as err:
-            logger.error("ingestion failed %s", err)
+            logger.error("ingestion failed %r", err, exc_info=err)
 
         if simulate:
             logger.info("simulate was provided, rolling back transaction")

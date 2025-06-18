@@ -1,6 +1,7 @@
 """OWL Ontology Parsing"""
 
 from itertools import chain
+from logging import Logger
 from typing import Generator, List, Tuple
 
 from bs4 import BeautifulSoup, Tag
@@ -15,7 +16,7 @@ from .ontology import NoOntologyFound, Ontology
 from .types import media_types
 
 
-def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
+def owl_ontology(logger: Logger, graph: Graph, html_languages: List[str]) -> Ontology:
     """Returns a new OWL Ontology"""
 
     # determine the URI of the ontology
@@ -44,7 +45,7 @@ def owl_ontology(graph: Graph, html_languages: List[str]) -> Ontology:
     sanitize(graph)
 
     # make html
-    result = OntPub(graph).make_html()
+    result = OntPub(logger, graph).make_html()
     if not isinstance(result, (str, bytes)):
         raise AssertionError("OntPub did not return str or bytes")
     html = as_utf8(result)

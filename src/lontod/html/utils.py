@@ -3,12 +3,15 @@
 # spellchecker:words ONTDOC RDFS VANN onts trpls trpl ASGS orcid xlink evenodd uriref setclass inferencing elems specialised
 
 import logging
+import pickle
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import wraps
+from importlib import resources
 from itertools import chain
 from pathlib import Path
-from typing import Collection, List, Optional, Tuple, TypeVar, Union, cast
+from typing import Callable, Collection, List, Optional, Tuple, TypeVar, Union, cast
 
 import markdown  # type: ignore
 from dominate import document  # type:ignore
@@ -291,42 +294,64 @@ def sort_ontology(ont_orig: Graph) -> Graph:
     return ont_sorted
 
 
-def load_background_onts() -> Graph:
+RDF_FOLDER = resources.files(__package__).joinpath("ontologies")
+
+
+def _pickle_and_cache_graph(
+    f: Callable[[logging.Logger], Graph],
+) -> Callable[[logging.Logger], Graph]:
+    cache: bytes | None = None
+
+    @wraps(f)
+    def f_cached(logger: logging.Logger) -> Graph:
+        nonlocal cache
+        if cache is None:
+            result = f(logger)
+            cache = pickle.dumps(result)
+            return result
+
+        g = pickle.loads(cache)
+        if not isinstance(g, Graph):
+            raise AssertionError("cached value is not a graph")
+        return g
+
+    return f_cached
+
+
+@_pickle_and_cache_graph
+def load_background_onts(logger: logging.Logger) -> Graph:
     """Loads background ontology files into an RDFLib graph from either
     RDF source files or a pickled Graph.
 
     Performs title and description inference and stores a pickle if
     generating from RDF source files."""
 
-    def _parse_background_onts() -> Graph:
-        g_ = Graph(bind_namespaces="core")
-        for f_ in RDF_FOLDER.glob("*.ttl"):
-            g_.parse(f_)
+    g = Graph(bind_namespaces="core")
 
-        return g_
+    for file in RDF_FOLDER.iterdir():
+        if not file.is_file() or not file.name.endswith(".ttl"):
+            continue
+        logger.debug("loading background ontology from %s", file.name)
+        g.parse(file.open("r"))
 
-    def _expand_background_onts_graph(back_ont: Graph) -> None:
-        # make regular titles
-        for s_, o in chain(
-            back_ont.subject_objects(DC.title),
-            back_ont.subject_objects(RDFS.label),
-            back_ont.subject_objects(SKOS.prefLabel),
-            back_ont.subject_objects(SDO.name),
-        ):
-            back_ont.add((s_, DCTERMS.title, o))
+    # make regular titles
+    for s_, o in chain(
+        g.subject_objects(DC.title),
+        g.subject_objects(RDFS.label),
+        g.subject_objects(SKOS.prefLabel),
+        g.subject_objects(SDO.name),
+    ):
+        g.add((s_, DCTERMS.title, o))
 
-        # make regular descriptions
-        for s_, o in chain(
-            back_ont.subject_objects(DC.description),
-            back_ont.subject_objects(RDFS.comment),
-            back_ont.subject_objects(SKOS.definition),
-            back_ont.subject_objects(SDO.description),
-        ):
-            back_ont.add((s_, DCTERMS.description, o))
+    # make regular descriptions
+    for s_, o in chain(
+        g.subject_objects(DC.description),
+        g.subject_objects(RDFS.comment),
+        g.subject_objects(SKOS.definition),
+        g.subject_objects(SDO.description),
+    ):
+        g.add((s_, DCTERMS.description, o))
 
-    logging.info("Loading background ontologies from RDF files")
-    g = _parse_background_onts()
-    _expand_background_onts_graph(g)
     return g
 
 
