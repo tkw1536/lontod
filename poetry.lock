@@ -604,6 +604,22 @@ files = [
 ]
 
 [[package]]
+name = "pip-licenses-lib"
+version = "0.5.0"
+description = "Retrieve the software license list of Python packages installed with pip."
+optional = false
+python-versions = "<4,>=3.9"
+groups = ["main"]
+files = [
+    {file = "pip_licenses_lib-0.5.0-py3-none-any.whl", hash = "sha256:b6b3c1c85a71879494d0ea65f63f3b4ca37cf8e1862617e3766a8402d1064a1d"},
+    {file = "pip_licenses_lib-0.5.0.tar.gz", hash = "sha256:3e1afbd230703d38baf01fc3b05727d79dfa4ab8877ee305574df1fd73504dab"},
+]
+
+[package.extras]
+dev = ["codespell", "flake8", "flake8-bugbear", "mypy", "pep8-naming", "pypdf", "requests", "types-requests"]
+docs = ["furo", "sphinx"]
+
+[[package]]
 name = "platformdirs"
 version = "4.3.8"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
@@ -1020,4 +1036,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "e3eb2d94533b03b1438bd0779f0b8a82d4f48222f66ee9eff452f589a41c0ae0"
+content-hash = "4020f2287a184cd59f52ae8149b4ae3585db0fadb113c3e435d1e6f0ed9af76b"

@@ -4,19 +4,42 @@ from argparse import ArgumentParser
 from logging import CRITICAL, DEBUG, INFO, WARNING, Logger, getLogger
 from os import environ
 from pathlib import Path
+from typing import Iterable, TypeVar
+
+from piplicenses_lib import FromArg, get_packages
 
 # spellchecker:words fsevents
 
 
 def legal_info(logger: Logger) -> None:
     """Logs legal information"""
-    logger.info("LONTOD written by Dr. Tom Wiesing")
+    logger.info("Lontod (c) Dr. Tom Wiesing <tom@tkw01536.de>, all rights reserved. ")
     if logger.level > DEBUG:
-        logger.info(
-            "Enable DEBUG log level view licensing information about included code"
+        logger.info("Set log level to DEBUG to view licensing information. ")
+        return
+
+    for package in get_packages(FromArg.META):
+        logger.debug(
+            "package %s by %s licensed under %s",
+            package.name,
+            package.author,
+            package.license,
         )
+        text = _first(package.license_texts)
+        logger.debug(text)
+
     with (Path(__file__).parent.parent / "html" / "NOTICE").open("r") as file:
         logger.debug(file.read())
+
+
+T = TypeVar("T")
+
+
+def _first(items: Iterable[T]) -> T | None:
+    """returns the first value contained in an iterator or None"""
+    for item in items:
+        return item
+    return None
 
 
 def file_or_none(env: str) -> str | None:
