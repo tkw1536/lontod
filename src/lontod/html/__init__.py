@@ -1,12 +1,11 @@
 """parses an ontology as html"""
 
 from collections import defaultdict
+from importlib import resources
 from itertools import chain
 from logging import Logger
 from pathlib import Path
 from typing import Dict, Union, cast
-
-from importlib import resources
 
 import dominate  # type:ignore
 from dominate.tags import (  # type:ignore
@@ -33,15 +32,6 @@ from dominate.tags import (  # type:ignore
     ul,
 )
 from dominate.util import raw  # type:ignore
-from pylode.profiles import ontpub  # type:ignore
-from pylode.rdf_elements import (  # type:ignore
-    AGENT_PROPS,
-    CLASS_PROPS,
-    ONT_PROPS,
-    ONTDOC,
-    PROP_PROPS,
-)
-from pylode.version import __version__  # type:ignore
 from rdflib import Graph, Literal
 from rdflib.namespace import (
     DC,
@@ -58,6 +48,13 @@ from rdflib.namespace import (
 )
 from rdflib.term import Node, URIRef
 
+from .rdf_elements import (
+    AGENT_PROPS,
+    CLASS_PROPS,
+    ONT_PROPS,
+    ONTDOC,
+    PROP_PROPS,
+)
 from .utils import (
     PylodeError,
     back_onts_label_props,
@@ -71,9 +68,6 @@ from .utils import (
 )
 
 # spellchecker:words ONTDOC FOAF RDFS onts Helper objectproperties datatypeproperties annotationproperties functionalproperties nses
-
-
-ONTPUB_PATH = Path(ontpub.__file__)
 
 
 class OntPub:
@@ -274,7 +268,9 @@ class OntPub:
     ) -> None:
         """Helper function for make_html(). Makes <head>???</head> content"""
         with self.doc.head:
-            css = resources.files(__package__).joinpath("assets", "style.css").read_text()
+            css = (
+                resources.files(__package__).joinpath("assets", "style.css").read_text()
+            )
 
             style(raw("\n" + css + "\n\t"))
             meta(http_equiv="Content-Type", content="text/html; charset=utf-8")

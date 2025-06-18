@@ -36,7 +36,12 @@ from dominate.tags import (  # type: ignore
     ul,
 )
 from dominate.util import raw  # type: ignore
-from pylode.rdf_elements import (  # type: ignore
+from rdflib import Graph
+from rdflib.namespace import DC, DCTERMS, OWL, PROF, PROV, RDF, RDFS, SDO, SKOS, VANN
+from rdflib.paths import ZeroOrMore
+from rdflib.term import BNode, Identifier, Literal, Node, URIRef
+
+from .rdf_elements import (
     AGENT_PROPS,
     ONT_TYPES,
     ONTDOC,
@@ -44,11 +49,6 @@ from pylode.rdf_elements import (  # type: ignore
     PROPS,
     RESTRICTION_TYPES,
 )
-from pylode.utils import RDF_FOLDER  # type: ignore
-from rdflib import Graph
-from rdflib.namespace import DC, DCTERMS, OWL, PROF, PROV, RDF, RDFS, SDO, SKOS, VANN
-from rdflib.paths import ZeroOrMore
-from rdflib.term import BNode, Identifier, Literal, Node, URIRef
 
 
 def get_ns(ont: Graph) -> Tuple[str, str]:
@@ -211,7 +211,7 @@ class OntProps:
     ont_title: str | None
 
 
-def back_onts_label_props(back_onts: Graph) -> dict[str, OntProps]:
+def back_onts_label_props(back_onts: Graph) -> dict[URIRef, OntProps]:
     """Gets titles and descriptions for all properties
     in the background ontologies"""
     back_onts_titles = load_background_onts_titles(back_onts)
@@ -331,7 +331,7 @@ def load_background_onts(logger: logging.Logger) -> Graph:
         if not file.is_file() or not file.name.endswith(".ttl"):
             continue
         logger.debug("loading background ontology from %s", file.name)
-        g.parse(file.open("r"))
+        g.parse(file.read_bytes())
 
     # make regular titles
     for s_, o in chain(
@@ -794,7 +794,7 @@ def section_html(
     toc: dict[str, list[tuple[str, str]]],
     toc_ul_id: str,
     fids: dict[str, str],
-    props_labeled: dict[str, OntProps],
+    props_labeled: dict[URIRef, OntProps],
 ) -> div:
     """Makes all the HTML (div, title & table) for all instances of a
     given RDF class, e.g. owl:Class or owl:ObjectProperty"""
@@ -810,7 +810,7 @@ def section_html(
         props_list: list[URIRef],
         this_props_: dict[URIRef, list[Node]],
         fids_: dict[str, str],
-        props_labeled_: dict[str, OntProps],
+        props_labeled_: dict[URIRef, OntProps],
     ) -> div:
         """Makes all the HTML (div, title & table) for one instance of a
         given RDF class, e.g. owl:Class or owl:ObjectProperty"""

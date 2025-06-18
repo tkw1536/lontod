@@ -1,7 +1,7 @@
 """Shared cli functionality"""
 
 from argparse import ArgumentParser
-from logging import CRITICAL, DEBUG, INFO, WARNING, Logger, getLogger
+from logging import CRITICAL, DEBUG, INFO, WARNING, Logger, basicConfig, getLogger
 from os import environ
 from pathlib import Path
 from typing import Iterable, TypeVar
@@ -75,11 +75,16 @@ def add_logging_arg(parser: ArgumentParser) -> None:
 
 def setup_logging(name: str, level: str) -> Logger:
     """perform global logging config and setup a new logger with the given name and level for the"""
+    basicConfig()
+
+    # turn down the verbosity of a bunch of these
     getLogger("asyncio").setLevel(WARNING)
     getLogger("watchdog").setLevel(INFO)
     getLogger("fsevents").setLevel(INFO)
     getLogger("root").setLevel(CRITICAL)
 
+    # and get our logger!
     logger = getLogger(name)
     logger.setLevel(level)
+
     return logger
