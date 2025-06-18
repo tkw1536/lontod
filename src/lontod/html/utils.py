@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from functools import wraps
 from importlib import resources
 from itertools import chain
-from pathlib import Path
 from typing import Callable, Collection, List, Optional, Tuple, TypeVar, Union, cast
 
 import markdown  # type: ignore
@@ -241,53 +240,13 @@ def back_onts_label_props(back_onts: Graph) -> dict[URIRef, OntProps]:
     return pl
 
 
-def _is_file(filepath: str) -> bool:
-    try:
-        if Path(filepath).is_file():
-            return True
-        return False
-    except Exception:
-        return False
-
-
-def load_ontology(ontology: Union[Graph, Path, str]) -> Graph:
-    """Loads and ontology into an RDFLib Graph.
-
-    Can handle string data, file path, URL or Graph input"""
-    # try URL
-    if isinstance(ontology, str) and ontology.startswith("http"):
-        return Graph(bind_namespaces="core").parse(location=ontology)
-    if isinstance(ontology, str):
-        if _is_file(ontology):
-            return Graph(bind_namespaces="core").parse(ontology)
-        if ontology.startswith("[") or ontology.startswith("{"):
-            input_format = "json-ld"
-        elif (
-            ontology.startswith("<?xml")
-            or ontology.startswith("<!--")
-            or ontology.startswith("<rdf:RDF")
-        ):
-            input_format = "xml"
-        else:
-            input_format = "turtle"  # this will also cover n-triples
-        return Graph(bind_namespaces="core").parse(data=ontology, format=input_format)
-    if isinstance(ontology, Graph):
-        return ontology
-    if isinstance(ontology, Path):
-        return Graph(bind_namespaces="core").parse(ontology)
-
-    raise ValueError(
-        "The ontology you supply to OntDoc must be either "
-        "an RDFlib Graph, a Path (to an RDF file) or a string "
-        "(of RDF data)"
-    )
-
-
 def sort_ontology(ont_orig: Graph) -> Graph:
     """Creates a copy of the supplied ontology, sorted by subjects"""
     trpls = ont_orig.triples((None, None, None))
     trpls_srt = sorted(trpls)
-    ont_sorted = Graph(bind_namespaces="core")
+    ont_sorted = Graph(
+        bind_namespaces="core", namespace_manager=ont_orig.namespace_manager
+    )
     for trpl in trpls_srt:
         ont_sorted.add(trpl)
     return ont_sorted

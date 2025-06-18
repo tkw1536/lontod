@@ -61,7 +61,6 @@ from .utils import (
     get_ns,
     load_background_onts,
     load_background_onts_titles,
-    load_ontology,
     prop_obj_pair_html,
     section_html,
     sort_ontology,
@@ -85,15 +84,8 @@ class OntPub:
         od.make_html(destination="some-resulting-html-file.html")
     """
 
-    def __init__(
-        self,
-        logger: Logger,
-        ontology: Union[Graph, Path, str],
-        sort_subjects: bool = False,
-    ):
-        self.ont = load_ontology(ontology)
-        if sort_subjects:
-            self.ont = sort_ontology(self.ont)
+    def __init__(self, logger: Logger, ontology: Graph):
+        self.ont = sort_ontology(ontology)
         self._ontdoc_inference(self.ont)
         self.back_onts = load_background_onts(logger)
         self.back_onts_titles = load_background_onts_titles(self.back_onts)
