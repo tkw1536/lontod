@@ -19,6 +19,8 @@ from .types import media_types
 def owl_ontology(logger: Logger, graph: Graph, html_languages: List[str]) -> Ontology:
     """Returns a new OWL Ontology"""
 
+    _ = logger  # TODO: mark argument as used for now
+
     # determine the URI of the ontology
     uri = None
     for s in graph.subjects(RDF.type, OWL.Ontology):
@@ -45,7 +47,7 @@ def owl_ontology(logger: Logger, graph: Graph, html_languages: List[str]) -> Ont
     sanitize(graph)
 
     # make html
-    result = OntPub(logger, graph).make_html()
+    result = OntPub(graph).make_html()
     if not isinstance(result, (str, bytes)):
         raise AssertionError("OntPub did not return str or bytes")
     html = as_utf8(result)

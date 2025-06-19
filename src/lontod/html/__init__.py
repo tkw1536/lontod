@@ -4,8 +4,7 @@ from collections import defaultdict
 from importlib import resources
 from itertools import chain
 from logging import Logger
-from pathlib import Path
-from typing import Dict, Union, cast
+from typing import Dict, cast
 
 import dominate  # type:ignore
 from dominate.tags import (  # type:ignore
@@ -48,6 +47,7 @@ from rdflib.namespace import (
 )
 from rdflib.term import Node, URIRef
 
+from .background import BackgroundOntologies
 from .rdf_elements import (
     AGENT_PROPS,
     CLASS_PROPS,
@@ -57,10 +57,7 @@ from .rdf_elements import (
 )
 from .utils import (
     PylodeError,
-    back_onts_label_props,
     get_ns,
-    load_background_onts,
-    load_background_onts_titles,
     prop_obj_pair_html,
     section_html,
     sort_ontology,
@@ -84,12 +81,10 @@ class OntPub:
         od.make_html(destination="some-resulting-html-file.html")
     """
 
-    def __init__(self, logger: Logger, ontology: Graph):
+    def __init__(self, ontology: Graph):
         self.ont = sort_ontology(ontology)
         self._ontdoc_inference(self.ont)
-        self.back_onts = load_background_onts(logger)
-        self.back_onts_titles = load_background_onts_titles(self.back_onts)
-        self.props_labeled = back_onts_label_props(self.back_onts)
+        self.back_onts = BackgroundOntologies()
 
         self.toc: Dict[str, list[tuple[str, str]]] = {}
         self.fids: Dict[str, str] = {}
@@ -314,9 +309,6 @@ class OntPub:
                         self.ns,
                         "dl",
                         prop,
-                        self.props_labeled[prop].title,
-                        self.props_labeled[prop].description,
-                        self.props_labeled[prop].ont_title,
                         self.fids,
                         this_onts_props[prop],
                     )
@@ -381,7 +373,6 @@ class OntPub:
                     self.toc,
                     "classes",
                     self.fids,
-                    self.props_labeled,
                 )
                 d.render()
 
@@ -396,7 +387,6 @@ class OntPub:
                     self.toc,
                     "properties",
                     self.fids,
-                    self.props_labeled,
                 )
                 d.render()
 
@@ -411,7 +401,6 @@ class OntPub:
                     self.toc,
                     "objectproperties",
                     self.fids,
-                    self.props_labeled,
                 )
                 d.render()
 
@@ -426,7 +415,6 @@ class OntPub:
                     self.toc,
                     "datatypeproperties",
                     self.fids,
-                    self.props_labeled,
                 )
                 d.render()
 
@@ -441,7 +429,6 @@ class OntPub:
                     self.toc,
                     "annotationproperties",
                     self.fids,
-                    self.props_labeled,
                 )
                 d.render()
 
@@ -456,7 +443,6 @@ class OntPub:
                     self.toc,
                     "functionalproperties",
                     self.fids,
-                    self.props_labeled,
                 )
                 d.render()
 

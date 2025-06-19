@@ -16,7 +16,7 @@ from rdflib.namespace import (
 ONTDOC = Namespace("https://w3id.org/profile/ontdoc/")
 
 # metadata properties for OWL Ontology instances
-ONT_PROPS = [
+ONT_PROPS = (
     DCTERMS.title,
     DCTERMS.publisher,
     DCTERMS.creator,
@@ -41,10 +41,10 @@ ONT_PROPS = [
     SKOS.note,
     DCTERMS.description,
     ONTDOC.restriction,
-]
+)
 
 # properties for OWL Class instances
-CLASS_PROPS = [
+CLASS_PROPS = (
     RDFS.isDefinedBy,
     DCTERMS.title,
     DCTERMS.description,
@@ -63,11 +63,11 @@ CLASS_PROPS = [
     ONTDOC.restriction,
     ONTDOC.hasInstance,
     ONTDOC.superClassOf,
-]
+)
 
 # properties for instances of RDF Property and OWL specialised
 # forms, such as ObjectProperty etc.
-PROP_PROPS = [
+PROP_PROPS = (
     RDFS.isDefinedBy,
     DCTERMS.title,
     DCTERMS.description,
@@ -82,20 +82,20 @@ PROP_PROPS = [
     SDO.domainIncludes,
     RDFS.range,
     SDO.rangeIncludes,
-]
+)
 
 # properties for Agents
-AGENT_PROPS = [
+AGENT_PROPS = (
     SDO.name,
     SDO.affiliation,
     SDO.identifier,
     SDO.email,
     SDO.honorificPrefix,
     SDO.url,
-]
+)
 
 # properties for OWL restriction instances
-RESTRICTION_PROPS = [
+RESTRICTION_PROPS = (
     OWL.allValuesFrom,
     OWL.someValuesFrom,
     OWL.hasValue,
@@ -107,10 +107,12 @@ RESTRICTION_PROPS = [
     OWL.minQualifiedCardinality,
     OWL.maxCardinality,
     OWL.maxQualifiedCardinality,
-]
+)
 
 # all known properties
-PROPS = set(ONT_PROPS + CLASS_PROPS + PROP_PROPS + AGENT_PROPS + RESTRICTION_PROPS)
+PROPS = frozenset(
+    ONT_PROPS + CLASS_PROPS + PROP_PROPS + AGENT_PROPS + RESTRICTION_PROPS
+)
 
 ONT_TYPES = {
     OWL.Class: ("c", "OWL/RDFS Class"),
@@ -123,7 +125,7 @@ ONT_TYPES = {
     OWL.NamedIndividual: ("ni", "OWL Named Individual"),
 }
 
-RESTRICTION_TYPES = [
+RESTRICTION_TYPES = (
     OWL.cardinality,
     OWL.qualifiedCardinality,
     OWL.minCardinality,
@@ -133,6 +135,6 @@ RESTRICTION_TYPES = [
     OWL.allValuesFrom,
     OWL.someValuesFrom,
     OWL.hasValue,
-]
+)
 
-OWL_SET_TYPES = [OWL.unionOf, OWL.intersectionOf]
+OWL_SET_TYPES = (OWL.unionOf, OWL.intersectionOf)

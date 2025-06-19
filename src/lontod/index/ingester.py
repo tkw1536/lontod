@@ -131,7 +131,9 @@ class Ingester:
         try:
             owl = owl_ontology(self.__logger, g, self.html_languages)
         except Exception as err:
-            self.__logger.error("unable to read OWL ontology at %r: %s", path, err)
+            self.__logger.error(
+                "unable to read OWL ontology at %r: %s", path, err, exc_info=err
+            )
             return None
 
         self.__logger.debug("inserting ontology %r from %r", owl.uri, path)

@@ -1342,7 +1342,7 @@ http://www.w3.org/TR/2013/REC-prov-constraints-20130430/#term-Revision 23 April 
 # The following was imported from http://www.w3.org/ns/prov-o-inverses#
 
 
-<#> a owl:Ontology;
+<http://www.w3.org/ns/prov-o-inverses#> a owl:Ontology;
    owl:versionIRI        <http://www.w3.org/ns/prov-o-inverses-20130430>;
    prov:wasRevisionOf    <http://www.w3.org/ns/prov-o-inverses-20120312>;
    prov:specializationOf <http://www.w3.org/ns/prov-o-inverses>;
