@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from rdflib import Graph, Literal, Node
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 
-from lontod.html import OntPub
+from lontod.html.scanner import OntPub
 
 from ..utils.graph import restrict_languages, sanitize
 from ..utils.strings import as_utf8

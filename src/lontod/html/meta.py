@@ -3,7 +3,6 @@
 # spellchecker:words RDFS onts
 
 from collections import defaultdict
-from dataclasses import dataclass
 from functools import cached_property
 from importlib import resources
 from logging import getLogger
@@ -23,38 +22,24 @@ from rdflib.term import Literal, Node, URIRef
 
 from ..utils.cached import PickleCachedMeta
 from .common import iri_to_title
+from .data import MetaOntology, MetaProperty
 from .rdf_elements import PROPS
 
 RDF_FOLDER = resources.files(__package__).joinpath("ontologies")
 
 
-@dataclass
-class PropInfo:
-    """Human-readable information about a specific property"""
-
-    # title of the property
-    title: str
-
-    # description of the property
-    description: str | None
-
-    # ontology title
-    ont_title: str | None
-
-
 @final
-class BackgroundOntologies(metaclass=PickleCachedMeta):
-    """Holds information about background ontologies"""
+class MetaOntologies(metaclass=PickleCachedMeta):
+    """Holds information about the meta ontologies"""
 
     def __init__(self) -> None:
-        g = _BackgroundOntologyGraph()
+        g = _MetaOntologiesGraph()
 
         self.__types = g.types
         self.__titles = g.titles
-        self.__descriptions = g.descriptions
         self.__props = g.props
 
-    def __getitem__(self, uri: URIRef) -> PropInfo:
+    def __getitem__(self, uri: URIRef) -> MetaProperty:
         """gets information about a specific property"""
 
         return self.__props[uri]
@@ -66,37 +51,11 @@ class BackgroundOntologies(metaclass=PickleCachedMeta):
         except KeyError:
             pass
 
-    def titles_of(self, iri: URIRef) -> Generator[Literal, None, None]:
-        """Returns the title of the given URI"""
-
-        try:
-            yield from self.__titles[iri]
-        except KeyError:
-            pass
-
     def title_of(self, iri: URIRef) -> Literal | None:
-        """Like titles_of, but returns on the first title"""
+        """Returns the title of the given IRI, if it exists in the metadata ontology"""
 
         try:
             return self.__titles[iri][0]
-        except KeyError:
-            return None
-        except IndexError:
-            return None
-
-    def descriptions_of(self, iri: URIRef) -> Generator[Literal, None, None]:
-        """Yields all descriptions of the given iri"""
-
-        try:
-            yield from self.__descriptions[iri]
-        except KeyError:
-            pass
-
-    def description_of(self, iri: URIRef) -> Literal | None:
-        """Like descriptions_of, but returns only the first description"""
-
-        try:
-            return self.__descriptions[iri][0]
         except KeyError:
             return None
         except IndexError:
@@ -108,8 +67,8 @@ T = TypeVar("T", bound=Node)
 logger = getLogger("lontod.ontology.background")
 
 
-class _BackgroundOntologyGraph:
-    """An in-memory loaded background ontology graph"""
+class _MetaOntologiesGraph:
+    """In-memory representation for the loaded meta ontologies graph"""
 
     @cached_property
     def g(self) -> Graph:
@@ -126,13 +85,13 @@ class _BackgroundOntologyGraph:
         return g
 
     @cached_property
-    def types(self) -> dict[URIRef, list[URIRef]]:
+    def types(self) -> dict[URIRef, Sequence[URIRef]]:
         """returns a dictionary holding all types for all objects"""
 
         return self.__subject_object_dict((RDF.type,), URIRef)
 
     @cached_property
-    def descriptions(self) -> dict[URIRef, list[Literal]]:
+    def descriptions(self) -> dict[URIRef, Sequence[Literal]]:
         """returns a dictionary holding the descriptions of all objects"""
 
         return self.__subject_object_dict(
@@ -147,7 +106,7 @@ class _BackgroundOntologyGraph:
         )
 
     @cached_property
-    def titles(self) -> dict[URIRef, list[Literal]]:
+    def titles(self) -> dict[URIRef, Sequence[Literal]]:
         """returns a dictionary holding the titles of all objects"""
 
         return self.__subject_object_dict(
@@ -162,70 +121,47 @@ class _BackgroundOntologyGraph:
         )
 
     @cached_property
-    def ontology_titles(self) -> dict[URIRef, str]:
+    def ontologies(self) -> Generator[MetaOntology, None, None]:
         """returns a dictionary of titles for ontologies"""
-        ont_titles = {}
+
         for s in self.g.subjects(predicate=RDF.type, object=OWL.Ontology):
             if not isinstance(s, URIRef):
                 continue
 
             try:
-                titles = self.titles[s]
-                if len(titles) > 1:
-                    logger.debug("multiple titles for %s: %r", s, titles)
-                ont_titles[s] = str(self.titles[s][0].value)
+                yield MetaOntology(uri=s, titles=self.titles[s])
             except KeyError:
                 continue
 
-        return ont_titles
-
     @cached_property
-    def props(self) -> dict[str, PropInfo]:
+    def props(self) -> dict[str, MetaProperty]:
         """Information about properties defined by ontologies"""
 
         return {iri: self.__prop_info(iri) for iri in PROPS}
 
-    def __prop_info(self, prop: URIRef) -> PropInfo:
-        title: str
-        title_lits = self.titles.get(prop)
-        if title_lits is not None and len(title_lits) > 0:
-            if len(title_lits) > 1:
-                logger.debug("multiple titles for %s: %r", prop, title_lits)
-            title = str(title_lits[0].value)
-        else:
+    def __prop_info(self, prop: URIRef) -> MetaProperty:
+        titles = self.titles.get(prop)
+        if titles is None or len(titles) == 0:
             auto_title = iri_to_title(prop)
             if auto_title is None:
                 raise AssertionError(
                     f"unable to generate title for IRI for property {prop!r}"
                 )
-            title = auto_title
+            titles = [Literal(auto_title)]
 
-        description: str | None = None
-        description_lits = self.descriptions.get(prop)
-        if description_lits is not None and len(description_lits) > 0:
-            if len(description_lits) > 1:
-                logger.debug("multiple descriptions for %s: %r", prop, description_lits)
-            description = str(description_lits[0].value)
-
-        ont_titles: list[str] = []
-        for k, v in self.ontology_titles.items():
-            if not prop.startswith(k):
-                continue
-
-            ont_titles.append(str(v))
-
-        ont_title: str | None = None
-        if len(ont_titles) > 0:
-            ont_title = str(ont_titles[0])
-
-        return PropInfo(title=title, description=description, ont_title=ont_title)
+        return MetaProperty(
+            uri=prop,
+            titles=titles,
+            descriptions=self.descriptions.get(prop) or tuple(),
+            ontologies=[ontology for ontology in self.ontologies if prop in ontology],
+        )
 
     def __subject_object_dict(
         self, predicates: Sequence[URIRef], typ: type[T]
-    ) -> dict[URIRef, list[T]]:
+    ) -> dict[URIRef, Sequence[T]]:
         """builds a dictionary { subject: list[objects] } with the given predicates"""
 
-        so_dict: defaultdict[URIRef, list[T]] = defaultdict(list)
+        so_dict = defaultdict[URIRef, list[T]](list)
 
         for predicate in predicates:
             for sub, obj in self.g.subject_objects(predicate):

@@ -35,7 +35,7 @@ from rdflib.namespace import DCTERMS, OWL, PROF, PROV, RDF, RDFS, SDO, SKOS, VAN
 from rdflib.paths import ZeroOrMore
 from rdflib.term import BNode, Identifier, Literal, Node, URIRef
 
-from .background import BackgroundOntologies
+from .meta import MetaOntologies
 from .rdf_elements import (
     AGENT_PROPS,
     ONT_TYPES,
@@ -210,7 +210,7 @@ def sort_ontology(ont_orig: Graph) -> Graph:
 
 def _rdf_obj_html(
     ont: Graph,
-    back_onts: BackgroundOntologies,
+    back_onts: MetaOntologies,
     ns: Tuple[str, str],
     obj: List[Node],
     fids: dict[str, str],
@@ -223,7 +223,7 @@ def _rdf_obj_html(
 
     def _rdf_obj_single_html(
         ont_: Graph,
-        back_onts_: BackgroundOntologies,
+        back_onts_: MetaOntologies,
         ns_: Tuple[str, str],
         obj_: Node,
         fids_: dict[str, str],
@@ -232,7 +232,7 @@ def _rdf_obj_html(
     ) -> ul:
         def _hyperlink_html(
             ont__: Graph,
-            back_onts__: BackgroundOntologies,
+            back_onts__: MetaOntologies,
             ns__: Tuple[str, str],
             iri__: URIRef,
             fids__: dict[str, str],
@@ -242,7 +242,7 @@ def _rdf_obj_html(
                 return _agent_html(ont__, iri__)
 
             def _get_ont_type(
-                ont___: Graph, back_onts___: BackgroundOntologies, iri___: Node
+                ont___: Graph, back_onts___: MetaOntologies, iri___: Node
             ) -> URIRef | None:
                 types_we_know = [
                     OWL.Class,
@@ -520,7 +520,7 @@ def _rdf_obj_html(
         def _setclass_html(
             ont__: Graph,
             obj__: Node,
-            back_onts__: BackgroundOntologies,
+            back_onts__: MetaOntologies,
             ns__: Tuple[str, str],
             fids__: dict[str, str],
         ) -> list[html_tag]:
@@ -549,7 +549,7 @@ def _rdf_obj_html(
 
         def _bn_html(
             ont__: Graph,
-            back_onts__: BackgroundOntologies,
+            back_onts__: MetaOntologies,
             ns__: Tuple[str, str],
             fids__: dict[str, str],
             obj__: BNode,
@@ -598,7 +598,7 @@ def _rdf_obj_html(
 
 def prop_obj_pair_html(
     ont: Graph,
-    back_onts: BackgroundOntologies,
+    back_onts: MetaOntologies,
     ns: Tuple[str, str],
     table_or_dl: str,
     prop_iri: URIRef,
@@ -609,20 +609,7 @@ def prop_obj_pair_html(
     """Makes an HTML Definition list dt & dd pair or a Table tr, th & td set,
     for a given RDF property & resource pair"""
 
-    info = back_onts[prop_iri]
-
-    description_parts: list[str] = []
-    if info.description is not None:
-        description_parts.append(info.description.rstrip("."))
-    if info.ont_title is not None:
-        description_parts.append(f"Defined in {info.ont_title}.")
-
-    prop = a(
-        info.title.title(),
-        title=" ".join(description_parts) if len(description_parts) > 0 else None,
-        _class="hover_property",
-        href=str(prop_iri),
-    )
+    prop = back_onts[prop_iri].to_html()
     o = _rdf_obj_html(ont, back_onts, ns, obj, fids, rdf_type=obj_type, prop=prop_iri)
 
     if table_or_dl == "table":
@@ -636,7 +623,7 @@ def prop_obj_pair_html(
 def section_html(
     section_title: str,
     ont: Graph,
-    back_onts: BackgroundOntologies,
+    back_onts: MetaOntologies,
     ns: Tuple[str, str],
     obj_class: URIRef,
     prop_list: Sequence[URIRef],
@@ -649,7 +636,7 @@ def section_html(
 
     def _element_html(
         ont_: Graph,
-        back_onts_: BackgroundOntologies,
+        back_onts_: MetaOntologies,
         ns_: Tuple[str, str],
         iri: URIRef,
         fid: str,
