@@ -2,6 +2,8 @@
 
 # spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing
 
+from abc import ABC
+from collections.abc import Sequence
 from typing import cast
 
 import markdown
@@ -23,6 +25,7 @@ from rdflib.paths import ZeroOrMore
 from rdflib.term import BNode, Literal, Node, URIRef
 
 from .common import generate_fid, intersperse, must_uriref
+from .data import HTMLable
 from .meta import MetaOntologies
 from .rdf_elements import (
     AGENT_PROPS,
@@ -456,3 +459,34 @@ def rdf_obj_html(
             ),
         )
     return u_
+
+
+class RDFNode(HTMLable, ABC):
+    """represents a single RDF resource."""
+
+
+class AgentObject(RDFNode):
+    """an agent."""
+
+
+class BlankNodeObject(RDFNode):
+    """a blank node."""
+
+
+class RestrictionObject(RDFNode):
+    """representation of a restriction."""
+
+
+class LiteralObject(RDFNode):
+    """references a literal object node in the local different."""
+
+    content: Literal
+
+
+class ReferenceObject(RDFNode):
+    """references a different node in the local document."""
+
+    # TODO: not sure if the title reference doesn't belong in the render context.
+
+    iri: URIRef  # reference to the referenced object
+    title: Sequence[Literal]  # title(s) of the referenced object.
