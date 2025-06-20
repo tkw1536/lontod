@@ -1,19 +1,20 @@
-"""query functionality"""
+"""query functionality."""
 
 import json
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from logging import Logger
 from sqlite3 import Connection
-from typing import Any, Generator, Iterable, Optional, Tuple, TypeGuard, final
+from typing import Any, TypeGuard, final
 
-from ..sqlite import Connector, LoggingCursorContext
-from ..utils.pool import Pool
-from ..utils.strings import as_utf8
+from lontod.sqlite import Connector, LoggingCursorContext
+from lontod.utils.pool import Pool
+from lontod.utils.strings import as_utf8
 
 
 @dataclass
 class Ontology:
-    """an ontology as stored in the database"""
+    """an ontology as stored in the database."""
 
     identifier: str
     uri: str
@@ -25,7 +26,7 @@ class Ontology:
 
 @dataclass
 class Definiendum:
-    """a definiendum result"""
+    """a definiendum result."""
 
     uri: str
     ontology_identifier: str
@@ -35,26 +36,26 @@ class Definiendum:
 
 @final
 class Query:
-    """functionality for interacting with indexed ontologies"""
+    """functionality for interacting with indexed ontologies."""
 
     __conn: Connection
     __logger: Logger
 
-    def __init__(self, conn: Connection, logger: Logger):
-        """Creates a new Query instance"""
+    def __init__(self, conn: Connection, logger: Logger) -> None:
+        """Create a new Query instance."""
         self.__conn = conn
         self.__logger = logger
 
     @property
     def conn(self) -> Connection:
-        """connection used by this query object"""
+        """Connection used by this query object."""
         return self.__conn
 
     def _cursor(self) -> LoggingCursorContext:
         return LoggingCursorContext(self.__conn, self.__logger)
 
-    def list_ontologies(self) -> Generator[Ontology, None, None]:
-        """Lists all (identifier, uri, list[types], len(definienda)) ontologies found in the database"""
+    def list_ontologies(self) -> Generator[Ontology]:
+        """List all (identifier, uri, list[types], len(definienda)) ontologies found in the database."""
         with self._cursor() as cursor:
             cursor.execute(
                 """
@@ -66,7 +67,7 @@ SELECT
     ONTOLOGIES.MIME_TYPES
 FROM
     ONTOLOGIES
-"""
+""",
             )
 
             while True:
@@ -75,15 +76,18 @@ FROM
                     return
 
                 if not _is_row_text_text_text_int_text(row):
-                    raise AssertionError("expected (TEXT,TEXT,TEXT,INT,TEXT)")
+                    msg = "expected (TEXT,TEXT,TEXT,INT,TEXT)"
+                    raise AssertionError(msg)
 
                 alternate_uris = json.loads(row[2])
                 if not _is_list_str(alternate_uris):
-                    raise AssertionError("expected LIST[TEXT]")
+                    msg = "expected LIST[TEXT]"
+                    raise AssertionError(msg)
 
                 mime_types = json.loads(row[4])
                 if not _is_list_str(mime_types):
-                    raise AssertionError("expected LIST[TEXT]")
+                    msg = "expected LIST[TEXT]"
+                    raise AssertionError(msg)
 
                 yield Ontology(
                     identifier=row[0],
@@ -93,9 +97,8 @@ FROM
                     definienda_count=row[3],
                 )
 
-    def get_data(self, identifier: str, mime_type: str) -> Optional[bytes]:
-        """receives the encoding of the ontology with the given slug and mime_type"""
-
+    def get_data(self, identifier: str, mime_type: str) -> bytes | None:
+        """Receives the encoding of the ontology with the given slug and mime_type."""
         with self._cursor() as cursor:
             cursor.execute(
                 "SELECT DATA.DATA FROM DATA WHERE DATA.ONTOLOGY_ID = ? AND DATA.MIME_TYPE = ? LIMIT 1",
@@ -107,15 +110,16 @@ FROM
                 return None
 
             if not _is_row_blob(row):
-                raise AssertionError("expected (BLOB)")
+                msg = "expected (BLOB)"
+                raise AssertionError(msg)
 
             return as_utf8(row[0])
 
     def get_definienda(
-        self, *uris: Iterable[str]
-    ) -> Generator[Definiendum, None, None]:
-        """Returns in any of the given uris"""
-
+        self,
+        *uris: Iterable[str],
+    ) -> Generator[Definiendum]:
+        """Return in any of the given uris."""
         # nothing requested, nothing returned!
         if len(uris) == 0:
             return
@@ -146,7 +150,8 @@ ORDER BY
                     return
 
                 if not _is_row_text_text_int_ntext(row):
-                    raise AssertionError("expected (TEXT,TEXT,INTEGER,TEXT OR NULL)")
+                    msg = "expected (TEXT,TEXT,INTEGER,TEXT OR NULL)"
+                    raise AssertionError(msg)
 
                 yield Definiendum(
                     uri=row[0],
@@ -156,8 +161,7 @@ ORDER BY
                 )
 
     def has_mime_type(self, identifier: str, typ: str) -> bool:
-        """checks if the given ontology exists with the given identifier"""
-
+        """Check if the given ontology exists with the given identifier."""
         with self._cursor() as cursor:
             cursor.execute(
                 """SELECT EXISTS (SELECT 1 FROM DATA WHERE DATA.MIME_TYPE = ? AND DATA.ONTOLOGY_ID = ?)""",
@@ -172,9 +176,8 @@ ORDER BY
 
             return row[0] == 1
 
-    def get_mime_types(self, identifier: str) -> Generator[str, None, None]:
-        """Returns a set containing all available mime types representations for the given mime_type"""
-
+    def get_mime_types(self, identifier: str) -> Generator[str]:
+        """Return a set containing all available mime types representations for the given mime_type."""
         with self._cursor() as cursor:
             cursor.execute(
                 "SELECT DISTINCT DATA.MIME_TYPE FROM DATA WHERE DATA.ONTOLOGY_ID = ? ORDER BY DATA.MIME_TYPE",
@@ -183,17 +186,22 @@ ORDER BY
 
             for row in cursor.fetchall():
                 if not _is_row_text(row):
-                    raise AssertionError("expected (TEXT)")
+                    msg = "expected (TEXT)"
+                    raise AssertionError(msg)
 
                 yield row[0]
 
 
 class QueryPool(Pool[Query]):
-    """Represents a pool of Query objects"""
+    """Represents a pool of Query objects."""
 
-    def __init__(self, max_size: int, logger: Logger, connector: Connector):
+    def __init__(self, max_size: int, logger: Logger, connector: Connector) -> None:
+        """Create a new QueryPool."""
         super().__init__(
-            size=max_size, setup=self.__setup, reset=None, teardown=self.__teardown
+            size=max_size,
+            setup=self.__setup,
+            reset=None,
+            teardown=self.__teardown,
         )
         self._connector = connector
         self._logger = logger
@@ -210,10 +218,10 @@ class QueryPool(Pool[Query]):
 
 def _is_row_text_text_text_int_text(
     value: Any,
-) -> TypeGuard[Tuple[str, str, str, int, str]]:
+) -> TypeGuard[tuple[str, str, str, int, str]]:
     return (
         isinstance(value, tuple)
-        and len(value) == 5
+        and len(value) == 5  # noqa: PLR2004
         and isinstance(value[0], str)
         and isinstance(value[1], str)
         and isinstance(value[2], str)
@@ -226,24 +234,24 @@ def _is_list_str(value: Any) -> TypeGuard[list[str]]:
     return isinstance(value, list) and all(isinstance(x, str) for x in value)
 
 
-def _is_row_blob(value: Any) -> TypeGuard[Tuple[bytes]]:
+def _is_row_blob(value: Any) -> TypeGuard[tuple[bytes]]:
     return isinstance(value, tuple) and len(value) == 1 and isinstance(value[0], bytes)
 
 
-def _is_row_text(value: Any) -> TypeGuard[Tuple[str]]:
+def _is_row_text(value: Any) -> TypeGuard[tuple[str]]:
     return isinstance(value, tuple) and len(value) == 1 and isinstance(value[0], str)
 
 
-def _is_row_int(value: Any) -> TypeGuard[Tuple[int]]:
+def _is_row_int(value: Any) -> TypeGuard[tuple[int]]:
     return isinstance(value, tuple) and len(value) == 1 and isinstance(value[0], int)
 
 
 def _is_row_text_text_int_ntext(
     value: Any,
-) -> TypeGuard[tuple[str, str, int, Optional[str]]]:
+) -> TypeGuard[tuple[str, str, int, str | None]]:
     return (
         isinstance(value, tuple)
-        and len(value) == 4
+        and len(value) == 4  # noqa: PLR2004
         and isinstance(value[0], str)
         and isinstance(value[1], str)
         and isinstance(value[2], int)

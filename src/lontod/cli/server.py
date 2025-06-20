@@ -1,14 +1,16 @@
-"""Entrypoint for lontod_server"""
+"""Entrypoint for lontod_server."""
 
 import argparse
+from collections.abc import Sequence
 from os import environ
-from typing import Optional, Sequence, Text
+from pathlib import Path
 
 from uvicorn import run as uv_run
 
-from ..daemon import Handler
-from ..index import Controller, QueryPool
-from ..sqlite import Connector, Mode
+from lontod.daemon import Handler
+from lontod.index import Controller, QueryPool
+from lontod.sqlite import Connector, Mode
+
 from ._common import (
     add_logging_arg,
     file_or_none,
@@ -18,8 +20,8 @@ from ._common import (
 )
 
 
-def main(args: Optional[Sequence[Text]] = None) -> None:
-    """Entrypoint for the lontod_server command"""
+def main(args: Sequence[str] | None = None) -> None:
+    """Entrypoint for the lontod_server command."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -82,7 +84,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     result = parser.parse_args(args)
     run(
         result.database,
-        list_or_environment(result.input, "LONTOD_PATHS"),
+        [Path(p) for p in list_or_environment(result.input, "LONTOD_PATHS")],
         result.port,
         result.host,
         result.public_domain,
@@ -94,19 +96,19 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     )
 
 
-def run(
-    db: Optional[str],
-    paths: list[str],
+def run(  # noqa: PLR0913
+    db: str | None,
+    paths: list[Path],
     port: int,
     host: str,
-    public_domain: Optional[str],
+    public_domain: str | None,
     ontology_route: str,
     insecure_skip_routes: bool,
     log_level: str,
     watch: bool,
     languages: list[str],
 ) -> None:
-    """Starts the lontod server"""
+    """Start the lontod server."""
     # setup logging
     logger = setup_logging("lontod_server", log_level)
     legal_info(logger)

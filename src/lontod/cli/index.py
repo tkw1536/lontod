@@ -1,16 +1,18 @@
-"""Entrypoint for lontod_index"""
+"""Entrypoint for lontod_index."""
 
 import argparse
+from collections.abc import Sequence
 from os import environ
-from typing import List, Optional, Sequence, Text
+from pathlib import Path
 
-from ..index import Indexer, Ingester
-from ..sqlite import Connector
+from lontod.index import Indexer, Ingester
+from lontod.sqlite import Connector
+
 from ._common import add_logging_arg, legal_info, list_or_environment, setup_logging
 
 
-def main(args: Optional[Sequence[Text]] = None) -> None:
-    """Main Entry point for the lontod_index executable"""
+def main(args: Sequence[str] | None = None) -> None:
+    """Entrypoint for the lontod_index executable."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "input",
@@ -54,7 +56,7 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
 
     result = parser.parse_args(args)
     run(
-        list_or_environment(result.input, "LONTOD_PATHS"),
+        [Path(p) for p in list_or_environment(result.input, "LONTOD_PATHS")],
         result.clean,
         list_or_environment(result.languages, "LONTOD_LANGUAGES"),
         result.simulate,
@@ -64,17 +66,16 @@ def main(args: Optional[Sequence[Text]] = None) -> None:
     )
 
 
-def run(
-    paths: list[str],
+def run(  # noqa: PLR0913
+    paths: list[Path],
     clean: bool,
-    html_languages: List[str],
+    html_languages: list[str],
     simulate: bool,
     db: str,
     remove: bool,
     log_level: str,
 ) -> None:
-    """Begins an indexing process"""
-
+    """Begins an indexing process."""
     # setup logging
     logger = setup_logging("lontod_index", log_level)
     legal_info(logger)
@@ -95,7 +96,7 @@ def run(
             ingester(*paths, initialize=True, truncate=clean, remove=remove)
             ingest_ok = True
         except Exception as err:
-            logger.error("ingestion failed %r", err, exc_info=err)
+            logger.exception("ingestion failed", exc_info=err)
 
         if simulate:
             logger.info("simulate was provided, rolling back transaction")

@@ -1,6 +1,6 @@
-"""ontology parsing"""
+"""ontology parsing."""
 
-from .ontology import NoOntologyFound, Ontology
+from .ontology import NoOntologyFoundError, Ontology
 from .owl import owl_ontology
 
-__all__ = ["Ontology", "NoOntologyFound", "owl_ontology"]
+__all__ = ["NoOntologyFoundError", "Ontology", "owl_ontology"]

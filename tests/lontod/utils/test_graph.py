@@ -1,6 +1,6 @@
-"""Test the graph module"""
+"""Test the graph module."""
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import pytest
 from rdflib import Graph, Literal
@@ -13,7 +13,7 @@ EX = Namespace("http://example.com/namespace")
 
 
 @pytest.mark.parametrize(
-    "edges, want",
+    ("edges", "want"),
     [
         (
             [
@@ -62,7 +62,8 @@ EX = Namespace("http://example.com/namespace")
                     EX.subject_1,
                     EX.predicate,
                     Literal(
-                        "unsafe html 2<script>alert('unsafe');</script>", lang="en"
+                        "unsafe html 2<script>alert('unsafe');</script>",
+                        lang="en",
                     ),
                 ),
             ],
@@ -93,7 +94,8 @@ EX = Namespace("http://example.com/namespace")
                     EX.subject_1,
                     EX.predicate,
                     Literal(
-                        "some text with \t      weird spaces\t", datatype=XSD.string
+                        "some text with \t      weird spaces\t",
+                        datatype=XSD.string,
                     ),
                 ),
                 (
@@ -120,7 +122,8 @@ EX = Namespace("http://example.com/namespace")
                     EX.subject_1,
                     EX.predicate,
                     Literal(
-                        "some text with \t      weird spaces\t", datatype=XSD.string
+                        "some text with \t      weird spaces\t",
+                        datatype=XSD.string,
                     ),
                 ),
                 (
@@ -133,8 +136,7 @@ EX = Namespace("http://example.com/namespace")
     ],
 )
 def test_sanitize(edges: Sequence[_TripleType], want: Sequence[_TripleType]) -> None:
-    """Test the sanitize function"""
-
+    """Test the sanitize function."""
     # create the graph graph
     g = Graph()
     for e in edges:
@@ -146,7 +148,7 @@ def test_sanitize(edges: Sequence[_TripleType], want: Sequence[_TripleType]) -> 
 
 
 @pytest.mark.parametrize(
-    "edges, langs, want",
+    ("edges", "langs", "want"),
     [
         (
             [
@@ -184,11 +186,10 @@ def test_sanitize(edges: Sequence[_TripleType], want: Sequence[_TripleType]) -> 
 )
 def test_restrict_languages(
     edges: Sequence[_TripleType],
-    langs: Optional[Sequence[str]],
+    langs: Sequence[str] | None,
     want: Sequence[_TripleType],
 ) -> None:
-    """Test the sanitize function"""
-
+    """Test the sanitize function."""
     # create the graph graph
     g = Graph()
     for e in edges:
@@ -200,15 +201,13 @@ def test_restrict_languages(
 
 
 def assert_graph(g: Graph, edges: Sequence[_TripleType]) -> None:
-    """Asserts that a graph only contains the given edges"""
-
+    """Assert that a graph only contains the given edges."""
     try:
         assert len(edges) == len(g)
 
         for edge in edges:
             assert edge in g
     except AssertionError:
-        print("graph contains edges:")
-        for edge in g:
-            print(edge)
+        for _ in g:
+            pass
         raise

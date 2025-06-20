@@ -1,24 +1,23 @@
-"""OWL Ontology Parsing"""
+"""OWL Ontology Parsing."""
 
+from collections.abc import Generator
 from itertools import chain
 from logging import Logger
-from typing import Generator, List, Tuple
 
 from bs4 import BeautifulSoup, Tag
 from rdflib import Graph, Literal, Node
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 
 from lontod.html.scanner import OntPub
+from lontod.utils.graph import restrict_languages, sanitize
+from lontod.utils.strings import as_utf8
 
-from ..utils.graph import restrict_languages, sanitize
-from ..utils.strings import as_utf8
-from .ontology import NoOntologyFound, Ontology
+from .ontology import NoOntologyFoundError, Ontology
 from .types import media_types
 
 
-def owl_ontology(logger: Logger, graph: Graph, html_languages: List[str]) -> Ontology:
-    """Returns a new OWL Ontology"""
-
+def owl_ontology(logger: Logger, graph: Graph, html_languages: list[str]) -> Ontology:
+    """Return a new OWL Ontology."""
     _ = logger  # TODO: mark argument as used for now
 
     # determine the URI of the ontology
@@ -26,7 +25,7 @@ def owl_ontology(logger: Logger, graph: Graph, html_languages: List[str]) -> Ont
     for s in graph.subjects(RDF.type, OWL.Ontology):
         uri = str(s)
     if uri is None:
-        raise NoOntologyFound()
+        raise NoOntologyFoundError
 
     # encode the ontology in all different formats
     types = [
@@ -48,8 +47,9 @@ def owl_ontology(logger: Logger, graph: Graph, html_languages: List[str]) -> Ont
 
     # make html
     result = OntPub(graph).make_html()
-    if not isinstance(result, (str, bytes)):
-        raise AssertionError("OntPub did not return str or bytes")
+    if not isinstance(result, str | bytes):
+        msg = "OntPub did not return str or bytes"
+        raise TypeError(msg)
     html = as_utf8(result)
     types.append(("text/html", html))
 
@@ -62,8 +62,7 @@ def owl_ontology(logger: Logger, graph: Graph, html_languages: List[str]) -> Ont
 
 
 def insert_fallback_title(g: Graph, *titles: Node) -> bool:
-    """Inserts a fallback title for an ontology, and returns if one has been inserted"""
-
+    """Insert a fallback title for an ontology, and returns if one has been inserted."""
     uri = None
     for s in chain(
         g.subjects(RDF.type, OWL.Ontology),
@@ -81,11 +80,12 @@ def insert_fallback_title(g: Graph, *titles: Node) -> bool:
             g.add((uri, DCTERMS.title, title))
         return True
 
-    raise AssertionError("no ontology found in graph")
+    msg = "no ontology found in graph"
+    raise AssertionError(msg)
 
 
-def get_alternate_uris(g: Graph) -> Generator[str, None, None]:
-    """gets the alternate URIS for a given graph"""
+def get_alternate_uris(g: Graph) -> Generator[str]:
+    """Get the alternate URIS for a given graph."""
     for s in chain(
         g.subjects(RDF.type, OWL.Ontology),
         g.subjects(RDF.type, PROF.Profile),
@@ -101,9 +101,8 @@ def get_alternate_uris(g: Graph) -> Generator[str, None, None]:
 
 def definienda_of(
     html: BeautifulSoup,
-) -> Generator[Tuple[str, str]]:
-    """finds all (definiendum, fragment) identifiers in the given ontopub profile."""
-
+) -> Generator[tuple[str, str]]:
+    """Find all (definiendum, fragment) identifiers in the given ontopub profile."""
     # This finds all definienda defined in the ontopub profile.
     #
     #   div > table > tr > (th|td) > code
@@ -124,7 +123,7 @@ def definienda_of(
 
         children = [c for c in tr_elem.children if isinstance(c, Tag)]
         if (
-            len(children) != 2
+            len(children) != 2  # noqa: PLR2004
             or children[1] != td_elem
             or children[0].getText() != "IRI"
         ):
@@ -146,9 +145,6 @@ def definienda_of(
 
 
 def _is_tag(tag: Tag, *names: str) -> bool:
-    """Checks if the given tag corresponds to any of the given tag names"""
+    """Check if the given tag corresponds to any of the given tag names."""
     t = tag.name.lower()
-    for n in names:
-        if n.lower() == t:
-            return True
-    return False
+    return any(n.lower() == t for n in names)

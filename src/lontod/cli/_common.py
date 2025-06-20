@@ -1,18 +1,18 @@
-"""Shared cli functionality"""
+"""Shared cli functionality."""
 
 from argparse import ArgumentParser
+from collections.abc import Iterable
 from logging import CRITICAL, DEBUG, INFO, WARNING, Logger, basicConfig, getLogger
 from os import environ
 from pathlib import Path
-from typing import Iterable, TypeVar
 
 from piplicenses_lib import FromArg, get_packages
 
-# spellchecker:words fsevents
+# spellchecker:words fsevents piplicenses
 
 
 def legal_info(logger: Logger) -> None:
-    """Logs legal information"""
+    """Log legal information."""
     logger.info("Lontod (c) Dr. Tom Wiesing <tom@tkw01536.de>, all rights reserved. ")
     if logger.level > DEBUG:
         logger.info("Set log level to DEBUG to view licensing information. ")
@@ -32,28 +32,22 @@ def legal_info(logger: Logger) -> None:
         logger.debug(file.read())
 
 
-T = TypeVar("T")
-
-
-def _first(items: Iterable[T]) -> T | None:
-    """returns the first value contained in an iterator or None"""
+def _first[T](items: Iterable[T]) -> T | None:
+    """Return the first value contained in an iterator or None."""
     for item in items:
         return item
     return None
 
 
 def file_or_none(env: str) -> str | None:
-    """reads a file from the given environment variable or None"""
-
+    """Read a file from the given environment variable or None."""
     if env not in environ:
         return None
-    with open(environ.get(env, ""), "r", encoding="utf-8") as f:
-        return f.read()
+    return Path(environ.get(env, "")).read_text(encoding="utf-8")
 
 
 def list_or_environment(values: list[str] | None, env: str) -> list[str]:
-    """returns the values set, or the default one from the environment if unset."""
-
+    """Return the values set, or the default one from the environment if unset."""
     if values:
         return values
     arg = environ.get(env, "")
@@ -63,7 +57,7 @@ def list_or_environment(values: list[str] | None, env: str) -> list[str]:
 
 
 def add_logging_arg(parser: ArgumentParser) -> None:
-    """adds a logging argument to the given parser"""
+    """Add a logging argument to the given parser."""
     parser.add_argument(
         "-l",
         "--log",
@@ -74,7 +68,7 @@ def add_logging_arg(parser: ArgumentParser) -> None:
 
 
 def setup_logging(name: str, level: str) -> Logger:
-    """perform global logging config and setup a new logger with the given name and level for the"""
+    """Perform global logging config and setup a new logger with the given name and level for the."""
     basicConfig()
 
     # turn down the verbosity of a bunch of these

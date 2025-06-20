@@ -1,14 +1,14 @@
-"""implements connections to an sqlite database"""
+"""implements connections to an sqlite database."""
 
 from dataclasses import dataclass, field
 from enum import Enum
 from sqlite3 import Connection, connect
-from typing import Any, final
+from typing import Any, cast, final
 
 
 @final
 class Mode(Enum):
-    """Modes for connecting to an sqlite database"""
+    """Modes for connecting to an sqlite database."""
 
     READ_ONLY = "ro"
     READ_WRITE = "rw"
@@ -20,7 +20,7 @@ class Mode(Enum):
 @final
 @dataclass
 class Connector:
-    """Represents connection parameter for an sqlite database"""
+    """Represents connection parameter for an sqlite database."""
 
     filename: str
     mode: Mode = Mode.READ_WRITE_CREATE
@@ -29,17 +29,17 @@ class Connector:
 
     @property
     def connect_url(self) -> str:
-        """URL used to connect to the database"""
+        """URL used to connect to the database."""
         return f"file:{self.filename}?mode={self.mode.value}"
 
     @property
     def connect_kwargs(self) -> dict[str, Any]:
-        """kwargs used for connect call"""
+        """Kwargs used for connect call."""
         kwargs = self.kwargs.copy()
         kwargs["check_same_thread"] = self.check_same_thread
         return kwargs
 
     def connect(self) -> Connection:
-        """call connect with the given arguments"""
-        conn = connect(self.connect_url, **self.connect_kwargs)  # type: Connection
-        return conn
+        """Call connect with the given arguments."""
+        conn = connect(self.connect_url, **self.connect_kwargs)
+        return cast("Connection", conn)

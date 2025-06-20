@@ -1,14 +1,15 @@
-"""debounce a function"""
+"""debounce a function."""
 
+from collections.abc import Callable
 from functools import wraps
 from threading import Timer
-from typing import Any, Callable, Final, TypeAlias, cast
+from typing import Any, Final, cast
 
-Func: TypeAlias = Callable[..., None]
+type Func = Callable[..., None]
 
 
 def debounce(wait: float) -> Callable[[Func], Func]:
-    """ensures a function is called at most once within 'wait' seconds"""
+    """Ensure a function is called at most once within 'wait' seconds."""
 
     def decorator(fn: Func) -> Func:
         timers: Final[list[Timer | None]] = [None]
@@ -24,6 +25,6 @@ def debounce(wait: float) -> Callable[[Func], Func]:
             timer.start()
             timers[0] = timer
 
-        return cast(Func, debounced)
+        return cast("Func", debounced)
 
     return decorator

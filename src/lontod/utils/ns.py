@@ -1,6 +1,6 @@
-"""implements a custom namespace manager"""
+"""implements a custom namespace manager."""
 
-from typing import Tuple, final, override
+from typing import final, override
 
 from rdflib import Graph, URIRef
 from rdflib.namespace import NamespaceManager
@@ -8,13 +8,14 @@ from rdflib.namespace import NamespaceManager
 
 @final
 class BrokenSplitNamespaceManager(NamespaceManager):
-    """Implements a NamespaceManager for when .split() is broken because of a trailing '/'"""
-
-    def __init__(self, graph: Graph):
-        super().__init__(graph, graph._bind_namespaces)
+    """Implements a NamespaceManager for when .split() is broken because of a trailing '/'."""
 
     @override
-    def compute_qname(self, uri: str, generate: bool = True) -> Tuple[str, URIRef, str]:
+    def __init__(self, graph: Graph) -> None:
+        super().__init__(graph, graph._bind_namespaces)  # noqa: SLF001
+
+    @override
+    def compute_qname(self, uri: str, generate: bool = True) -> tuple[str, URIRef, str]:
         try:
             return super().compute_qname(uri, generate)
         except ValueError:
@@ -24,8 +25,10 @@ class BrokenSplitNamespaceManager(NamespaceManager):
 
     @override
     def compute_qname_strict(
-        self, uri: str, generate: bool = True
-    ) -> Tuple[str, str, str]:
+        self,
+        uri: str,
+        generate: bool = True,
+    ) -> tuple[str, str, str]:
         try:
             return super().compute_qname_strict(uri, generate)
         except ValueError:

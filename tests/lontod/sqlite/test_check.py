@@ -1,4 +1,4 @@
-"""tests the check module"""
+"""tests the check module."""
 
 import pytest
 
@@ -60,14 +60,14 @@ INSERT INTO products (product_name, category, price, stock_quantity) VALUES
 
 
 EMPTY_DIFF: DatabaseDiff = {
-    "left": set([]),
-    "right": set([]),
+    "left": set(),
+    "right": set(),
     "diff": [],
 }
 
 
 @pytest.mark.parametrize(
-    "left_src, right_src, want_equal",
+    ("left_src", "right_src", "want_equal"),
     [
         (_sample_one, _sample_one, True),
         (_sample_one, _sample_one_half, False),
@@ -77,7 +77,7 @@ EMPTY_DIFF: DatabaseDiff = {
     ],
 )
 def test_assert_table_equals(left_src: str, right_src: str, want_equal: bool) -> None:
-    """tests that two tables are identical"""
+    """Tests that two tables are identical."""
     try:
         left = make_test_database(left_src)
         right = make_test_database(right_src)

@@ -1,9 +1,11 @@
-"""rendering a single object"""
+"""rendering a single object."""
 
-from typing import List, Optional, Tuple, Union, cast
+# spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing
 
-import markdown  # type: ignore
-from dominate.tags import (  # type: ignore
+from typing import cast
+
+import markdown
+from dominate.tags import (
     a,
     br,
     em,
@@ -14,7 +16,7 @@ from dominate.tags import (  # type: ignore
     sup,
     ul,
 )
-from dominate.util import raw  # type: ignore
+from dominate.util import raw
 from rdflib import Graph
 from rdflib.namespace import DCTERMS, OWL, PROV, RDF, SDO, SKOS
 from rdflib.paths import ZeroOrMore
@@ -30,41 +32,44 @@ from .rdf_elements import (
 )
 
 
-def _rdf_obj_html(
+def rdf_obj_html(
     ont: Graph,
     back_onts: MetaOntologies,
-    ns: Tuple[str, str],
-    obj: List[Node],
+    ns: tuple[str, str],
+    obj: list[Node],
     fids: dict[str, str],
     rdf_type: URIRef | None = None,
     prop: URIRef | None = None,
 ) -> ul:
-    """Makes a sensible HTML rendering of an RDF resource.
+    """Make sensible HTML rendering of an RDF resource.
 
-    Can handle IRIs, Blank Nodes of Agents or OWL Restrictions or Literals"""
+    Can handle IRIs, Blank Nodes of Agents or OWL Restrictions or Literals
+    """
 
     def _rdf_obj_single_html(
         ont_: Graph,
         back_onts_: MetaOntologies,
-        ns_: Tuple[str, str],
+        ns_: tuple[str, str],
         obj_: Node,
         fids_: dict[str, str],
-        rdf_type_: Optional[URIRef] = None,
+        rdf_type_: URIRef | None = None,
         prop: URIRef | None = None,
     ) -> ul:
         def _hyperlink_html(
             ont__: Graph,
             back_onts__: MetaOntologies,
-            ns__: Tuple[str, str],
+            ns__: tuple[str, str],
             iri__: URIRef,
             fids__: dict[str, str],
-            rdf_type__: Optional[URIRef] = None,
+            rdf_type__: URIRef | None = None,
         ) -> span | a:
             if (iri__, RDF.type, PROV.Agent) in ont__:
                 return _agent_html(ont__, iri__)
 
             def _get_ont_type(
-                ont___: Graph, back_onts___: MetaOntologies, iri___: Node
+                ont___: Graph,
+                back_onts___: MetaOntologies,
+                iri___: Node,
             ) -> URIRef | None:
                 types_we_know = [
                     OWL.Class,
@@ -75,18 +80,17 @@ def _rdf_obj_html(
                     RDF.Property,
                 ]
 
-                this_objects_types = []
-                for o in ont___.objects(iri___, RDF.type):
-                    if o in ONT_TYPES:
-                        this_objects_types.append(o)
+                this_objects_types = [
+                    o for o in ont___.objects(iri___, RDF.type) if o in ONT_TYPES
+                ]
 
                 for x_ in types_we_know:
                     if x_ in this_objects_types:
                         return x_
 
-                for o in back_onts___.types_of(iri__):
-                    if o in ONT_TYPES:
-                        this_objects_types.append(o)
+                this_objects_types.extend(
+                    o for o in back_onts___.types_of(iri__) if o in ONT_TYPES
+                )
 
                 for x_ in types_we_know:
                     if x_ in this_objects_types:
@@ -120,8 +124,9 @@ def _rdf_obj_html(
                 try:
                     qname = ont__.compute_qname(iri__, False)
                     if "ASGS" in qname[2]:
-                        print(qname)
+                        pass
                 except Exception:
+                    # TODO: Have a better way of handling this
                     qname = iri__
                 prefix = "" if qname[0] == "" else f"{qname[0]}:"
 
@@ -132,7 +137,8 @@ def _rdf_obj_html(
                     )
                 else:
                     anchor = a(
-                        f"{qname}", href=frag_iri if frag_iri is not None else iri__
+                        f"{qname}",
+                        href=frag_iri if frag_iri is not None else iri__,
                     )
 
             if rdf_type__ is None:
@@ -145,14 +151,18 @@ def _rdf_obj_html(
                     ONT_TYPES[rdf_type__][0],
                     _class="sup-" + ONT_TYPES[rdf_type__][0],
                     title=ONT_TYPES[rdf_type__][1],
-                )
+                ),
             )
             return ret
 
-        def _literal_html(obj__: Union[URIRef, BNode, Literal]) -> html_tag:
+        def _literal_html(obj__: URIRef | BNode | Literal) -> html_tag:
             if str(obj__).startswith("http"):
                 return _hyperlink_html(
-                    ont_, back_onts_, ns_, cast(URIRef, obj__), fids_
+                    ont_,
+                    back_onts_,
+                    ns_,
+                    cast("URIRef", obj__),
+                    fids_,
                 )
 
             if prop == SKOS.example:
@@ -160,9 +170,10 @@ def _rdf_obj_html(
 
             return raw(markdown.markdown(str(obj__)))
 
-        def _agent_html(ont__: Graph, obj__: Union[URIRef, BNode, Literal]) -> html_tag:
+        def _agent_html(ont__: Graph, obj__: URIRef | BNode | Literal) -> html_tag:
             def _affiliation_html(
-                ont___: Graph, obj___: Union[URIRef, BNode, Literal]
+                ont___: Graph,
+                obj___: URIRef | BNode | Literal,
             ) -> html_tag:
                 name_ = None
                 url_ = None
@@ -180,9 +191,8 @@ def _rdf_obj_html(
                         sp_.appendChild(em(" of ", a(name_, href=url_)))
                     else:
                         sp_.appendChild(em(" of ", name_))
-                else:
-                    if "http" in obj___:
-                        sp_.appendChild(em(" of ", a(obj___, href=obj___)))
+                elif "http" in obj___:
+                    sp_.appendChild(em(" of ", a(obj___, href=obj___)))
                 return sp_
 
             if isinstance(obj__, Literal):
@@ -233,7 +243,8 @@ def _rdf_obj_html(
                     elif px == SDO.email:
                         email = str(o)
                     elif px == SDO.affiliation and isinstance(
-                        o, (URIRef, BNode, Literal)
+                        o,
+                        URIRef | BNode | Literal,
                     ):
                         affiliation = o
 
@@ -268,7 +279,9 @@ def _rdf_obj_html(
             return sp
 
         def _restriction_html(
-            ont__: Graph, obj__: Node, ns__: tuple[str, str]
+            ont__: Graph,
+            obj__: Node,
+            ns__: tuple[str, str],
         ) -> html_tag:
             prop = None
             card = None
@@ -279,25 +292,29 @@ def _rdf_obj_html(
                     continue
                 if px == OWL.onProperty:
                     prop = _hyperlink_html(
-                        ont__, back_onts_, ns__, must_uriref(o), fids_
+                        ont__,
+                        back_onts_,
+                        ns__,
+                        must_uriref(o),
+                        fids_,
                     )
                 elif px in RESTRICTION_TYPES + OWL_SET_TYPES:
-                    if px in [
+                    if px in {
                         OWL.minCardinality,
                         OWL.minQualifiedCardinality,
                         OWL.maxCardinality,
                         OWL.maxQualifiedCardinality,
                         OWL.cardinality,
                         OWL.qualifiedCardinality,
-                    ]:
-                        if px in [OWL.minCardinality, OWL.minQualifiedCardinality]:
+                    }:
+                        if px in {OWL.minCardinality, OWL.minQualifiedCardinality}:
                             card = "min"
-                        elif px in [
+                        elif px in {
                             OWL.maxCardinality,
                             OWL.maxQualifiedCardinality,
-                        ]:
+                        }:
                             card = "max"
-                        elif px in [OWL.cardinality, OWL.qualifiedCardinality]:
+                        elif px in {OWL.cardinality, OWL.qualifiedCardinality}:
                             card = "exactly"
 
                         card = span(span(card, _class="cardinality"), span(str(o)))
@@ -328,7 +345,7 @@ def _rdf_obj_html(
                                     must_uriref(o),
                                     fids_,
                                     OWL.Class,
-                                )
+                                ),
                             ),
                         )
 
@@ -343,12 +360,12 @@ def _rdf_obj_html(
             ont__: Graph,
             obj__: Node,
             back_onts__: MetaOntologies,
-            ns__: Tuple[str, str],
+            ns__: tuple[str, str],
             fids__: dict[str, str],
         ) -> list[html_tag]:
-            """Makes lists of (union) 'ClassX or Class Y or ClassZ' or
-            (intersection) 'ClassX and Class Y and ClassZ'"""
-
+            """Make lists of (union) 'ClassX or Class Y or ClassZ' or
+            (intersection) 'ClassX and Class Y and ClassZ'.
+            """
             joining_word: html_tag
             if (obj__, OWL.unionOf, None) in ont__:
                 joining_word = span("or", _class="cardinality")
@@ -357,22 +374,27 @@ def _rdf_obj_html(
             else:
                 joining_word = span(",", _class="cardinality")
 
-            class_set = set()  # type: set[html_tag]
+            class_set: set[html_tag] = set()
             for o in ont__.objects(obj__, OWL.unionOf | OWL.intersectionOf):
-                # TODO How does this work?
-                for o2 in ont__.objects(o, RDF.rest * ZeroOrMore / RDF.first):  # type: ignore
-                    class_set.add(
-                        _rdf_obj_single_html(
-                            ont__, back_onts__, ns__, o2, fids__, OWL.Class
-                        )
+                # TODO: How does this work?
+                class_set.update(
+                    _rdf_obj_single_html(
+                        ont__,
+                        back_onts__,
+                        ns__,
+                        o2,
+                        fids__,
+                        OWL.Class,
                     )
+                    for o2 in ont__.objects(o, RDF.rest * ZeroOrMore / RDF.first)  # type:ignore[operator]
+                )
 
             return intersperse(class_set, joining_word)
 
         def _bn_html(
             ont__: Graph,
             back_onts__: MetaOntologies,
-            ns__: Tuple[str, str],
+            ns__: tuple[str, str],
             fids__: dict[str, str],
             obj__: BNode,
         ) -> html_tag | list[html_tag]:
@@ -388,22 +410,34 @@ def _rdf_obj_html(
             # (obj, RDF.type, OWL.Class) in ont:  # Set Class
             return _setclass_html(ont__, obj__, back_onts__, ns__, fids__)
 
-        if isinstance(obj_, (URIRef, tuple)):
+        if isinstance(obj_, URIRef | tuple):
             ret = _hyperlink_html(
-                ont_, back_onts_, ns_, obj_, fids_, rdf_type__=rdf_type_
+                ont_,
+                back_onts_,
+                ns_,
+                obj_,
+                fids_,
+                rdf_type__=rdf_type_,
             )
         elif isinstance(obj_, BNode):
             ret = _bn_html(ont_, back_onts_, ns_, fids_, obj_)
         elif isinstance(obj_, Literal):
             ret = _literal_html(obj_)
         else:
-            raise AssertionError("never reached")
+            msg = "never reached"
+            raise TypeError(msg)
 
         return ret if ret is not None else span()
 
     if len(obj) == 1:
         return _rdf_obj_single_html(
-            ont, back_onts, ns, obj[0], fids, rdf_type_=rdf_type, prop=prop
+            ont,
+            back_onts,
+            ns,
+            obj[0],
+            fids,
+            rdf_type_=rdf_type,
+            prop=prop,
         )
 
     u_ = ul()
@@ -411,8 +445,14 @@ def _rdf_obj_html(
         u_.appendChild(
             li(
                 _rdf_obj_single_html(
-                    ont, back_onts, ns, x, fids, rdf_type_=rdf_type, prop=prop
-                )
-            )
+                    ont,
+                    back_onts,
+                    ns,
+                    x,
+                    fids,
+                    rdf_type_=rdf_type,
+                    prop=prop,
+                ),
+            ),
         )
     return u_

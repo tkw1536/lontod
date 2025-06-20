@@ -1,12 +1,12 @@
-"""parses an ontology as html"""
+"""parses an ontology as html."""
 
 from collections import defaultdict
 from importlib import resources
 from itertools import chain
-from typing import Dict, cast
+from typing import cast
 
-import dominate  # type:ignore
-from dominate.tags import (  # type:ignore
+import dominate
+from dominate.tags import (
     a,
     code,
     dd,
@@ -28,7 +28,7 @@ from dominate.tags import (  # type:ignore
     tr,
     ul,
 )
-from dominate.util import raw  # type:ignore
+from dominate.util import raw
 from rdflib import Graph, Literal
 from rdflib.namespace import (
     DC,
@@ -79,13 +79,14 @@ class OntPub:
         od.make_html(destination="some-resulting-html-file.html")
     """
 
-    def __init__(self, ontology: Graph):
+    def __init__(self, ontology: Graph) -> None:
+        """Create a new OntPub."""
         self.ont = sort_ontology(ontology)
         self._ontdoc_inference(self.ont)
         self.back_onts = MetaOntologies()
 
-        self.toc: Dict[str, list[tuple[str, str]]] = {}
-        self.fids: Dict[str, str] = {}
+        self.toc: dict[str, list[tuple[str, str]]] = {}
+        self.fids: dict[str, str] = {}
         self.ns = get_ns(self.ont)
 
         # make HTML doc with title
@@ -98,9 +99,12 @@ class OntPub:
             for o2 in self.ont.objects(s, DCTERMS.title):
                 t = str(o2)
         if t is None:
-            raise PylodeError(
+            msg = (
                 "You MUST supply a title property "
                 "(dcterms:title, rdfs:label or sdo:name) for your ontology"
+            )
+            raise PylodeError(
+                msg,
             )
         self.doc = dominate.document(title=t)
 
@@ -110,21 +114,23 @@ class OntPub:
     def make_html(
         self,
     ) -> str:
-        """Makes the complete OntDoc HTML document.
+        """Make the complete OntDoc HTML document.
 
-        Either writes to a file or returns a string"""
+        Either writes to a file or returns a string
+        """
         self._make_head(
             self._make_schema_org(),
         )
         self._make_body()
 
-        return cast(str, self.doc.render())
+        return cast("str", self.doc.render())
 
     def _ontdoc_inference(self, g: Graph) -> None:
-        """Expands the ontology's graph to make OntDoc querying easier.
+        """Expand the ontology's graph to make OntDoc querying easier.
 
         Uses axioms made up for OntDoc, but they are simple and obvious
-        and don't collide with well-known ontologies"""
+        and don't collide with well-known ontologies
+        """
         # class types
         for s_ in g.subjects(RDF.type, OWL.Class):
             g.add((s_, RDF.type, RDFS.Class))
@@ -171,7 +177,8 @@ class OntPub:
             g.add((s_, RDF.type, OWL.Restriction))
 
         for s_ in chain(
-            g.subjects(OWL.unionOf, None), g.subjects(OWL.intersectionOf, None)
+            g.subjects(OWL.unionOf, None),
+            g.subjects(OWL.intersectionOf, None),
         ):
             g.add((s_, RDF.type, OWL.Class))
 
@@ -223,7 +230,8 @@ class OntPub:
 
         # publisher
         for s_, o in chain(
-            g.subject_objects(DC.publisher), g.subject_objects(SDO.publisher)
+            g.subject_objects(DC.publisher),
+            g.subject_objects(SDO.publisher),
         ):
             g.remove((s_, DC.publisher, o))
             g.remove((s_, SDO.publisher, o))
@@ -251,7 +259,7 @@ class OntPub:
         self,
         schema_org: Graph | None,
     ) -> None:
-        """Helper function for make_html(). Makes <head>???</head> content"""
+        """Make <head>???</head> content."""
         with self.doc.head:
             css = (
                 resources.files(__package__).joinpath("assets", "style.css").read_text()
@@ -268,9 +276,10 @@ class OntPub:
                 )
 
     def _make_body(self) -> None:
-        """Helper function for make_html(). Makes <body>???</body> content.
+        """Make <body>???</body> content.
 
-        Just calls other helper functions in order"""
+        Just calls other helper functions in order.
+        """
         self._make_metadata()
         self._make_main_sections()
         self._make_namespaces()
@@ -291,7 +300,8 @@ class OntPub:
                     continue
                 if not isinstance(p_, URIRef):
                     # always True because ONT_PROPS only has URIRefs
-                    raise AssertionError("never reached")
+                    msg = "never reached"
+                    raise TypeError(msg)
                 this_onts_props[p_].append(o)
 
         # make HTML for all props in order of ONT_PROPS
@@ -299,7 +309,7 @@ class OntPub:
         sec.appendChild(h2("Metadata"))
         d = dl(div(dt(strong("IRI")), dd(code(str(iri)))))
         for prop in ONT_PROPS:
-            if prop in this_onts_props.keys():
+            if prop in this_onts_props:
                 d.appendChild(
                     prop_obj_pair_html(
                         self.ont,
@@ -309,7 +319,7 @@ class OntPub:
                         prop,
                         self.fids,
                         this_onts_props[prop],
-                    )
+                    ),
                 )
         sec.appendChild(d)
         self.content.appendChild(sec)
@@ -445,56 +455,55 @@ class OntPub:
                 d.render()
 
     def _make_legend(self) -> None:
-        with self.content:
-            with div(id="legend"):
-                h2("Legend")
-                with table(_class="entity"):
-                    if self.toc.get("classes") is not None:
-                        with tr():
-                            td(sup("c", _class="sup-c", title="OWL/RDFS Class"))
-                            td("Classes")
-                    if self.toc.get("properties") is not None:
-                        with tr():
-                            td(sup("p", _class="sup-p", title="RDF Property"))
-                            td("Properties")
-                    if self.toc.get("objectproperties") is not None:
-                        with tr():
-                            td(sup("op", _class="sup-op", title="OWL Object Property"))
-                            td("Object Properties")
-                    if self.toc.get("datatypeproperties") is not None:
-                        with tr():
-                            td(
-                                sup(
-                                    "dp",
-                                    _class="sup-dp",
-                                    title="OWL Datatype Property",
-                                )
-                            )
-                            td("Datatype Properties")
-                    if self.toc.get("annotationproperties") is not None:
-                        with tr():
-                            td(
-                                sup(
-                                    "ap",
-                                    _class="sup-ap",
-                                    title="OWL Annotation Property",
-                                )
-                            )
-                            td("Annotation Properties")
-                    if self.toc.get("functionalproperties") is not None:
-                        with tr():
-                            td(
-                                sup(
-                                    "fp",
-                                    _class="sup-fp",
-                                    title="OWL Functional Property",
-                                )
-                            )
-                            td("Functional Properties")
-                    if self.toc.get("named_individuals") is not None:
-                        with tr():
-                            td(sup("ni", _class="sup-ni", title="OWL Named Individual"))
-                            td("Named Individuals")
+        with self.content, div(id="legend"):
+            h2("Legend")
+            with table(_class="entity"):
+                if self.toc.get("classes") is not None:
+                    with tr():
+                        td(sup("c", _class="sup-c", title="OWL/RDFS Class"))
+                        td("Classes")
+                if self.toc.get("properties") is not None:
+                    with tr():
+                        td(sup("p", _class="sup-p", title="RDF Property"))
+                        td("Properties")
+                if self.toc.get("objectproperties") is not None:
+                    with tr():
+                        td(sup("op", _class="sup-op", title="OWL Object Property"))
+                        td("Object Properties")
+                if self.toc.get("datatypeproperties") is not None:
+                    with tr():
+                        td(
+                            sup(
+                                "dp",
+                                _class="sup-dp",
+                                title="OWL Datatype Property",
+                            ),
+                        )
+                        td("Datatype Properties")
+                if self.toc.get("annotationproperties") is not None:
+                    with tr():
+                        td(
+                            sup(
+                                "ap",
+                                _class="sup-ap",
+                                title="OWL Annotation Property",
+                            ),
+                        )
+                        td("Annotation Properties")
+                if self.toc.get("functionalproperties") is not None:
+                    with tr():
+                        td(
+                            sup(
+                                "fp",
+                                _class="sup-fp",
+                                title="OWL Functional Property",
+                            ),
+                        )
+                        td("Functional Properties")
+                if self.toc.get("named_individuals") is not None:
+                    with tr():
+                        td(sup("ni", _class="sup-ni", title="OWL Named Individual"))
+                        td("Named Individuals")
 
     def _make_namespaces(self) -> None:
         # only get namespaces used in ont
@@ -504,10 +513,15 @@ class OntPub:
             excluded_namespaces = (
                 # "https://linked.data.gov.au/def/"
             )
-            if not str(n).startswith(excluded_namespaces):
-                for prefix, ns in self.ont.namespaces():
-                    if str(n).startswith(ns):
-                        nses[prefix] = ns
+            if str(n).startswith(excluded_namespaces):
+                continue
+            nses.update(
+                {
+                    prefix: ns
+                    for (prefix, ns) in self.ont.namespaces()
+                    if str(n).startswith(ns)
+                }
+            )
 
         # # deduplicate namespaces
         # temp = []
@@ -518,89 +532,84 @@ class OntPub:
         #         res[k] = v
         # nses = res
 
-        with self.content:
-            with div(id="namespaces"):
-                h2("Namespaces")
-                with dl():
-                    if self.toc.get("namespaces") is None:
-                        self.toc["namespaces"] = []
-                    for prefix, ns in sorted(nses.items()):
-                        p_ = prefix if prefix != "" else ":"
-                        dt(p_, id=p_)
-                        dd(code(ns))
-                        self.toc["namespaces"].append(("#" + prefix, prefix))
+        with self.content, div(id="namespaces"):
+            h2("Namespaces")
+            with dl():
+                if self.toc.get("namespaces") is None:
+                    self.toc["namespaces"] = []
+                for prefix, ns in sorted(nses.items()):
+                    p_ = prefix if prefix != "" else ":"
+                    dt(p_, id=p_)
+                    dd(code(ns))
+                    self.toc["namespaces"].append(("#" + prefix, prefix))
 
     def _make_toc(self) -> None:
-        with self.doc:
-            with div(id="toc"):
-                h3("Table of Contents")
-                with ul(_class="first"):
-                    li(h4(a("Metadata", href="#metadata")))
+        with self.doc, div(id="toc"):
+            h3("Table of Contents")
+            with ul(_class="first"):
+                li(h4(a("Metadata", href="#metadata")))
 
-                    if (
-                        self.toc.get("classes") is not None
-                        and len(self.toc["classes"]) > 0
-                    ):
-                        with li():
-                            h4(a("Classes", href="#classes"))
-                            with ul(_class="second"):
-                                for c in self.toc["classes"]:
-                                    li(a(c[1], href=c[0]))
-
-                    if (
-                        self.toc.get("properties") is not None
-                        and len(self.toc["properties"]) > 0
-                    ):
-                        with li():
-                            h4(a("Properties", href="#properties"))
-                            with ul(_class="second"):
-                                for c in self.toc["properties"]:
-                                    li(a(c[1], href=c[0]))
-
-                    if (
-                        self.toc.get("objectproperties") is not None
-                        and len(self.toc["objectproperties"]) > 0
-                    ):
-                        with li():
-                            h4(a("Object Properties", href="#objectproperties"))
-                            with ul(_class="second"):
-                                for c in self.toc["objectproperties"]:
-                                    li(a(c[1], href=c[0]))
-
-                    if (
-                        self.toc.get("datatypeproperties") is not None
-                        and len(self.toc["datatypeproperties"]) > 0
-                    ):
-                        with li():
-                            h4(a("Datatype Properties", href="#datatypeproperties"))
-                            with ul(_class="second"):
-                                for c in self.toc["datatypeproperties"]:
-                                    li(a(c[1], href=c[0]))
-
-                    if (
-                        self.toc.get("annotationproperties") is not None
-                        and len(self.toc["annotationproperties"]) > 0
-                    ):
-                        with li():
-                            h4(a("Annotation Properties", href="#annotationproperties"))
-                            with ul(_class="second"):
-                                for c in self.toc["annotationproperties"]:
-                                    li(a(c[1], href=c[0]))
-
-                    if (
-                        self.toc.get("functionalproperties") is not None
-                        and len(self.toc["functionalproperties"]) > 0
-                    ):
-                        with li():
-                            h4(a("Functional Properties", href="#functionalproperties"))
-                            with ul(_class="second"):
-                                for c in self.toc["functionalproperties"]:
-                                    li(a(c[1], href=c[0]))
-
+                if self.toc.get("classes") is not None and len(self.toc["classes"]) > 0:
                     with li():
-                        h4(a("Namespaces", href="#namespaces"))
+                        h4(a("Classes", href="#classes"))
                         with ul(_class="second"):
-                            for n in self.toc["namespaces"]:
-                                li(a(n[1], href="#" + n[1]))
+                            for c in self.toc["classes"]:
+                                li(a(c[1], href=c[0]))
 
-                    li(h4(a("Legend", href="#legend")), ul(_class="second"))
+                if (
+                    self.toc.get("properties") is not None
+                    and len(self.toc["properties"]) > 0
+                ):
+                    with li():
+                        h4(a("Properties", href="#properties"))
+                        with ul(_class="second"):
+                            for c in self.toc["properties"]:
+                                li(a(c[1], href=c[0]))
+
+                if (
+                    self.toc.get("objectproperties") is not None
+                    and len(self.toc["objectproperties"]) > 0
+                ):
+                    with li():
+                        h4(a("Object Properties", href="#objectproperties"))
+                        with ul(_class="second"):
+                            for c in self.toc["objectproperties"]:
+                                li(a(c[1], href=c[0]))
+
+                if (
+                    self.toc.get("datatypeproperties") is not None
+                    and len(self.toc["datatypeproperties"]) > 0
+                ):
+                    with li():
+                        h4(a("Datatype Properties", href="#datatypeproperties"))
+                        with ul(_class="second"):
+                            for c in self.toc["datatypeproperties"]:
+                                li(a(c[1], href=c[0]))
+
+                if (
+                    self.toc.get("annotationproperties") is not None
+                    and len(self.toc["annotationproperties"]) > 0
+                ):
+                    with li():
+                        h4(a("Annotation Properties", href="#annotationproperties"))
+                        with ul(_class="second"):
+                            for c in self.toc["annotationproperties"]:
+                                li(a(c[1], href=c[0]))
+
+                if (
+                    self.toc.get("functionalproperties") is not None
+                    and len(self.toc["functionalproperties"]) > 0
+                ):
+                    with li():
+                        h4(a("Functional Properties", href="#functionalproperties"))
+                        with ul(_class="second"):
+                            for c in self.toc["functionalproperties"]:
+                                li(a(c[1], href=c[0]))
+
+                with li():
+                    h4(a("Namespaces", href="#namespaces"))
+                    with ul(_class="second"):
+                        for n in self.toc["namespaces"]:
+                            li(a(n[1], href="#" + n[1]))
+
+                li(h4(a("Legend", href="#legend")), ul(_class="second"))

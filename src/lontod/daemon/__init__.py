@@ -1,4 +1,4 @@
-"""Daemon functionality"""
+"""Daemon functionality."""
 
 from .handler import Handler
 

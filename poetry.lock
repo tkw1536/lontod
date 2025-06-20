@@ -807,6 +807,18 @@ files = [
 ]
 
 [[package]]
+name = "types-markdown"
+version = "3.8.0.20250415"
+description = "Typing stubs for Markdown"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "types_markdown-3.8.0.20250415-py3-none-any.whl", hash = "sha256:b41abed474a303ba300e3a4cf6f27eda339219124a59d529a158203570007776"},
+    {file = "types_markdown-3.8.0.20250415.tar.gz", hash = "sha256:98ab13587d1177769d93e55586d3dc97047df75bc6e37ce4074666f5dd4212ba"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.13.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -883,4 +895,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "af5827eb94b6cfa88fd780a17ee872b3bcf2063d5b5f8a37fe9826654f73397c"
+content-hash = "2f83ee1001172287874efe907fa1ae1ef222301fea81d55cbcd70a75a7558d7e"

@@ -1,11 +1,12 @@
-"""http http handler"""
+"""http http handler."""
 
 from collections import OrderedDict
+from collections.abc import Callable, Generator
 from functools import wraps
 from html import escape
 from logging import Logger
 from traceback import format_exception
-from typing import Any, Callable, Final, Generator, Optional, final
+from typing import Any, Final, final
 from urllib.parse import quote
 
 from starlette.applications import Starlette
@@ -14,9 +15,10 @@ from starlette.requests import Request
 from starlette.responses import Response, StreamingResponse
 from starlette.routing import BaseRoute, Route
 
-from ..index import Query
-from ..ontologies.types import extension_from_type
-from ..utils.pool import Pool
+from lontod.index import Query
+from lontod.ontologies.types import extension_from_type
+from lontod.utils.pool import Pool
+
 from .http import LoggingMiddleware, negotiate
 
 # spellchecker:words noopener noreferer tabindex
@@ -59,7 +61,7 @@ Powered by lontod: https://github.com/tkw1536/lontod
 
 @final
 class Handler(Starlette):
-    """Handler class for the ontology serving daemon"""
+    """Handler class for the ontology serving daemon."""
 
     __public_domain: str | None
     __ontology_route: str
@@ -71,19 +73,20 @@ class Handler(Starlette):
     __pool: Pool[Query]
     __logger: Logger
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         pool: Pool[Query],
         logger: Logger,
         ontology_route: str = "/",
-        public_domain: Optional[str] = None,
+        public_domain: str | None = None,
         insecure_skip_routes: bool = False,
-        index_html_header: Optional[str] = None,
-        index_html_footer: Optional[str] = None,
-        index_txt_header: Optional[str] = None,
-        index_txt_footer: Optional[str] = None,
+        index_html_header: str | None = None,
+        index_html_footer: str | None = None,
+        index_txt_header: str | None = None,
+        index_txt_footer: str | None = None,
         debug: bool = False,
-    ):
+    ) -> None:
+        """Create a new handler."""
         self.__public_domain = public_domain
         self.__ontology_route = ontology_route
         self.debug = debug
@@ -105,7 +108,7 @@ class Handler(Starlette):
         )
 
     @property
-    def __routes(self) -> Generator[BaseRoute, None, None]:
+    def __routes(self) -> Generator[BaseRoute]:
         yield Route(self.__ontology_route, self.handle)
 
         if not self.__insecure_skip_routes:
@@ -125,8 +128,8 @@ class Handler(Starlette):
         fragment: str | None = None,
         download: bool = False,
     ) -> str:
-        """returns the (server-local) url to retrieve a specific ontology"""
-        params: OrderedDict[str, Optional[str]] = OrderedDict()
+        """Return the (server-local) url to retrieve a specific ontology."""
+        params: OrderedDict[str, str | None] = OrderedDict()
         params["identifier"] = identifier
         params["format"] = typ
         params["download"] = "1" if download else None
@@ -138,7 +141,7 @@ class Handler(Starlette):
                 f"{key}={quote(value)}"
                 for (key, value) in params.items()
                 if isinstance(value, str)
-            ]
+            ],
         )
         if query != "":
             query = "?" + query
@@ -149,23 +152,26 @@ class Handler(Starlette):
 
     @property
     def logger(self) -> Logger:
-        """logger associated with this handler"""
+        """Logger associated with this handler."""
         return self.__logger
 
     @staticmethod
     def _catch_handler_error(
         func: Callable[..., Response],
     ) -> Callable[..., Response]:
-        """Wraps a handler to safely catch all errors"""
+        """Wrap a handler to safely catch all errors."""
 
         @wraps(func)
         def wrapper(
-            self: "Handler", req: Request, *args: Any, **kwargs: Any
+            self: "Handler",
+            req: Request,
+            *args: Any,
+            **kwargs: Any,
         ) -> Response:
             try:
                 return func(self, req, *args, **kwargs)
             except Exception as err:
-                self.logger.error(err)
+                self.logger.exception("handler failed", exc_info=err)
                 text = (
                     "".join(format_exception(err))
                     if self.debug
@@ -177,8 +183,7 @@ class Handler(Starlette):
 
     @_catch_handler_error
     def handle_fallback(self, req: Request) -> Response:
-        """Handles a fallback request to lookup a definition"""
-
+        """Handle a fallback request to lookup a definition."""
         # find the hostname to use for URI lookup!
         prefix = (
             self.__public_domain
@@ -191,7 +196,7 @@ class Handler(Starlette):
         # find the exact IRI requested
         iri_noproto = "://" + prefix + req.url.path.rstrip("/")
 
-        self.__logger.debug(f"looking up IRIs {iri_noproto!r}")
+        self.__logger.debug("looking up IRIs %r", iri_noproto)
 
         candidates = (
             f"http{iri_noproto}",
@@ -210,7 +215,9 @@ class Handler(Starlette):
 
             # pick the last URL, ordered by slug!
             url = self.reverse_url(
-                first_def.ontology_identifier, None, fragment=first_def.fragment
+                first_def.ontology_identifier,
+                None,
+                fragment=first_def.fragment,
             )
             return self.redirect_response(url, status_code=303)
 
@@ -224,8 +231,7 @@ class Handler(Starlette):
         )
 
     def redirect_response(self, dest: str, status_code: int = 307) -> Response:
-        """Creates a generic response that redirects the user to the given destination"""
-
+        """Create a generic response that redirects the user to the given destination."""
         return Response(
             content=f"Redirecting to {dest}...",
             status_code=status_code,
@@ -235,8 +241,7 @@ class Handler(Starlette):
         )
 
     def error_response(self, code: int, message: str) -> Response:
-        """Creates a generic error response with the given message and code"""
-
+        """Create a generic error response with the given message and code."""
         return Response(
             status_code=code,
             media_type="text/plain",
@@ -245,8 +250,7 @@ class Handler(Starlette):
 
     @_catch_handler_error
     def handle(self, req: Request) -> Response:
-        """Handles a request to the main route"""
-
+        """Handle a request to the main route."""
         typ = req.query_params.get("format")
         identifier = req.query_params.get("identifier")
         download = req.query_params.get("download") == "1"
@@ -257,22 +261,25 @@ class Handler(Starlette):
         return self.handle_ontology(req, identifier, typ, download)
 
     def handle_root(self, req: Request, typ: str | None = None) -> Response:
-        """Handles the "/" url"""
-
+        """Handle the "/" url."""
         self.__logger.debug("handle_root(typ=%r)", typ)
 
         if not isinstance(typ, str):
             typ = negotiate(req, ("text/plain", "text/html"), default="text/plain")
             if typ is None:
-                raise AssertionError("negotiate returned None")
+                msg = "negotiate returned None"
+                raise AssertionError(msg)
 
         return self.serve_index(typ)
 
     def handle_ontology(
-        self, req: Request, identifier: str, typ: str | None, download: bool
+        self,
+        req: Request,
+        identifier: str,
+        typ: str | None,
+        download: bool,
     ) -> Response:
-        """Handles the get ontology rendering route"""
-
+        """Handle the get ontology rendering route."""
         self.__logger.debug(
             "handle_ontology(identifier=%r, typ=%r,download=%r)",
             identifier,
@@ -302,10 +309,13 @@ class Handler(Starlette):
             return self.serve_ontology(query, identifier, decision, download)
 
     def serve_ontology(
-        self, query: Query, identifier: str, typ: str, download: bool
+        self,
+        query: Query,
+        identifier: str,
+        typ: str,
+        download: bool,
     ) -> Response:
-        """Serves an ontology with the given identifier and format"""
-
+        """Serve an ontology with the given identifier and format."""
         self.__logger.debug(
             "serve_ontology(identifier=%r, typ=%r,download=%r)",
             identifier,
@@ -334,17 +344,16 @@ class Handler(Starlette):
         )
 
     def serve_index(self, typ: str) -> Response:
-        """Serves the index document"""
-
+        """Serve the index document."""
         self.__logger.debug("serve_index(%r)", typ)
 
-        if typ not in ("text/plain", "text/html"):
+        if typ not in {"text/plain", "text/html"}:
             return self.error_response(404, "Not Found")
 
         is_html = typ == "text/html"
         return StreamingResponse(self.__stream_root(is_html), media_type=typ)
 
-    def __stream_root(self, html: bool) -> Generator[str, None, None]:
+    def __stream_root(self, html: bool) -> Generator[str]:
         if html:
             yield self.__index_html_header
         else:

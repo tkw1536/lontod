@@ -1,15 +1,16 @@
-"""Implements a pool that recycles objects when needed"""
+"""Implements a pool that recycles objects when needed."""
 
 from collections import deque
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from threading import Lock
-from typing import Callable, Generic, Iterator, Optional, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 
 
-class Pool(Generic[T]):
-    """Pool holds and manages a set of recyclable objects"""
+class Pool[T]:
+    """Pool holds and manages a set of recyclable objects."""
 
     _q: deque[T]
     _maxsize: int
@@ -22,15 +23,17 @@ class Pool(Generic[T]):
         self,
         size: int,
         setup: Callable[[], T],
-        reset: Optional[Callable[[T], None]],
-        teardown: Optional[Callable[[T], None]],
-    ):
-        """
+        reset: Callable[[T], None] | None,
+        teardown: Callable[[T], None] | None,
+    ) -> None:
+        """Create a new pool.
+
         Args:
-            size (int): Number of items to keep alive in the pool
-            setup (Callable[[], T]): Called to create a new pool item
-            reset (Optional[Callable[[T], None]]): Called right before an item is returned to the pool
-            teardown (Optional[Callable[[T], None]]): Called when an item is removed from the pool
+        size (int): Number of items to keep alive in the pool
+        setup (Callable[[], T]): Called to create a new pool item
+        reset (Optional[Callable[[T], None]]): Called right before an item is returned to the pool
+        teardown (Optional[Callable[[T], None]]): Called when an item is removed from the pool
+
         """
         self._q = deque()
         self._maxsize = size
@@ -41,20 +44,20 @@ class Pool(Generic[T]):
 
     @contextmanager
     def use(self) -> Iterator[T]:
-        """A context manager that allows using an item from a pool"""
+        """Context manager that allows using an item from a pool."""
         item = self.get()
         yield item
         self.put(item)
 
     def get(self) -> T:
-        """Gets an object from the pool, or (if empty) creates a new object"""
+        """Get an object from the pool, or (if empty) creates a new object."""
         with self._lock:
             if len(self._q) == 0:
                 return self._setup()
             return self._q.popleft()
 
     def put(self, item: T) -> None:
-        """Returns an object to the pool or (if it is full) discards it"""
+        """Return an object to the pool or (if it is full) discards it."""
         self._reset(item)
 
         with self._lock:
@@ -64,7 +67,7 @@ class Pool(Generic[T]):
             self._q.append(item)
 
     def teardown(self) -> None:
-        """Removes all objects from the pool"""
+        """Remove all objects from the pool."""
         with self._lock:
             if len(self._q) > 0:
                 self._teardown(self._q.popleft())

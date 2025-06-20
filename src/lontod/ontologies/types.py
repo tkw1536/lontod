@@ -1,6 +1,6 @@
-"""media types and mappings"""
+"""media types and mappings."""
 
-from typing import Generator, Tuple
+from collections.abc import Generator
 
 _FORMAT_TO_MEDIA_TYPES_ = {
     "xml": "application/rdf+xml",
@@ -15,15 +15,13 @@ _FORMAT_TO_MEDIA_TYPES_ = {
 _MEDIA_TYPE_TO_FORMATS = {v: k for (k, v) in _FORMAT_TO_MEDIA_TYPES_.items()}
 
 
-def media_types() -> Generator[Tuple[str, str], None, None]:
-    """Iterates over all (extension, media_type) pairs"""
-
+def media_types() -> Generator[tuple[str, str]]:
+    """Iterate over all (extension, media_type) pairs."""
     yield from _FORMAT_TO_MEDIA_TYPES_.items()
 
 
 def extension_from_type(typ: str) -> str | None:
-    """Given a media type, return an extension including a period"""
-
+    """Given a media type, return an extension including a period."""
     if typ not in _MEDIA_TYPE_TO_FORMATS:
         return None
     return _MEDIA_TYPE_TO_FORMATS[typ]

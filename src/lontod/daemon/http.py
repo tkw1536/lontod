@@ -1,7 +1,8 @@
-"""http utility functions for daemon"""
+"""http utility functions for daemon."""
 
+from collections.abc import Awaitable, Callable, Iterable
 from logging import Logger
-from typing import Any, Awaitable, Callable, Iterable, Optional, final
+from typing import Any, final, override
 
 from mimeparse import MimeTypeParseException, best_match
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -10,8 +11,10 @@ from starlette.responses import Response
 
 
 def negotiate(
-    req: Request, offers: Iterable[str], default: Optional[str] = None
-) -> Optional[str]:
+    req: Request,
+    offers: Iterable[str],
+    default: str | None = None,
+) -> str | None:
     """Negotiates an appropriate content type for a request.
 
     Args:
@@ -21,6 +24,7 @@ def negotiate(
 
     Returns:
         Optional[str]: A content type from offers, or default if none matches.
+
     """
     accepts = req.headers.getlist("accept")
     if len(accepts) == 0:
@@ -34,17 +38,24 @@ def negotiate(
 
 @final
 class LoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware to log all requests into the given logger"""
+    """Middleware to log all requests into the given logger."""
 
-    def __init__(self, *args: Any, logger: Logger, **kwargs: Any):
+    def __init__(self, *args: Any, logger: Logger, **kwargs: Any) -> None:
+        """Create a new middleware."""
         super().__init__(*args, **kwargs)
         self._logger = logger
 
+    @override
     async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         response = await call_next(request)
         self._logger.debug(
-            f"{request.method} {request.url.path} - {response.status_code} "
+            "%s %s - %d",
+            request.method,
+            request.url.path,
+            response.status_code,
         )
         return response

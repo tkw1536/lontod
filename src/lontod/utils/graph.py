@@ -1,17 +1,15 @@
-"""Implements graph mutation functions"""
+"""Implements graph mutation functions."""
 
+from collections.abc import Generator, Sequence
 from typing import (
     Any,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
     TypeGuard,
 )
 
-from html_sanitizer.sanitizer import Sanitizer, sanitize_href  # type: ignore
+from html_sanitizer.sanitizer import (
+    Sanitizer,
+    sanitize_href,
+)
 from rdflib import Graph, Literal
 from rdflib.graph import _PredicateType, _SubjectType, _TripleType
 
@@ -47,16 +45,17 @@ _SANITIZE_SETTINGS = {
 }
 
 
-def sanitize(g: Graph, settings: Optional[Dict[str, Any]] = None) -> None:
+def sanitize(g: Graph, settings: dict[str, Any] | None = None) -> None:
     """Sanitizes a graph by removing any dangerous html from it.
 
     Args:
         g (Graph): Graph to be sanitized
         settings (Optional[Dict[str,Any]], optional): Settings for sanitization to be passed to the 'html_sanitizer' module. Defaults to None.
+
     """
     sanitizer = Sanitizer(settings if settings is not None else _SANITIZE_SETTINGS)
 
-    cleaned_edges: List[_TripleType] = []
+    cleaned_edges: list[_TripleType] = []
     for s, p, o in g:
         if not isinstance(o, Literal):
             continue
@@ -73,7 +72,7 @@ def sanitize(g: Graph, settings: Optional[Dict[str, Any]] = None) -> None:
 
         # add a cleaned edge
         cleaned_edges.append(
-            (s, p, Literal(c_o_value, datatype=o.datatype, lang=o.language))
+            (s, p, Literal(c_o_value, datatype=o.datatype, lang=o.language)),
         )
         g.remove((s, p, o))
 
@@ -82,16 +81,18 @@ def sanitize(g: Graph, settings: Optional[Dict[str, Any]] = None) -> None:
         g.add(edge)
 
 
-def restrict_languages(g: Graph, preferences: Optional[Sequence[str]] = None) -> None:
-    """Restricts the available internationalized object values per (subject, predicate) pair in the graph.
+def restrict_languages(g: Graph, preferences: Sequence[str] | None = None) -> None:
+    """Restrict languages in a graph.
+
+    Restrict the available internationalized object values per (subject, predicate) pair in the graph.
     In particular, it picks all values that are of the first available language in preferences, or the
     alphabetically first language if None matches.
 
     Args:
         g (Graph): _description_
         preferences (Optional[List[str]], optional): _description_. Defaults to None.
-    """
 
+    """
     for s, p in _subject_predicates(g):
         # find the languages for the given (subject, predicate) triples and pick a preference
         langs = [
@@ -115,9 +116,10 @@ def restrict_languages(g: Graph, preferences: Optional[Sequence[str]] = None) ->
 
 
 def _pick_language(
-    offers: set[Optional[str]], preferences: Optional[Sequence[str]]
-) -> Optional[str]:
-    """Picks a language from the given set of offers (or None).
+    offers: set[str | None],
+    preferences: Sequence[str] | None,
+) -> str | None:
+    """Pick a language from the given set of offers (or None).
 
     Args:
         offers (set[Optional[str]]): Set of available languages.
@@ -125,8 +127,8 @@ def _pick_language(
 
     Returns:
         Optional[str]: A language from offers, or None if no languages are available.
-    """
 
+    """
     # easy case: no languages available
     if len(offers) == 0 or (len(offers) == 1 and None in offers):
         return None
@@ -137,14 +139,14 @@ def _pick_language(
             return lang
 
     # pick the 'first' of the available languages
-    def is_str(s: Optional[str]) -> TypeGuard[str]:
+    def is_str(s: str | None) -> TypeGuard[str]:
         return s is not None
 
     return min(filter(is_str, offers))
 
 
-def _subject_predicates(g: Graph) -> Generator[Tuple[_SubjectType, _PredicateType]]:
-    """Yields all unique (subject, predicate) pairs for the given graph"""
+def _subject_predicates(g: Graph) -> Generator[tuple[_SubjectType, _PredicateType]]:
+    """Yield all unique (subject, predicate) pairs for the given graph."""
     for s in g.subjects(unique=True):
         for p in g.predicates(subject=s, unique=True):
             yield (s, p)

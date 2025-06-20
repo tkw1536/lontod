@@ -1,4 +1,4 @@
-"""various rdf namespaces"""
+"""various rdf namespaces."""
 
 from rdflib import Namespace
 from rdflib.namespace import (
@@ -111,7 +111,7 @@ RESTRICTION_PROPS = (
 
 # all known properties
 PROPS = frozenset(
-    ONT_PROPS + CLASS_PROPS + PROP_PROPS + AGENT_PROPS + RESTRICTION_PROPS
+    ONT_PROPS + CLASS_PROPS + PROP_PROPS + AGENT_PROPS + RESTRICTION_PROPS,
 )
 
 ONT_TYPES = {

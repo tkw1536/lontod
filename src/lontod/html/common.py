@@ -1,13 +1,16 @@
-"""common functionality between different utility modules"""
+"""common functionality between different utility modules."""
 
 import re
-from typing import Collection, TypeVar
+from collections.abc import Collection
+from typing import TypeVar
 
 from rdflib.term import Identifier, Node, URIRef
 
+# spellchecker:words uriref
+
 
 def must_uriref(node: Node) -> URIRef:
-    """ensures that a node is a URIRef, or"""
+    """Ensure that a node is a URIRef, or."""
     # TODO: fixme
     if isinstance(node, URIRef):
         return node
@@ -15,14 +18,15 @@ def must_uriref(node: Node) -> URIRef:
     if isinstance(node, Identifier):
         return URIRef(str(node))
 
-    raise ValueError("unable to turn node into URIRef")
+    msg = "unable to turn node into URIRef"
+    raise ValueError(msg)
 
 
 T = TypeVar("T")
 
 
 def intersperse(lst: Collection[T], sep: T) -> list[T]:
-    """intersperses lst with instances of sep"""
+    """Intersperses lst with instances of sep."""
     # TODO: fixme
     result = [sep] * (len(lst) * 2 - 1)
     result[0::2] = lst
@@ -30,8 +34,7 @@ def intersperse(lst: Collection[T], sep: T) -> list[T]:
 
 
 def iri_to_title(iri: URIRef) -> str | None:
-    """Makes a human-readable title from an IRI"""
-
+    """Make a human-readable title from an IRI."""
     if not isinstance(iri, str):
         iri = str(iri)
     # can't tolerate any URI faults so return None if anything is wrong
@@ -42,7 +45,7 @@ def iri_to_title(iri: URIRef) -> str | None:
         return None
 
     # URIs with only a domain - no path segments
-    if len(segments) < 4:
+    if len(segments) < 4:  # noqa: PLR2004
         return None
 
     # URIs ending in hash
@@ -65,8 +68,7 @@ def iri_to_title(iri: URIRef) -> str | None:
 
 
 def generate_fid(title_: Node | None, iri: URIRef, fids: dict[str, str]) -> str | None:
-    """Makes an HTML fragment ID for an RDF resource,
-    based on title (preferred) or IRI"""
+    """Make an HTML fragment ID for an RDF resource based on title (preferred) or IRI."""
     # TODO: fixme
     s_iri = str(iri) if iri is not None else None
     s_title_ = str(title_) if title_ is not None else None
@@ -78,7 +80,7 @@ def generate_fid(title_: Node | None, iri: URIRef, fids: dict[str, str]) -> str 
 
     # if we get here, there is no fid, so make one
     def _remove_non_ascii_chars(s_: str) -> str:
-        return "".join(j for j in s_ if ord(j) < 128).replace("&", "")
+        return "".join(j for j in s_ if ord(j) < 128).replace("&", "")  # noqa: PLR2004
 
     # try creating an ID from label
     # remove spaces, escape all non-ASCII chars
@@ -102,7 +104,7 @@ def generate_fid(title_: Node | None, iri: URIRef, fids: dict[str, str]) -> str 
 
     # return None for domains, i.e. ['http:', '', '{domain}'],
     # no path segments
-    if len(segments) < 4:
+    if len(segments) < 4:  # noqa: PLR2004
         return None
 
     # split out hash URIs

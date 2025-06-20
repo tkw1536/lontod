@@ -1,11 +1,11 @@
-"""indexing functionality"""
+"""indexing functionality."""
 
 from logging import Logger
 from sqlite3 import Connection
 from typing import Final, final
 
-from ..ontologies import Ontology
-from ..sqlite import LoggingCursorContext
+from lontod.ontologies import Ontology
+from lontod.sqlite import LoggingCursorContext
 
 _TABLE_SCHEMA_: Final[str] = """
 CREATE TABLE IF NOT EXISTS "DEFINIENDA" (
@@ -30,7 +30,7 @@ DROP VIEW IF EXISTS "ONTOLOGIES";
 CREATE VIEW IF NOT EXISTS
     "ONTOLOGIES"
 AS SELECT
-  NAMES.ONTOLOGY_ID, 
+  NAMES.ONTOLOGY_ID,
   NAMES.URI,
   (
     SELECT
@@ -62,8 +62,8 @@ AS SELECT
         ORDER BY
             DATA.MIME_TYPE
   ) AS MIME_TYPES
-FROM 
-  DEFINIENDA AS NAMES 
+FROM
+  DEFINIENDA AS NAMES
 WHERE
     NAMES.FRAGMENT IS NULL
     AND NAMES.CANONICAL IS TRUE
@@ -78,12 +78,13 @@ ORDER BY
 
 @final
 class Indexer:
-    """Low-level database-interacting indexing functionality"""
+    """Low-level database-interacting indexing functionality."""
 
     conn: Connection
     _logger: Logger
 
-    def __init__(self, conn: Connection, logger: Logger):
+    def __init__(self, conn: Connection, logger: Logger) -> None:
+        """Create a new indexer."""
         self.conn = conn
         self._logger = logger
 
@@ -91,23 +92,22 @@ class Indexer:
         return LoggingCursorContext(self.conn, self._logger)
 
     def initialize_schema(self) -> None:
-        """
-        Initializes the database schema, unless if already exists.
+        """Initialize the database schema.
+
+        If the database schema already exists, does nothing.
         Automatically commits any pending changes.
         """
         with self._cursor() as cursor:
             cursor.executescript(_TABLE_SCHEMA_)
 
     def truncate(self) -> None:
-        """Removes all indexed data from the database"""
-
+        """Remove all indexed data from the database."""
         with self._cursor() as cursor:
             cursor.execute("DELETE FROM DEFINIENDA")
             cursor.execute("DELETE FROM DATA")
 
     def remove(self, identifier: str) -> None:
-        """Remove any indexed data from the database with the given identifier"""
-
+        """Remove any indexed data from the database with the given identifier."""
         with self._cursor() as cursor:
             cursor.execute(
                 "DELETE FROM DEFINIENDA WHERE ONTOLOGY_ID = ?",
@@ -119,10 +119,12 @@ class Indexer:
             )
 
     def upsert(
-        self, identifier: str, ontology: Ontology, sort_key: str | None = None
+        self,
+        identifier: str,
+        ontology: Ontology,
+        sort_key: str | None = None,
     ) -> None:
-        """Inserts the given ontology into the database, removing any old references to it"""
-
+        """Insert the given ontology into the database, removing any old references to it."""
         self.remove(identifier)
         sort_key = sort_key if isinstance(sort_key, str) else identifier
 
