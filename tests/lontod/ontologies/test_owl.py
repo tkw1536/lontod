@@ -28,7 +28,7 @@ def want_definienda(request: pytest.FixtureRequest) -> list[Tuple[str, str | Non
         raw = json.load(f)
 
     data = cast(list[list[str | None]], raw)
-    return [cast(Tuple[str, str | None], tuple(l)) for l in data]
+    return [cast(Tuple[str, str | None], tuple(case)) for case in data]
 
 
 @pytest.mark.parametrize(

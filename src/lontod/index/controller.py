@@ -138,5 +138,5 @@ class ReIndexingHandler(FileSystemEventHandler):
 
         if len(failures) > 0:
             raise AssertionError(
-                f"failed to ingest {",".join([repr(f) for f in failures])}"
+                f"failed to ingest {','.join([repr(f) for f in failures])}"
             )

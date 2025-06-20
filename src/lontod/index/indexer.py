@@ -7,9 +7,7 @@ from typing import Final, final
 from ..ontologies import Ontology
 from ..sqlite import LoggingCursorContext
 
-_TABLE_SCHEMA_: Final[
-    str
-] = """
+_TABLE_SCHEMA_: Final[str] = """
 CREATE TABLE IF NOT EXISTS "DEFINIENDA" (
     "URI"           TEXT NOT NULL,
     "ONTOLOGY_ID"   TEXT NOT NULL,

@@ -449,7 +449,6 @@ class OntPub:
             with div(id="legend"):
                 h2("Legend")
                 with table(_class="entity"):
-
                     if self.toc.get("classes") is not None:
                         with tr():
                             td(sup("c", _class="sup-c", title="OWL/RDFS Class"))

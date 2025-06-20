@@ -28,20 +28,18 @@ lontod_server = 'lontod.cli.server:main'
 [tool.poe.tasks]
 
 format = [
-    "_format_black",
-    "_format_isort"
+    "_ruff_format",
+    "_ruff_fix"
 ]
-_format_black = "black src/ tests/"
-_format_isort = "isort src/ tests/"
+_ruff_format = "ruff format"
+_ruff_fix = "ruff check --fix"
 
 lint = [
-    "_lint_black",
-    "_lint_isort",
+    "_lint_ruff",
     "_lint_pylint",
     "_lint_mypy"
 ]
-_lint_black = "black --check src/ tests/"
-_lint_isort = "isort --check src/ tests/"
+_lint_ruff = "ruff check"
 _lint_pylint = "pylint src/ tests/"
 _lint_mypy = "mypy src/ tests/"
 
@@ -58,19 +56,21 @@ ci = [
 [tool.pylint]
 disable = ["C0301", "E1121", "R0801", "R0902", "R0903", "R0911", "R0912", "R0913", "R0914", "R0915", "R0917", "R1702", "W0511", "W0718"]
 
-[tool.isort]
-profile = 'black'
+[tool.ruff]
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
 
 [tool.poetry]
 packages = [{include = "lontod", from = "src"}]
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
-isort = "^6.0.1"
 mypy = "^1.15.0"
 pylint = "^3.3.5"
 pytest = "^8.3.5"
 poethepoet = "^0.33.1"
+ruff = "^0.12.0"
 
 [tool.mypy]
 mypy_path = "typings/"

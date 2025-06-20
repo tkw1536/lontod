@@ -56,7 +56,6 @@ class Query:
     def list_ontologies(self) -> Generator[Ontology, None, None]:
         """Lists all (identifier, uri, list[types], len(definienda)) ontologies found in the database"""
         with self._cursor() as cursor:
-
             cursor.execute(
                 """
 SELECT

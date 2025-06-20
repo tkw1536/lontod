@@ -64,7 +64,7 @@ class MetaProperty(HTMLable):
 
         for ontology in self.ontologies:
             description_parts.append(
-                f"Defined in {", ".join(str(title) for title in ontology.titles)}.",
+                f"Defined in {', '.join(str(title) for title in ontology.titles)}.",
             )
 
         titles = [

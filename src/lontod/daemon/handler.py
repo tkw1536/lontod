@@ -21,9 +21,7 @@ from .http import LoggingMiddleware, negotiate
 
 # spellchecker:words noopener noreferer tabindex
 
-DEFAULT_INDEX_HTML_HEADER: Final[
-    str
-] = """
+DEFAULT_INDEX_HTML_HEADER: Final[str] = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,23 +41,17 @@ DEFAULT_INDEX_HTML_HEADER: Final[
 <main>
 """
 
-DEFAULT_INDEX_TXT_HEADER: Final[
-    str
-] = """# Ontologies:
+DEFAULT_INDEX_TXT_HEADER: Final[str] = """# Ontologies:
 """
 
-DEFAULT_INDEX_HTML_FOOTER: Final[
-    str
-] = """
+DEFAULT_INDEX_HTML_FOOTER: Final[str] = """
 </main>
 <footer>
     Powered by <a href='https://github.com/tkw1536/lontod' target='_blank' rel='noopener noreferer'>lontod</a>
 </footer>
 """
 
-DEFAULT_INDEX_TXT_FOOTER: Final[
-    str
-] = """
+DEFAULT_INDEX_TXT_FOOTER: Final[str] = """
 ---
 Powered by lontod: https://github.com/tkw1536/lontod
 """
@@ -332,7 +324,7 @@ class Handler(Starlette):
         filename = f"{identifier}.{ext}" if isinstance(ext, str) else identifier
 
         disposition = (
-            f"{"attachment" if download else "inline"}; filename*=UTF-8''{filename}"
+            f"{'attachment' if download else 'inline'}; filename*=UTF-8''{filename}"
         )
         return Response(
             status_code=200,
@@ -360,7 +352,6 @@ class Handler(Starlette):
 
         with self.__pool.use() as query:
             for onto in query.list_ontologies():
-
                 if html:
                     yield "<fieldset>"
 
