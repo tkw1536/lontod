@@ -160,5 +160,7 @@ class Ingester:
             )
             raise
 
-        self.__logger.info("indexed ontology %r from %s as %r", owl.uri, str(path), slug)
+        self.__logger.info(
+            "indexed ontology %r from %s as %r", owl.uri, str(path), slug
+        )
         return slug

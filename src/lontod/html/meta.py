@@ -3,7 +3,6 @@
 # spellchecker:words RDFS onts
 
 import contextlib
-from collections import defaultdict
 from collections.abc import Generator, Sequence
 from functools import cached_property
 from importlib import resources
@@ -23,6 +22,7 @@ from rdflib.namespace import (
 from rdflib.term import Literal, Node, URIRef
 
 from lontod.utils.cached import PickleCachedMeta
+from lontod.utils.graph import SubjectObjectQuery, subject_object_dicts
 
 from .common import iri_to_title
 from .data import MetaOntology, MetaProperty
@@ -70,6 +70,39 @@ logger = getLogger("lontod.ontology.background")
 class _MetaOntologiesGraph:
     """In-memory representation for the loaded meta ontologies graph."""
 
+    def __init__(self) -> None:
+        """Create the meta ontologies graph."""
+        q = subject_object_dicts(
+            self.g,
+            SubjectObjectQuery(
+                typ=URIRef,
+                predicates=(RDF.type,),
+            ),
+            SubjectObjectQuery(
+                typ=Literal,
+                predicates=(
+                    DC.description,
+                    RDFS.comment,
+                    SKOS.definition,
+                    SDO.description,
+                    DCTERMS.description,
+                ),
+            ),
+            SubjectObjectQuery(
+                typ=Literal,
+                predicates=(
+                    DC.title,
+                    RDFS.label,
+                    SKOS.prefLabel,
+                    SDO.name,
+                    DCTERMS.title,
+                ),
+            ),
+        )
+        self.types = cast("dict[URIRef,Sequence[URIRef]]", next(q))
+        self.descriptions = cast("dict[URIRef,Sequence[Literal]]", next(q))
+        self.titles = cast("dict[URIRef,Sequence[Literal]]", next(q))
+
     @cached_property
     def g(self) -> Graph:
         """Graph representing background ontologies."""
@@ -82,39 +115,6 @@ class _MetaOntologiesGraph:
             g.parse(None, file=cast("TextIO", file.open("r")), format="n3")
 
         return g
-
-    @cached_property
-    def types(self) -> dict[URIRef, Sequence[URIRef]]:
-        """Returns a dictionary holding all types for all objects."""
-        return self.__subject_object_dict((RDF.type,), URIRef)
-
-    @cached_property
-    def descriptions(self) -> dict[URIRef, Sequence[Literal]]:
-        """Returns a dictionary holding the descriptions of all objects."""
-        return self.__subject_object_dict(
-            (
-                DC.description,
-                RDFS.comment,
-                SKOS.definition,
-                SDO.description,
-                DCTERMS.description,
-            ),
-            Literal,
-        )
-
-    @cached_property
-    def titles(self) -> dict[URIRef, Sequence[Literal]]:
-        """Returns a dictionary holding the titles of all objects."""
-        return self.__subject_object_dict(
-            (
-                DC.title,
-                RDFS.label,
-                SKOS.prefLabel,
-                SDO.name,
-                DCTERMS.title,
-            ),
-            Literal,
-        )
 
     @cached_property
     def ontologies(self) -> Generator[MetaOntology]:
@@ -150,21 +150,3 @@ class _MetaOntologiesGraph:
             descriptions=self.descriptions.get(prop) or (),
             ontologies=[ontology for ontology in self.ontologies if prop in ontology],
         )
-
-    def __subject_object_dict(
-        self,
-        predicates: Sequence[URIRef],
-        typ: type[T],
-    ) -> dict[URIRef, Sequence[T]]:
-        """Build a dictionary { subject: list[objects] } with the given predicates."""
-        so_dict = defaultdict[URIRef, list[T]](list)
-
-        for predicate in predicates:
-            for sub, obj in self.g.subject_objects(predicate):
-                if not isinstance(sub, URIRef):
-                    continue
-                if not isinstance(obj, typ):
-                    continue
-                so_dict[sub].append(obj)
-
-        return dict(so_dict)

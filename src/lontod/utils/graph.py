@@ -1,6 +1,8 @@
 """Implements graph mutation functions."""
 
+from collections import defaultdict
 from collections.abc import Generator, Sequence
+from dataclasses import dataclass
 from typing import (
     Any,
     TypeGuard,
@@ -10,8 +12,9 @@ from html_sanitizer.sanitizer import (
     Sanitizer,
     sanitize_href,
 )
-from rdflib import Graph, Literal
-from rdflib.graph import _PredicateType, _SubjectType, _TripleType
+from rdflib import Graph
+from rdflib.graph import _ObjectType, _PredicateType, _SubjectType, _TripleType
+from rdflib.term import Literal, URIRef
 
 _SANITIZE_SETTINGS = {
     "tags": [
@@ -150,3 +153,36 @@ def _subject_predicates(g: Graph) -> Generator[tuple[_SubjectType, _PredicateTyp
     for s in g.subjects(unique=True):
         for p in g.predicates(subject=s, unique=True):
             yield (s, p)
+
+
+@dataclass
+class SubjectObjectQuery:
+    """Query for the subject_object_dicts function."""
+
+    typ: type[_ObjectType]
+    predicates: Sequence[URIRef]
+
+
+def subject_object_dicts(
+    graph: Graph,
+    *queries: SubjectObjectQuery,
+) -> Generator[dict[URIRef, Sequence[_ObjectType]]]:
+    """For each query, yield a dictionary { subject: list[objects] } matching the given predicates and being of the given typ."""
+    all_predicates = {item for query in queries for item in query.predicates}
+
+    pso = {p: defaultdict[URIRef, list[_ObjectType]](list) for p in all_predicates}
+    for sub, pred, obj in graph:
+        if not isinstance(sub, URIRef):
+            continue
+        if pred not in all_predicates or not isinstance(pred, URIRef):
+            continue
+        pso[pred][sub].append(obj)
+
+    for query in queries:
+        result_dict: defaultdict[URIRef, list[_ObjectType]] = defaultdict(list)
+        for pred in query.predicates:
+            for sub, values in pso[pred].items():
+                result_dict[sub].extend(
+                    value for value in values if isinstance(value, query.typ)
+                )
+        yield dict(result_dict)
