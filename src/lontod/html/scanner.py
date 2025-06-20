@@ -1,6 +1,7 @@
 """parses an ontology as html."""
 
 from collections import defaultdict
+from collections.abc import Generator
 from importlib import resources
 from itertools import chain
 from typing import cast
@@ -81,43 +82,6 @@ class Ontology(HTMLable):
 
         self.__toc: dict[str, list[tuple[str, str]]] = {}
         self.__ns = get_ns(self.__ont)
-
-        # make HTML doc with title
-        t = None
-        for s in chain(
-            self.__ont.subjects(RDF.type, OWL.Ontology),
-            self.__ont.subjects(RDF.type, PROF.Profile),
-            self.__ont.subjects(RDF.type, SKOS.ConceptScheme),
-        ):
-            for o2 in self.__ont.objects(s, DCTERMS.title):
-                t = str(o2)
-        if t is None:
-            msg = (
-                "You MUST supply a title property "
-                "(dcterms:title, rdfs:label or sdo:name) for your ontology"
-            )
-            raise PylodeError(
-                msg,
-            )
-        self.__doc = dominate.document(title=t)
-
-        with self.__doc:
-            self.__content = div(id="content")
-
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        """Render this ontology into a document."""
-        self._make_head(
-            ctx,
-            self._make_schema_org(ctx),
-        )
-        self._make_body(ctx)
-
-        return self.__doc
-
-    def render(self) -> str:
-        """Render this document into a string."""
-        res = self.to_html(RenderContext()).render(pretty=True)
-        return cast("str", res)
 
     def _ontdoc_inference(self, g: Graph) -> None:
         """Expand the ontology's graph to make OntDoc querying easier.
@@ -249,42 +213,79 @@ class Ontology(HTMLable):
         for s_, o in g.subject_objects(ORG.memberOf):
             g.add((s_, SDO.affiliation, o))
 
-    def _make_head(
+    @property
+    def title(self) -> Literal:
+        """Title of this ontology."""
+        for s in chain(
+            self.__ont.subjects(RDF.type, OWL.Ontology),
+            self.__ont.subjects(RDF.type, PROF.Profile),
+            self.__ont.subjects(RDF.type, SKOS.ConceptScheme),
+        ):
+            for o2 in self.__ont.objects(s, DCTERMS.title):
+                if not isinstance(o2, Literal):
+                    continue
+                return o2
+
+        msg = (
+            "You MUST supply a title property "
+            "(dcterms:title, rdfs:label or sdo:name) for your ontology"
+        )
+        raise PylodeError(
+            msg,
+        )
+
+    def to_html(self, ctx: RenderContext) -> dominate.document:
+        """Render this ontology into a document."""
+        doc = dominate.document(title=self.title)
+
+        with doc.head:
+            for tag in self._head():
+                tag.render()
+
+        body = self._make_body(ctx)
+        doc.appendChild(body)
+
+        return doc
+
+    def render(self) -> str:
+        """Render this document into a string."""
+        res = self.to_html(RenderContext()).render(pretty=True)
+        return cast("str", res)
+
+    def _head(
         self,
-        ctx: RenderContext,
-        schema_org: Graph | None,
-    ) -> None:
+    ) -> Generator[html_tag]:
         """Make <head>???</head> content."""
-        _ = ctx
-        with self.__doc.head:
-            css = (
-                resources.files(__package__).joinpath("assets", "style.css").read_text()
-            )
+        css = resources.files(__package__).joinpath("assets", "style.css").read_text()
+        yield style(raw("\n" + css + "\n\t"))
 
-            style(raw("\n" + css + "\n\t"))
-            meta(http_equiv="Content-Type", content="text/html; charset=utf-8")
+        yield meta(http_equiv="Content-Type", content="text/html; charset=utf-8")
 
-            if schema_org is None:
-                return
+        yield script(
+            raw("\n" + self.schema.serialize(format="json-ld") + "\n\t"),
+            type="application/ld+json",
+            id="schema.org",
+        )
 
-            script(
-                raw("\n" + schema_org.serialize(format="json-ld") + "\n\t"),
-                type="application/ld+json",
-                id="schema.org",
-            )
-
-    def _make_body(self, ctx: RenderContext) -> None:
+    def _make_body(self, ctx: RenderContext) -> html_tag:
         """Make <body>???</body> content.
 
         Just calls other helper functions in order.
         """
-        self._make_metadata(ctx)
-        self._make_main_sections(ctx)
-        self._make_namespaces(ctx)
-        self._make_legend(ctx)
-        self._make_toc(ctx)
+        content = div(id="content")
 
-    def _make_metadata(self, ctx: RenderContext) -> None:
+        for tag in chain(
+            self._make_metadata(ctx),
+            self._make_main_sections(ctx),
+            self._make_namespaces(),
+            self._make_legend(),
+            self._make_toc(),
+        ):
+            content.appendChild(tag)
+
+        return content
+
+    def _make_metadata(self, ctx: RenderContext) -> Generator[html_tag]:
         # get all ONT_PROPS props and their (multiple) values
         this_onts_props: defaultdict[URIRef, list[Node]] = defaultdict(list)
         for s_ in chain(
@@ -320,10 +321,11 @@ class Ontology(HTMLable):
                     ),
                 )
         sec.appendChild(d)
-        self.__content.appendChild(sec)
+        yield sec
 
-    def _make_schema_org(self, ctx: RenderContext) -> Graph:
-        _ = ctx
+    @property
+    def schema(self) -> Graph:
+        """Generic schema.org description for this graph."""
         sdo = Graph()
         for ont_iri in chain(
             self.__ont.subjects(predicate=RDF.type, object=OWL.Ontology),
@@ -331,6 +333,7 @@ class Ontology(HTMLable):
             self.__ont.subjects(predicate=RDF.type, object=PROF.Profile),
         ):
             sdo.add((ont_iri, RDF.type, SDO.DefinedTermSet))
+
             for p_, o in self.__ont.predicate_objects(ont_iri):
                 if p_ == DCTERMS.title:
                     sdo.add((ont_iri, SDO.name, o))
@@ -338,22 +341,25 @@ class Ontology(HTMLable):
                     sdo.add((ont_iri, SDO.description, o))
                 elif p_ == DCTERMS.publisher:
                     sdo.add((ont_iri, SDO.publisher, o))
-                    if not isinstance(o, Literal):
-                        for p2, o2 in self.__ont.predicate_objects(o):
-                            if p2 in AGENT_PROPS:
-                                sdo.add((o, p2, o2))
+                    if isinstance(o, Literal):
+                        continue
+                    for p2, o2 in self.__ont.predicate_objects(o):
+                        if p2 in AGENT_PROPS:
+                            sdo.add((o, p2, o2))
                 elif p_ == DCTERMS.creator:
                     sdo.add((ont_iri, SDO.creator, o))
-                    if not isinstance(o, Literal):
-                        for p2, o2 in self.__ont.predicate_objects(o):
-                            if p2 in AGENT_PROPS:
-                                sdo.add((o, p2, o2))
+                    if isinstance(o, Literal):
+                        continue
+                    for p2, o2 in self.__ont.predicate_objects(o):
+                        if p2 in AGENT_PROPS:
+                            sdo.add((o, p2, o2))
                 elif p_ == DCTERMS.contributor:
                     sdo.add((ont_iri, SDO.contributor, o))
-                    if not isinstance(o, Literal):
-                        for p2, o2 in self.__ont.predicate_objects(o):
-                            if p2 in AGENT_PROPS:
-                                sdo.add((o, p2, o2))
+                    if isinstance(o, Literal):
+                        continue
+                    for p2, o2 in self.__ont.predicate_objects(o):
+                        if p2 in AGENT_PROPS:
+                            sdo.add((o, p2, o2))
                 elif p_ == DCTERMS.created:
                     sdo.add((ont_iri, SDO.dateCreated, o))
                 elif p_ == DCTERMS.modified:
@@ -367,99 +373,92 @@ class Ontology(HTMLable):
 
         return sdo
 
-    def _make_main_sections(self, ctx: RenderContext) -> None:
-        with self.__content:
-            if (None, RDF.type, OWL.Class) in self.__ont:
-                d = section_html(
-                    ctx,
-                    "Classes",
-                    self.__ont,
-                    self.__meta,
-                    self.__ns,
-                    OWL.Class,
-                    CLASS_PROPS,
-                    self.__toc,
-                    "classes",
-                )
-                d.render()
+    def _make_main_sections(self, ctx: RenderContext) -> Generator[html_tag]:
+        if (None, RDF.type, OWL.Class) in self.__ont:
+            yield section_html(
+                ctx,
+                "Classes",
+                self.__ont,
+                self.__meta,
+                self.__ns,
+                OWL.Class,
+                CLASS_PROPS,
+                self.__toc,
+                "classes",
+            )
 
-            if (
-                None,
-                RDF.type,
+        if (
+            None,
+            RDF.type,
+            RDF.Property,
+        ) in self.__ont:
+            yield section_html(
+                ctx,
+                "Properties",
+                self.__ont,
+                self.__meta,
+                self.__ns,
                 RDF.Property,
-            ) in self.__ont:
-                d = section_html(
-                    ctx,
-                    "Properties",
-                    self.__ont,
-                    self.__meta,
-                    self.__ns,
-                    RDF.Property,
-                    PROP_PROPS,
-                    self.__toc,
-                    "properties",
-                )
-                d.render()
+                PROP_PROPS,
+                self.__toc,
+                "properties",
+            )
 
-            if (None, RDF.type, OWL.ObjectProperty) in self.__ont:
-                d = section_html(
-                    ctx,
-                    "Object Properties",
-                    self.__ont,
-                    self.__meta,
-                    self.__ns,
-                    OWL.ObjectProperty,
-                    PROP_PROPS,
-                    self.__toc,
-                    "objectproperties",
-                )
-                d.render()
+        if (None, RDF.type, OWL.ObjectProperty) in self.__ont:
+            yield section_html(
+                ctx,
+                "Object Properties",
+                self.__ont,
+                self.__meta,
+                self.__ns,
+                OWL.ObjectProperty,
+                PROP_PROPS,
+                self.__toc,
+                "objectproperties",
+            )
 
-            if (None, RDF.type, OWL.DatatypeProperty) in self.__ont:
-                d = section_html(
-                    ctx,
-                    "Datatype Properties",
-                    self.__ont,
-                    self.__meta,
-                    self.__ns,
-                    OWL.DatatypeProperty,
-                    PROP_PROPS,
-                    self.__toc,
-                    "datatypeproperties",
-                )
-                d.render()
+        if (None, RDF.type, OWL.DatatypeProperty) in self.__ont:
+            yield section_html(
+                ctx,
+                "Datatype Properties",
+                self.__ont,
+                self.__meta,
+                self.__ns,
+                OWL.DatatypeProperty,
+                PROP_PROPS,
+                self.__toc,
+                "datatypeproperties",
+            )
 
-            if (None, RDF.type, OWL.AnnotationProperty) in self.__ont:
-                d = section_html(
-                    ctx,
-                    "Annotation Properties",
-                    self.__ont,
-                    self.__meta,
-                    self.__ns,
-                    OWL.AnnotationProperty,
-                    PROP_PROPS,
-                    self.__toc,
-                    "annotationproperties",
-                )
-                d.render()
+        if (None, RDF.type, OWL.AnnotationProperty) in self.__ont:
+            yield section_html(
+                ctx,
+                "Annotation Properties",
+                self.__ont,
+                self.__meta,
+                self.__ns,
+                OWL.AnnotationProperty,
+                PROP_PROPS,
+                self.__toc,
+                "annotationproperties",
+            )
 
-            if (None, RDF.type, OWL.FunctionalProperty) in self.__ont:
-                d = section_html(
-                    ctx,
-                    "Functional Properties",
-                    self.__ont,
-                    self.__meta,
-                    self.__ns,
-                    OWL.FunctionalProperty,
-                    PROP_PROPS,
-                    self.__toc,
-                    "functionalproperties",
-                )
-                d.render()
+        if (None, RDF.type, OWL.FunctionalProperty) in self.__ont:
+            yield section_html(
+                ctx,
+                "Functional Properties",
+                self.__ont,
+                self.__meta,
+                self.__ns,
+                OWL.FunctionalProperty,
+                PROP_PROPS,
+                self.__toc,
+                "functionalproperties",
+            )
 
-    def _make_legend(self, ctx: RenderContext) -> None:
-        _ = ctx
-        with self.__content, div(id="legend"):
+    def _make_legend(self) -> Generator[html_tag]:
+        legend = div(id="legend")
+        with legend:
             h2("Legend")
             with table(_class="entity"):
                 if self.__toc.get("classes") is not None:
@@ -508,12 +507,14 @@ class Ontology(HTMLable):
                     with tr():
                         td(sup("ni", _class="sup-ni", title="OWL Named Individual"))
                         td("Named Individuals")
+        yield legend
 
-    def _make_namespaces(self, ctx: RenderContext) -> None:
-        _ = ctx
+    def _make_namespaces(self) -> Generator[html_tag]:
         # only get namespaces used in ont
         nses = {}
-        for n in chain(self.__ont.subjects(), self.__ont.predicates(), self.__ont.objects()):
+        for n in chain(
+            self.__ont.subjects(), self.__ont.predicates(), self.__ont.objects()
+        ):
             # a list of prefixes we don't like
             excluded_namespaces = (
                 # "https://linked.data.gov.au/def/"
@@ -537,7 +538,8 @@ class Ontology(HTMLable):
         #         res[k] = v
         # nses = res
 
-        with self.__content, div(id="namespaces"):
+        namespaces = div(id="namespaces")
+        with namespaces:
             h2("Namespaces")
             with dl():
                 if self.__toc.get("namespaces") is None:
@@ -547,15 +549,19 @@ class Ontology(HTMLable):
                     dt(p_, id=p_)
                     dd(code(ns))
                     self.__toc["namespaces"].append(("#" + prefix, prefix))
+        yield namespaces
 
-    def _make_toc(self, ctx: RenderContext) -> None:
-        _ = ctx
-        with self.__doc, div(id="toc"):
+    def _make_toc(self) -> Generator[html_tag]:
+        toc = div(id="toc")
+        with toc:
             h3("Table of Contents")
             with ul(_class="first"):
                 li(h4(a("Metadata", href="#metadata")))
 
-                if self.__toc.get("classes") is not None and len(self.__toc["classes"]) > 0:
+                if (
+                    self.__toc.get("classes") is not None
+                    and len(self.__toc["classes"]) > 0
+                ):
                     with li():
                         h4(a("Classes", href="#classes"))
                         with ul(_class="second"):
@@ -619,3 +625,4 @@ class Ontology(HTMLable):
                             li(a(n[1], href="#" + n[1]))
 
                 li(h4(a("Legend", href="#legend")), ul(_class="second"))
+        yield toc
