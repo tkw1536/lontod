@@ -8,17 +8,7 @@ from typing import override
 from dominate.tags import a, html_tag, span
 from rdflib.term import Literal, URIRef
 
-
-class RenderContext:
-    """context used for rendering."""
-
-    def close(self) -> None:
-        """Close this context, reserved for future usage."""
-
-    def fragment(self, uri: URIRef) -> str:
-        """Return a fragment identifier for this uri."""
-        # TODO: keep track of state and use this once we've migrated rendering to appropriate functions!
-        raise NotImplementedError
+from .context import RenderContext
 
 
 class HTMLable(ABC):

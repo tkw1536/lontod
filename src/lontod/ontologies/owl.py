@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from rdflib import Graph, Literal, Node
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 
-from lontod.html.scanner import OntPub
+from lontod.html.scanner import Ontology as HTMLOntology
 from lontod.utils.graph import restrict_languages, sanitize
 from lontod.utils.strings import as_utf8
 
@@ -46,10 +46,7 @@ def owl_ontology(logger: Logger, graph: Graph, html_languages: list[str]) -> Ont
     sanitize(graph)
 
     # make html
-    result = OntPub(graph).render()
-    if not isinstance(result, str | bytes):
-        msg = "OntPub did not return str or bytes"
-        raise TypeError(msg)
+    result = HTMLOntology(graph).render()
     html = as_utf8(result)
     types.append(("text/html", html))
 

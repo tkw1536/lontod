@@ -24,8 +24,7 @@ from rdflib import Graph
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, RDFS, SKOS, VANN
 from rdflib.term import Node, URIRef
 
-from .common import generate_fid
-from .data import RenderContext
+from .context import RenderContext
 from .data_single import rdf_obj_html
 from .meta import MetaOntologies
 from .rdf_elements import (
@@ -132,7 +131,6 @@ def prop_obj_pair_html(
     ns: tuple[str, str],
     table_or_dl: str,
     prop_iri: URIRef,
-    fids: dict[str, str],
     obj: list[Node],
     obj_type: URIRef | None = None,
 ) -> tr | div:
@@ -141,7 +139,7 @@ def prop_obj_pair_html(
     Make a HTML Definition list dt & dd pair or a Table tr, th & td set, for a given RDF property & resource pair.
     """
     prop = back_onts[prop_iri].to_html(ctx)
-    o = rdf_obj_html(ont, back_onts, ns, obj, fids, rdf_type=obj_type, prop=prop_iri)
+    o = rdf_obj_html(ctx, ont, back_onts, ns, obj, rdf_type=obj_type, prop=prop_iri)
 
     return tr(th(prop), td(o)) if table_or_dl == "table" else div(dt(prop), dd(o))
 
@@ -156,7 +154,6 @@ def section_html(
     prop_list: Sequence[URIRef],
     toc: dict[str, list[tuple[str, str]]],
     toc_ul_id: str,
-    fids: dict[str, str],
 ) -> div:
     """Make all the HTML (div, title & table) for all instances of a
     given RDF class, e.g. owl:Class or owl:ObjectProperty.
@@ -172,7 +169,6 @@ def section_html(
         ont_type: URIRef,
         props_list: Sequence[URIRef],
         this_props_: dict[URIRef, list[Node]],
-        fids_: dict[str, str],
     ) -> div:
         """Make all the HTML (div, title & table) for one instance of a
         given RDF class, e.g. owl:Class or owl:ObjectProperty.
@@ -203,7 +199,6 @@ def section_html(
                     ns_,
                     "table",
                     prop,
-                    fids_,
                     this_props_[prop],
                 ),
             )
@@ -244,10 +239,10 @@ def section_html(
                     this_props[p_].append(o)
 
         if len(this_props[DCTERMS.title]) == 0:
-            this_fid = generate_fid(None, s_, fids)
+            this_fid = ctx.fragment(s_, None)
             this_title = make_title_from_iri(s_)
         else:
-            this_fid = generate_fid(this_props[DCTERMS.title][0], s_, fids)
+            this_fid = ctx.fragment(s_, this_props[DCTERMS.title][0])
             this_title = str(
                 this_props[DCTERMS.title],
             )  # TODO: this isn't right #pylint: disable=fixme
@@ -276,7 +271,6 @@ def section_html(
                 obj_class,
                 prop_list,
                 this_props,
-                fids,
             ),
         )
 

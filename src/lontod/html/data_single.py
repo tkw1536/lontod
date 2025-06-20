@@ -24,7 +24,8 @@ from rdflib.namespace import DCTERMS, OWL, PROV, RDF, SDO, SKOS
 from rdflib.paths import ZeroOrMore
 from rdflib.term import BNode, Literal, Node, URIRef
 
-from .common import generate_fid, intersperse, must_uriref
+from .common import intersperse, must_uriref
+from .context import RenderContext
 from .data import HTMLable
 from .meta import MetaOntologies
 from .rdf_elements import (
@@ -36,11 +37,11 @@ from .rdf_elements import (
 
 
 def rdf_obj_html(
+    ctx: RenderContext,
     ont: Graph,
     back_onts: MetaOntologies,
     ns: tuple[str, str],
     obj: list[Node],
-    fids: dict[str, str],
     rdf_type: URIRef | None = None,
     prop: URIRef | None = None,
 ) -> ul:
@@ -54,7 +55,6 @@ def rdf_obj_html(
         back_onts_: MetaOntologies,
         ns_: tuple[str, str],
         obj_: Node,
-        fids_: dict[str, str],
         rdf_type_: URIRef | None = None,
         prop: URIRef | None = None,
     ) -> ul:
@@ -63,7 +63,6 @@ def rdf_obj_html(
             back_onts__: MetaOntologies,
             ns__: tuple[str, str],
             iri__: URIRef,
-            fids__: dict[str, str],
             rdf_type__: URIRef | None = None,
         ) -> span | a:
             if (iri__, RDF.type, PROV.Agent) in ont__:
@@ -108,7 +107,7 @@ def rdf_obj_html(
             # if it's a thing in this ontology, use a fragment link
             frag_iri = None
             if ns__ is not None and str(iri__).startswith(ns__):
-                fid = generate_fid(None, iri__, fids__)
+                fid = ctx.fragment(iri__, None)
                 if fid is not None:
                     frag_iri = "#" + fid
 
@@ -165,7 +164,6 @@ def rdf_obj_html(
                     back_onts_,
                     ns_,
                     cast("URIRef", obj__),
-                    fids_,
                 )
 
             if prop == SKOS.example:
@@ -299,7 +297,6 @@ def rdf_obj_html(
                         back_onts_,
                         ns__,
                         must_uriref(o),
-                        fids_,
                     )
                 elif px in RESTRICTION_TYPES + OWL_SET_TYPES:
                     if px in {
@@ -346,7 +343,6 @@ def rdf_obj_html(
                                     back_onts_,
                                     ns__,
                                     must_uriref(o),
-                                    fids_,
                                     OWL.Class,
                                 ),
                             ),
@@ -364,7 +360,6 @@ def rdf_obj_html(
             obj__: Node,
             back_onts__: MetaOntologies,
             ns__: tuple[str, str],
-            fids__: dict[str, str],
         ) -> list[html_tag]:
             """Make lists of (union) 'ClassX or Class Y or ClassZ' or
             (intersection) 'ClassX and Class Y and ClassZ'.
@@ -386,7 +381,6 @@ def rdf_obj_html(
                         back_onts__,
                         ns__,
                         o2,
-                        fids__,
                         OWL.Class,
                     )
                     for o2 in ont__.objects(o, RDF.rest * ZeroOrMore / RDF.first)  # type:ignore[operator]
@@ -398,7 +392,6 @@ def rdf_obj_html(
             ont__: Graph,
             back_onts__: MetaOntologies,
             ns__: tuple[str, str],
-            fids__: dict[str, str],
             obj__: BNode,
         ) -> html_tag | list[html_tag]:
             # TODO: remove back_onts and fids if not needed by subfunctions #pylint: disable=fixme
@@ -411,7 +404,7 @@ def rdf_obj_html(
                 return _restriction_html(ont__, obj__, ns__)
 
             # (obj, RDF.type, OWL.Class) in ont:  # Set Class
-            return _setclass_html(ont__, obj__, back_onts__, ns__, fids__)
+            return _setclass_html(ont__, obj__, back_onts__, ns__)
 
         if isinstance(obj_, URIRef | tuple):
             ret = _hyperlink_html(
@@ -419,11 +412,10 @@ def rdf_obj_html(
                 back_onts_,
                 ns_,
                 obj_,
-                fids_,
                 rdf_type__=rdf_type_,
             )
         elif isinstance(obj_, BNode):
-            ret = _bn_html(ont_, back_onts_, ns_, fids_, obj_)
+            ret = _bn_html(ont_, back_onts_, ns_, obj_)
         elif isinstance(obj_, Literal):
             ret = _literal_html(obj_)
         else:
@@ -438,7 +430,6 @@ def rdf_obj_html(
             back_onts,
             ns,
             obj[0],
-            fids,
             rdf_type_=rdf_type,
             prop=prop,
         )
@@ -452,7 +443,6 @@ def rdf_obj_html(
                     back_onts,
                     ns,
                     x,
-                    fids,
                     rdf_type_=rdf_type,
                     prop=prop,
                 ),
