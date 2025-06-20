@@ -45,6 +45,7 @@ from rdflib.namespace import (
 )
 from rdflib.term import Node, URIRef
 
+from .data import RenderContext
 from .meta import MetaOntologies
 from .rdf_elements import (
     AGENT_PROPS,
@@ -83,7 +84,8 @@ class OntPub:
         """Create a new OntPub."""
         self.ont = sort_ontology(ontology)
         self._ontdoc_inference(self.ont)
-        self.back_onts = MetaOntologies()
+
+        self.meta = MetaOntologies()
 
         self.toc: dict[str, list[tuple[str, str]]] = {}
         self.fids: dict[str, str] = {}
@@ -111,17 +113,17 @@ class OntPub:
         with self.doc:
             self.content = div(id="content")
 
-    def make_html(
+    def render(
         self,
     ) -> str:
-        """Make the complete OntDoc HTML document.
+        """Return a string for the html document."""
+        ctx = RenderContext()
 
-        Either writes to a file or returns a string
-        """
         self._make_head(
-            self._make_schema_org(),
+            ctx,
+            self._make_schema_org(ctx),
         )
-        self._make_body()
+        self._make_body(ctx)
 
         return cast("str", self.doc.render())
 
@@ -257,9 +259,11 @@ class OntPub:
 
     def _make_head(
         self,
+        ctx: RenderContext,
         schema_org: Graph | None,
     ) -> None:
         """Make <head>???</head> content."""
+        _ = ctx
         with self.doc.head:
             css = (
                 resources.files(__package__).joinpath("assets", "style.css").read_text()
@@ -268,25 +272,27 @@ class OntPub:
             style(raw("\n" + css + "\n\t"))
             meta(http_equiv="Content-Type", content="text/html; charset=utf-8")
 
-            if schema_org is not None:
-                script(
-                    raw("\n" + schema_org.serialize(format="json-ld") + "\n\t"),
-                    type="application/ld+json",
-                    id="schema.org",
-                )
+            if schema_org is None:
+                return
 
-    def _make_body(self) -> None:
+            script(
+                raw("\n" + schema_org.serialize(format="json-ld") + "\n\t"),
+                type="application/ld+json",
+                id="schema.org",
+            )
+
+    def _make_body(self, ctx: RenderContext) -> None:
         """Make <body>???</body> content.
 
         Just calls other helper functions in order.
         """
-        self._make_metadata()
-        self._make_main_sections()
-        self._make_namespaces()
-        self._make_legend()
-        self._make_toc()
+        self._make_metadata(ctx)
+        self._make_main_sections(ctx)
+        self._make_namespaces(ctx)
+        self._make_legend(ctx)
+        self._make_toc(ctx)
 
-    def _make_metadata(self) -> None:
+    def _make_metadata(self, ctx: RenderContext) -> None:
         # get all ONT_PROPS props and their (multiple) values
         this_onts_props: defaultdict[URIRef, list[Node]] = defaultdict(list)
         for s_ in chain(
@@ -312,8 +318,9 @@ class OntPub:
             if prop in this_onts_props:
                 d.appendChild(
                     prop_obj_pair_html(
+                        ctx,
                         self.ont,
-                        self.back_onts,
+                        self.meta,
                         self.ns,
                         "dl",
                         prop,
@@ -324,7 +331,8 @@ class OntPub:
         sec.appendChild(d)
         self.content.appendChild(sec)
 
-    def _make_schema_org(self) -> Graph:
+    def _make_schema_org(self, ctx: RenderContext) -> Graph:
+        _ = ctx
         sdo = Graph()
         for ont_iri in chain(
             self.ont.subjects(predicate=RDF.type, object=OWL.Ontology),
@@ -368,13 +376,14 @@ class OntPub:
 
         return sdo
 
-    def _make_main_sections(self) -> None:
+    def _make_main_sections(self, ctx: RenderContext) -> None:
         with self.content:
             if (None, RDF.type, OWL.Class) in self.ont:
                 d = section_html(
+                    ctx,
                     "Classes",
                     self.ont,
-                    self.back_onts,
+                    self.meta,
                     self.ns,
                     OWL.Class,
                     CLASS_PROPS,
@@ -384,11 +393,16 @@ class OntPub:
                 )
                 d.render()
 
-            if (None, RDF.type, RDF.Property) in self.ont:
+            if (
+                None,
+                RDF.type,
+                RDF.Property,
+            ) in self.ont:
                 d = section_html(
+                    ctx,
                     "Properties",
                     self.ont,
-                    self.back_onts,
+                    self.meta,
                     self.ns,
                     RDF.Property,
                     PROP_PROPS,
@@ -400,9 +414,10 @@ class OntPub:
 
             if (None, RDF.type, OWL.ObjectProperty) in self.ont:
                 d = section_html(
+                    ctx,
                     "Object Properties",
                     self.ont,
-                    self.back_onts,
+                    self.meta,
                     self.ns,
                     OWL.ObjectProperty,
                     PROP_PROPS,
@@ -414,9 +429,10 @@ class OntPub:
 
             if (None, RDF.type, OWL.DatatypeProperty) in self.ont:
                 d = section_html(
+                    ctx,
                     "Datatype Properties",
                     self.ont,
-                    self.back_onts,
+                    self.meta,
                     self.ns,
                     OWL.DatatypeProperty,
                     PROP_PROPS,
@@ -428,9 +444,10 @@ class OntPub:
 
             if (None, RDF.type, OWL.AnnotationProperty) in self.ont:
                 d = section_html(
+                    ctx,
                     "Annotation Properties",
                     self.ont,
-                    self.back_onts,
+                    self.meta,
                     self.ns,
                     OWL.AnnotationProperty,
                     PROP_PROPS,
@@ -442,9 +459,10 @@ class OntPub:
 
             if (None, RDF.type, OWL.FunctionalProperty) in self.ont:
                 d = section_html(
+                    ctx,
                     "Functional Properties",
                     self.ont,
-                    self.back_onts,
+                    self.meta,
                     self.ns,
                     OWL.FunctionalProperty,
                     PROP_PROPS,
@@ -454,7 +472,8 @@ class OntPub:
                 )
                 d.render()
 
-    def _make_legend(self) -> None:
+    def _make_legend(self, ctx: RenderContext) -> None:
+        _ = ctx
         with self.content, div(id="legend"):
             h2("Legend")
             with table(_class="entity"):
@@ -505,7 +524,8 @@ class OntPub:
                         td(sup("ni", _class="sup-ni", title="OWL Named Individual"))
                         td("Named Individuals")
 
-    def _make_namespaces(self) -> None:
+    def _make_namespaces(self, ctx: RenderContext) -> None:
+        _ = ctx
         # only get namespaces used in ont
         nses = {}
         for n in chain(self.ont.subjects(), self.ont.predicates(), self.ont.objects()):
@@ -543,7 +563,8 @@ class OntPub:
                     dd(code(ns))
                     self.toc["namespaces"].append(("#" + prefix, prefix))
 
-    def _make_toc(self) -> None:
+    def _make_toc(self, ctx: RenderContext) -> None:
+        _ = ctx
         with self.doc, div(id="toc"):
             h3("Table of Contents")
             with ul(_class="first"):

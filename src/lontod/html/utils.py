@@ -6,7 +6,6 @@ import re
 from collections import defaultdict
 from collections.abc import Sequence
 from itertools import chain
-from typing import TypeVar
 
 from dominate.tags import (
     code,
@@ -126,10 +125,8 @@ def sort_ontology(ont_orig: Graph) -> Graph:
     return ont_sorted
 
 
-_GLOBAL_RENDER_CONTEXT = RenderContext()
-
-
 def prop_obj_pair_html(
+    ctx: RenderContext,
     ont: Graph,
     back_onts: MetaOntologies,
     ns: tuple[str, str],
@@ -143,13 +140,14 @@ def prop_obj_pair_html(
 
     Make a HTML Definition list dt & dd pair or a Table tr, th & td set, for a given RDF property & resource pair.
     """
-    prop = back_onts[prop_iri].to_html(_GLOBAL_RENDER_CONTEXT)
+    prop = back_onts[prop_iri].to_html(ctx)
     o = rdf_obj_html(ont, back_onts, ns, obj, fids, rdf_type=obj_type, prop=prop_iri)
 
     return tr(th(prop), td(o)) if table_or_dl == "table" else div(dt(prop), dd(o))
 
 
 def section_html(
+    ctx: RenderContext,
     section_title: str,
     ont: Graph,
     back_onts: MetaOntologies,
@@ -199,6 +197,7 @@ def section_html(
 
             t.appendChild(
                 prop_obj_pair_html(
+                    ctx,
                     ont_,
                     back_onts_,
                     ns_,
@@ -282,9 +281,6 @@ def section_html(
         )
 
     return elems
-
-
-T = TypeVar("T")
 
 
 class PylodeError(Exception):

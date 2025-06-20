@@ -46,7 +46,7 @@ def owl_ontology(logger: Logger, graph: Graph, html_languages: list[str]) -> Ont
     sanitize(graph)
 
     # make html
-    result = OntPub(graph).make_html()
+    result = OntPub(graph).render()
     if not isinstance(result, str | bytes):
         msg = "OntPub did not return str or bytes"
         raise TypeError(msg)
