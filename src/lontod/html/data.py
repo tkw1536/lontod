@@ -8,11 +8,24 @@ from dominate.tags import a, html_tag, span  # type: ignore
 from rdflib.term import Literal, URIRef
 
 
+class RenderContext:
+    """context used for rendering"""
+
+    def close(self) -> None:
+        """closes this context, reserved for future usage."""
+
+    def fragment(self, uri: URIRef) -> str:
+        """returns a fragment identifier for this uri"""
+
+        # TODO: keep track of state and use this once we've migrated rendering to appropriate functions!
+        raise NotImplementedError()
+
+
 class HTMLable(metaclass=ABCMeta):
     """Represents an object that can be rendered as html"""
 
     @abstractmethod
-    def to_html(self) -> html_tag:
+    def to_html(self, ctx: RenderContext) -> html_tag:
         """turns this class into html"""
 
 
@@ -44,7 +57,7 @@ class MetaProperty(HTMLable):
     # ontologies this property is defined in
     ontologies: Sequence[MetaOntology]
 
-    def to_html(self) -> a:
+    def to_html(self, ctx: RenderContext | None = None) -> a:
         description_parts: list[str] = []
         for description in self.descriptions:
             description_parts.append(str(description.value).rstrip(".") + ".")
