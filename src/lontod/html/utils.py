@@ -5,7 +5,6 @@
 import re
 from collections import defaultdict
 from collections.abc import Sequence
-from itertools import chain
 
 from dominate.tags import (
     code,
@@ -21,7 +20,7 @@ from dominate.tags import (
     tr,
 )
 from rdflib import Graph
-from rdflib.namespace import DCTERMS, OWL, PROF, RDF, RDFS, SKOS, VANN
+from rdflib.namespace import DCTERMS, OWL, RDF, RDFS
 from rdflib.term import Node, URIRef
 
 from .context import RenderContext
@@ -31,50 +30,6 @@ from .rdf_elements import (
     ONT_TYPES,
     ONTDOC,
 )
-
-
-def get_ns(ont: Graph) -> tuple[str, str]:
-    """Get the default Namespace for the given graph (ontology)."""
-    # if this ontology declares a preferred URI, use that
-    pref_iri = None
-    for _, o in ont.subject_objects(predicate=VANN.preferredNamespaceUri):
-        pref_iri = str(o)
-
-    pref_prefix = None
-    for _, o in ont.subject_objects(predicate=VANN.preferredNamespacePrefix):
-        pref_prefix = str(o)
-    if pref_prefix is None:
-        pref_prefix = ""
-
-    if pref_iri is not None:
-        return pref_prefix, pref_iri
-
-    # if not, try the URI of the main object, compared to all prefixes
-    default_iri = None
-
-    for s_ in chain(
-        ont.subjects(predicate=RDF.type, object=OWL.Ontology),
-        ont.subjects(predicate=RDF.type, object=SKOS.ConceptScheme),
-        ont.subjects(predicate=RDF.type, object=PROF.Profile),
-    ):
-        default_iri = str(s_)
-
-    if default_iri is None:
-        # can't find either a declared or default namespace
-        # so we have an error
-        msg = (
-            "pyLODE can't detect a URI for an owl:Ontology, "
-            "a skos:ConceptScheme or a prof:Profile"
-        )
-        raise PylodeError(
-            msg,
-        )
-
-    prefix = ont.compute_qname(default_iri, True)[0]
-    if prefix is None:
-        msg = "compute_qname return None"
-        raise AssertionError(msg)
-    return prefix, default_iri
 
 
 def make_title_from_iri(iri: URIRef) -> str | None:
@@ -128,7 +83,6 @@ def prop_obj_pair_html(
     ctx: RenderContext,
     ont: Graph,
     back_onts: MetaOntologies,
-    ns: tuple[str, str],
     table_or_dl: str,
     prop_iri: URIRef,
     obj: list[Node],
@@ -149,7 +103,6 @@ def section_html(
     section_title: str,
     ont: Graph,
     back_onts: MetaOntologies,
-    ns: tuple[str, str],
     obj_class: URIRef,
     prop_list: Sequence[URIRef],
     toc: dict[str, list[tuple[str, str]]],
@@ -162,7 +115,6 @@ def section_html(
     def _element_html(
         ont_: Graph,
         back_onts_: MetaOntologies,
-        ns_: tuple[str, str],
         iri: URIRef,
         fid: str,
         title_: str | None,
@@ -196,7 +148,6 @@ def section_html(
                     ctx,
                     ont_,
                     back_onts_,
-                    ns_,
                     "table",
                     prop,
                     this_props_[prop],
@@ -264,7 +215,6 @@ def section_html(
             _element_html(
                 ont,
                 back_onts,
-                ns,
                 s_,
                 this_fid,
                 this_title,

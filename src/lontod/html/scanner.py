@@ -59,7 +59,6 @@ from .rdf_elements import (
 )
 from .utils import (
     PylodeError,
-    get_ns,
     prop_obj_pair_html,
     section_html,
     sort_ontology,
@@ -79,9 +78,7 @@ class Ontology(HTMLable):
         self._ontdoc_inference(self.__ont)
 
         self.__meta = MetaOntologies()
-
         self.__toc: dict[str, list[tuple[str, str]]] = {}
-        self.__ns = get_ns(self.__ont)
 
     def _ontdoc_inference(self, g: Graph) -> None:
         """Expand the ontology's graph to make OntDoc querying easier.
@@ -314,7 +311,6 @@ class Ontology(HTMLable):
                         ctx,
                         self.__ont,
                         self.__meta,
-                        self.__ns,
                         "dl",
                         prop,
                         this_onts_props[prop],
@@ -380,7 +376,6 @@ class Ontology(HTMLable):
                 "Classes",
                 self.__ont,
                 self.__meta,
-                self.__ns,
                 OWL.Class,
                 CLASS_PROPS,
                 self.__toc,
@@ -397,7 +392,6 @@ class Ontology(HTMLable):
                 "Properties",
                 self.__ont,
                 self.__meta,
-                self.__ns,
                 RDF.Property,
                 PROP_PROPS,
                 self.__toc,
@@ -410,7 +404,6 @@ class Ontology(HTMLable):
                 "Object Properties",
                 self.__ont,
                 self.__meta,
-                self.__ns,
                 OWL.ObjectProperty,
                 PROP_PROPS,
                 self.__toc,
@@ -423,7 +416,6 @@ class Ontology(HTMLable):
                 "Datatype Properties",
                 self.__ont,
                 self.__meta,
-                self.__ns,
                 OWL.DatatypeProperty,
                 PROP_PROPS,
                 self.__toc,
@@ -436,7 +428,6 @@ class Ontology(HTMLable):
                 "Annotation Properties",
                 self.__ont,
                 self.__meta,
-                self.__ns,
                 OWL.AnnotationProperty,
                 PROP_PROPS,
                 self.__toc,
@@ -449,7 +440,6 @@ class Ontology(HTMLable):
                 "Functional Properties",
                 self.__ont,
                 self.__meta,
-                self.__ns,
                 OWL.FunctionalProperty,
                 PROP_PROPS,
                 self.__toc,
