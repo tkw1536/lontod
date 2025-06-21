@@ -2,7 +2,7 @@
 
 # spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import chain
@@ -38,22 +38,15 @@ from .rdf_elements import (
     RESTRICTION_TYPES,
 )
 
-
-class RDFResource(HTMLable, ABC):
-    """represents a single RDF resource."""
+type _RDFResource = "BlankNodeResource|SetClassResource|_ResourceReference|RestrictionResource|LiteralResource|AgentResource"
 
 
 @dataclass
-class BlankNodeObject(RDFResource):
-    """a blank node."""
-
-
-@dataclass
-class SetClassResource(RDFResource):
+class SetClassResource(HTMLable):
     """representation of a restriction."""
 
     cardinality: TLiteral["union", "intersection"] | None
-    resources: Sequence[RDFResource]
+    resources: Sequence[HTMLable]
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
@@ -74,33 +67,41 @@ class SetClassResource(RDFResource):
 
 
 @dataclass
-class HyperlinkResource(RDFResource):
-    """references a different node in the local document."""
+class BlankNodeResource(HTMLable):
+    """A BlankNode that isn't of a specific subtype."""
 
-    iri: URIRef  # what are we referring to?
-
-    local: bool  # is the reference local to this ontology?
-    title: Literal  # title of the object being referred to.
-    rdf_type: URIRef | None  # type of the object being referred to, if known.
+    node: BNode
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
-        local_href = ctx.fragment(self.iri) if self.local else None
-        (href, new_tab) = (
-            ("#" + local_href, False)
-            if local_href is not None
-            else (str(self.iri), False)
-        )
+        return pre(str(self.node))
 
-        rel, target = ("noreferrer noopener", "_blank") if new_tab else (None, None)
 
-        link = a(str(self.title.value), href=href, target=target, rel=rel)
+class _ResourceReference(HTMLable, ABC):
+    """Reference to a resource by IRI."""
 
-        if self.rdf_type is None:
-            return link
+    iri: URIRef
+    title: Literal
 
+    @property
+    @abstractmethod
+    def is_local(self) -> bool:
+        """Indicates if this resource is defined in the local ontology."""
+
+
+@dataclass
+class LocalResource(_ResourceReference):
+    """Resource defined in the local ontology."""
+
+    iri: URIRef
+    title: Literal
+    rdf_type: URIRef
+
+    @override
+    def to_html(self, ctx: RenderContext) -> html_tag:
+        fragment = ctx.fragment(self.iri)
         return span(
-            link,
+            a(str(self.title.value), href="#" + fragment),
             sup(
                 ONT_TYPES[self.rdf_type][0],
                 _class="sup-" + ONT_TYPES[self.rdf_type][0],
@@ -108,12 +109,41 @@ class HyperlinkResource(RDFResource):
             ),
         )
 
+    @property
+    @override
+    def is_local(self) -> TLiteral[True]:
+        """Indicates that this resource is defined within the local document."""
+        return True
+
+
+@dataclass
+class ExternalResource(_ResourceReference):
+    """Resource defined externally."""
+
+    iri: URIRef
+    title: Literal
+
+    @override
+    def to_html(self, ctx: RenderContext) -> html_tag:
+        return a(
+            str(self.title.value),
+            href=str(self.iri),
+            target="_blank",
+            rel="noreferrer noopener",
+        )
+
+    @property
+    @override
+    def is_local(self) -> TLiteral[False]:
+        """Indicates that this resource is not defined within the local document."""
+        return False
+
 
 @dataclass
 class RDFResources(HTMLable):
     """Information about a single RDF Resource."""
 
-    resources: list[RDFResource]
+    resources: list[_RDFResource]
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
@@ -125,6 +155,60 @@ class RDFResources(HTMLable):
         for resource in self.resources:
             u.appendChild(li(resource.to_html(ctx)))
         return u
+
+
+@dataclass
+class RestrictionResource(HTMLable):
+    """OWL Restriction."""
+
+    # list of properties this restriction is on
+    properties: Sequence["_ResourceReference|AgentResource"]
+    cardinalities: Sequence["_Cardinality"]
+
+    @override
+    def to_html(self, ctx: RenderContext) -> html_tag:
+        if len(self.properties) == 0 and len(self.cardinalities) == 0:
+            return text("None")
+
+        s = span()
+        for elem in chain(
+            (ref.to_html(ctx) for ref in self.properties),
+            (card.to_html(ctx) for card in self.cardinalities),
+        ):
+            s.appendChild(elem)
+
+        # TODO: not sure when we need this br!
+        if len(self.properties) > 0 and len(self.cardinalities) > 0:
+            s.appendChild(br())
+
+        return s
+
+
+@dataclass
+class LiteralResource(HTMLable):
+    """references a literal object node in the local different."""
+
+    is_example: bool
+    content: Literal
+
+    @override
+    def to_html(self, ctx: RenderContext) -> html_tag:
+        if self.is_example:
+            return pre(str(self.content))
+
+        # TODO: Language and smarter Content Type!
+        return raw(markdown.markdown(self.content))
+
+
+@dataclass
+class AgentResource(HTMLable):
+    """represents an agent."""
+
+    html: html_tag
+
+    @override
+    def to_html(self, ctx: RenderContext) -> html_tag:
+        return self.html
 
 
 def rdf_obj_html(
@@ -148,7 +232,7 @@ def _single_resource(
     obj: Node,
     rdf_type: URIRef | None,
     prop: URIRef | None = None,
-) -> RDFResource:
+) -> _RDFResource:
     """Represent a single rdf object."""
     if isinstance(obj, URIRef):
         return _hyperlink_resource(
@@ -170,20 +254,17 @@ def _bn_resource(
     ont: Graph,
     meta: MetaOntologies,
     obj: BNode,
-) -> RDFResource:
+) -> _RDFResource:
     if (obj, RDF.type, PROV.Agent) in ont:
         return _agent_resource(ont, obj)
-
-    # TODO: remove back_onts and fids if not needed by subfunctions #pylint: disable=fixme
-    # What kind of BN is it?
-    # An Agent, a Restriction or a Set Class (union/intersection)
-    # handled all typing added in OntDoc inferencing
 
     if (obj, RDF.type, OWL.Restriction) in ont:
         return _restriction_resource(ont, meta, obj)
 
-    # set class: (obj, RDF.type, OWL.Class) in ont:
-    return _setclass_resource(ont, obj, meta)
+    if (obj, RDF.type, OWL.Class) in ont:
+        return _setclass_resource(ont, obj, meta)
+
+    return BlankNodeResource(node=obj)
 
 
 def _get_ont_type(ont: Graph, meta: MetaOntologies, iri: URIRef) -> URIRef | None:
@@ -217,7 +298,7 @@ def _hyperlink_resource(
     meta: MetaOntologies,
     iri: URIRef,
     rdf_type: URIRef | None = None,
-) -> "HyperlinkResource|AgentResource":
+) -> "_ResourceReference|AgentResource":
     if (iri, RDF.type, PROV.Agent) in ont:
         return _agent_resource(ont, iri)
 
@@ -247,7 +328,9 @@ def _hyperlink_resource(
         except KeyError:
             title = Literal(iri, datatype=XSD.anyURI)
 
-    return HyperlinkResource(iri=iri, local=is_local, title=title, rdf_type=rdf_type)
+    if is_local and rdf_type is not None:
+        return LocalResource(iri=iri, title=title, rdf_type=rdf_type)
+    return ExternalResource(iri=iri, title=title)
 
 
 def _setclass_resource(
@@ -263,7 +346,7 @@ def _setclass_resource(
     elif (obj, OWL.intersectionOf, None) in ont:
         cardinality = "intersection"
 
-    resources: list[RDFResource] = []
+    resources: list[_RDFResource] = []
     for o in ont.objects(obj, OWL.unionOf | OWL.intersectionOf):
         resources.extend(
             _single_resource(
@@ -278,33 +361,6 @@ def _setclass_resource(
 
 
 type _Cardinality = "CardinalityNumeric" | "CardinalityReference"
-
-
-@dataclass
-class RestrictionResource(RDFResource):
-    """OWL Restriction."""
-
-    # list of properties this restriction is on
-    properties: Sequence["HyperlinkResource|AgentResource"]
-    cardinalities: Sequence["_Cardinality"]
-
-    @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        if len(self.properties) == 0 and len(self.cardinalities) == 0:
-            return text("None")
-
-        s = span()
-        for elem in chain(
-            (ref.to_html(ctx) for ref in self.properties),
-            (card.to_html(ctx) for card in self.cardinalities),
-        ):
-            s.appendChild(elem)
-
-        # TODO: not sure when we need this br!
-        if len(self.properties) > 0 and len(self.cardinalities) > 0:
-            s.appendChild(br())
-
-        return s
 
 
 @dataclass
@@ -324,7 +380,7 @@ class CardinalityReference(HTMLable):
     """Referencing Cardinality."""
 
     typ: TLiteral["only", "some", "value", "union", "intersection"]
-    value: HyperlinkResource
+    value: _ResourceReference
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
@@ -341,7 +397,7 @@ def _restriction_resource(
     meta: MetaOntologies,
     obj: Node,
 ) -> RestrictionResource:
-    props: list[HyperlinkResource] = []
+    props: list[_ResourceReference] = []
     cards: list[_Cardinality] = []
 
     for px, o in ont.predicate_objects(obj):
@@ -353,7 +409,7 @@ def _restriction_resource(
                 # TODO: warn if not?
                 continue
             on = _hyperlink_resource(ont, meta, o)
-            if not isinstance(on, HyperlinkResource):
+            if not isinstance(on, _ResourceReference):
                 # TODO: warn if not?
                 continue
             props.append(on)
@@ -411,7 +467,7 @@ def _restriction_resource(
                     o,
                     OWL.Class,
                 )
-                if not isinstance(link, HyperlinkResource):
+                if not isinstance(link, _ResourceReference):
                     continue
 
                 # TODO: Ensure that the type is actually an OWL.Class!
@@ -424,28 +480,12 @@ def _restriction_resource(
     return RestrictionResource(properties=props, cardinalities=cards)
 
 
-@dataclass
-class LiteralResource(RDFResource):
-    """references a literal object node in the local different."""
-
-    is_example: bool
-    content: Literal
-
-    @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        if self.is_example:
-            return pre(str(self.content))
-
-        # TODO: Language and smarter Content Type!
-        return raw(markdown.markdown(self.content))
-
-
 def _literal_resource(
     ont: Graph,
     meta: MetaOntologies,
     obj: Literal,
     prop: URIRef | None,
-) -> "LiteralResource|HyperlinkResource|AgentResource":
+) -> "LiteralResource|_ResourceReference|AgentResource":
     # TODO: Properly check if it's a valid URI.
     if str(obj).startswith("http"):
         uri = URIRef(str(obj))
@@ -455,17 +495,6 @@ def _literal_resource(
         is_example=(prop == SKOS.example),
         content=obj,
     )
-
-
-@dataclass
-class AgentResource(RDFResource):
-    """represents an agent."""
-
-    html: html_tag
-
-    @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        return self.html
 
 
 def _agent_resource(ont: Graph, obj: URIRef | BNode | Literal) -> AgentResource:

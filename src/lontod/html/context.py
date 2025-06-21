@@ -1,6 +1,7 @@
 """Holds RenderContext."""
 
 from collections.abc import Generator
+from hashlib import md5
 from typing import Final
 
 from rdflib.term import Node, URIRef
@@ -9,7 +10,7 @@ from rdflib.term import Node, URIRef
 class RenderContext:
     """context used for rendering."""
 
-    __fids: dict[URIRef, str | None]
+    __fids: dict[URIRef, str]
     __fid_values: set[str]
 
     MAX_FID_TRIES: Final = 1000
@@ -22,14 +23,14 @@ class RenderContext:
     def close(self) -> None:
         """Close this context, reserved for future usage."""
 
-    def fragment(self, uri: URIRef, title: Node | None = None) -> str | None:
+    def fragment(self, uri: URIRef, title: Node | None = None) -> str:
         """Return a fragment identifier for this uri, using the given title node if it exists."""
         # already have a fragment identifier!
         if uri in self.__fids:
             return self.__fids[uri]
 
         # iterate through the candidates until we find a new one!
-        the_fid: str | None = None
+        the_fid: str
         for count, fid in enumerate(self.__fragment(uri, title)):
             if count == RenderContext.MAX_FID_TRIES:
                 msg = "exceeded maximum tries when generating fragment identifier for {uri!r}"
@@ -47,6 +48,25 @@ class RenderContext:
         return the_fid
 
     def __fragment(self, uri: URIRef, title: Node | None = None) -> Generator[str]:
+        """Yield possible fragment identifiers, repeating with a suffix if needed to allow for uniqueness."""
+        pure_identifiers: list[str] = []
+
+        for identifier in self.__fragment_pure(uri, title=title):
+            yield identifier
+            pure_identifiers.append(identifier)
+
+        # fallback to the hash of the URI
+        if len(pure_identifiers) == 0:
+            md5_hash = md5(str(uri).encode("utf-8"), usedforsecurity=False)
+            pure_identifiers = [md5_hash.hexdigest()]
+
+        suffix = 1
+        while True:
+            suffix += 1
+            for identifier in pure_identifiers:
+                yield f"{identifier}_{suffix}"
+
+    def __fragment_pure(self, uri: URIRef, title: Node | None = None) -> Generator[str]:
         s_iri = str(uri) if uri is not None else None
         s_title_ = str(title) if title is not None else None
 
@@ -75,11 +95,6 @@ class RenderContext:
 
         # the fid itself (if it isn't yet set)
         yield fid
-
-        # add a counter
-        counter = 1
-        while True:
-            yield f"{fid}{counter}"
 
 
 def _remove_non_ascii_chars(s_: str) -> str:

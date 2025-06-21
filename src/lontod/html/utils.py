@@ -193,14 +193,11 @@ def section_html(
             this_fid = ctx.fragment(s_, None)
             this_title = make_title_from_iri(s_)
         else:
+            # TODO: Multiple things
             this_fid = ctx.fragment(s_, this_props[DCTERMS.title][0])
             this_title = str(
                 this_props[DCTERMS.title],
             )  # TODO: this isn't right #pylint: disable=fixme
-
-        if this_fid is None:
-            msg = "wasn't able to generate fid"
-            raise AssertionError(msg)
 
         if this_title is None:
             this_title = "(No title)"
