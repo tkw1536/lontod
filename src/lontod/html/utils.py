@@ -139,7 +139,7 @@ def prop_obj_pair_html(
     Make a HTML Definition list dt & dd pair or a Table tr, th & td set, for a given RDF property & resource pair.
     """
     prop = back_onts[prop_iri].to_html(ctx)
-    o = rdf_obj_html(ctx, ont, back_onts, ns, obj, rdf_type=obj_type, prop=prop_iri)
+    o = rdf_obj_html(ctx, ont, back_onts, obj, rdf_type=obj_type, prop=prop_iri)
 
     return tr(th(prop), td(o)) if table_or_dl == "table" else div(dt(prop), dd(o))
 
