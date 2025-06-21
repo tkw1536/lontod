@@ -1,10 +1,22 @@
 """Holds RenderContext."""
 
+from abc import ABC, abstractmethod
 from collections.abc import Generator
 from hashlib import md5
 from typing import Final
 
+from dominate.tags import (
+    html_tag,
+)
 from rdflib.term import Node, URIRef
+
+
+class HTMLable(ABC):
+    """Represents an object that can be rendered as html."""
+
+    @abstractmethod
+    def to_html(self, ctx: "RenderContext") -> html_tag:
+        """Turn this class into html."""
 
 
 class RenderContext:

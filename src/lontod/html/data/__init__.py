@@ -1,0 +1,1 @@
+"""Dataclasses representing ontology information."""

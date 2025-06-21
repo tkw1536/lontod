@@ -47,9 +47,8 @@ from rdflib.namespace import (
 )
 from rdflib.term import Node, URIRef
 
-from .context import RenderContext
-from .data import HTMLable
-from .meta import MetaOntologies
+from .data.core import HTMLable, RenderContext
+from .extractor_meta import MetaOntologies
 from .rdf_elements import (
     AGENT_PROPS,
     CLASS_PROPS,

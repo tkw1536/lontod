@@ -2,9 +2,9 @@
 
 # spellchecker:words ONTDOC RDFS VANN onts trpls trpl ASGS orcid xlink evenodd uriref setclass inferencing elems specialised
 
-import re
 from collections import defaultdict
 from collections.abc import Sequence
+from typing import Literal as TLiteral
 
 from dominate.tags import (
     code,
@@ -23,47 +23,14 @@ from rdflib import Graph
 from rdflib.namespace import DCTERMS, OWL, RDF, RDFS
 from rdflib.term import Node, URIRef
 
-from .context import RenderContext
-from .data_single import rdf_obj_html
-from .meta import MetaOntologies
+from .common import iri_to_title
+from .data.core import RenderContext
+from .extractor_meta import MetaOntologies
+from .extractor_single import SingleResourceExtractor
 from .rdf_elements import (
     ONT_TYPES,
     ONTDOC,
 )
-
-
-def make_title_from_iri(iri: URIRef) -> str | None:
-    """Make a human-readable title for an RDF resource from its IRI."""
-    if not isinstance(iri, str):
-        iri = str(iri)
-    # can't tolerate any URI faults so return None if anything is wrong
-
-    # URIs with no path segments or ending in slash
-    segments = iri.split("/")
-    if len(segments[-1]) < 1:
-        return None
-
-    # URIs with only a domain - no path segments
-    if len(segments) < 4:  # noqa: PLR2004
-        return None
-
-    # URIs ending in hash
-    if segments[-1].endswith("#"):
-        return None
-
-    id_part = (
-        segments[-1].split("#")[-1]
-        if segments[-1].split("#")[-1] != ""
-        else segments[-1].split("#")[-2]
-    )
-
-    # split CamelCase
-    # title case if the first char is uppercase (likely a Class)
-    # else lower (property/Named Individual)
-    words = re.split(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", id_part)
-    if words[0][0].isupper():
-        return " ".join(words).title()
-    return " ".join(words).lower()
 
 
 def sort_ontology(ont_orig: Graph) -> Graph:
@@ -83,19 +50,28 @@ def prop_obj_pair_html(
     ctx: RenderContext,
     ont: Graph,
     back_onts: MetaOntologies,
-    table_or_dl: str,
+    table_or_dl: TLiteral["table", "dl"],
     prop_iri: URIRef,
-    obj: list[Node],
+    objs: list[Node],
     obj_type: URIRef | None = None,
 ) -> tr | div:
     """Make a HTML Definition for a given object pair.
 
     Make a HTML Definition list dt & dd pair or a Table tr, th & td set, for a given RDF property & resource pair.
     """
-    prop = back_onts[prop_iri].to_html(ctx)
-    o = rdf_obj_html(ctx, ont, back_onts, obj, rdf_type=obj_type, prop=prop_iri)
+    prop = back_onts[prop_iri]
+    res = SingleResourceExtractor(ont, back_onts)(
+        *objs, rdf_type=obj_type, prop=prop_iri
+    )
 
-    return tr(th(prop), td(o)) if table_or_dl == "table" else div(dt(prop), dd(o))
+    prop_html = prop.to_html(ctx)
+    res_html = res.to_html(ctx)
+
+    return (
+        tr(th(prop_html), td(res_html))
+        if table_or_dl == "table"
+        else div(dt(prop_html), dd(res_html))
+    )
 
 
 def section_html(
@@ -191,7 +167,7 @@ def section_html(
 
         if len(this_props[DCTERMS.title]) == 0:
             this_fid = ctx.fragment(s_, None)
-            this_title = make_title_from_iri(s_)
+            this_title = iri_to_title(s_)
         else:
             # TODO: Multiple things
             this_fid = ctx.fragment(s_, this_props[DCTERMS.title][0])

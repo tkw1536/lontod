@@ -25,7 +25,7 @@ from lontod.utils.cached import PickleCachedMeta
 from lontod.utils.graph import SubjectObjectQuery, subject_object_dicts
 
 from .common import iri_to_title
-from .data import MetaOntology, MetaProperty
+from .data.meta import MetaOntology, MetaProperty
 from .rdf_elements import PROPS
 
 RDF_FOLDER = resources.files(__package__).joinpath("ontologies")
@@ -124,7 +124,7 @@ class _MetaOntologiesGraph:
                 continue
 
             try:
-                yield MetaOntology(uri=s, titles=self.titles[s])
+                yield MetaOntology(iri=s, titles=self.titles[s])
             except KeyError:
                 continue
 

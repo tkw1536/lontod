@@ -1,34 +1,29 @@
-"""classes representing specific information about ontologies."""
+"""Dataclasses describing the meta ontology."""
 
-from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import override
 
-from dominate.tags import a, html_tag, span
+from dominate.tags import (
+    a,
+    span,
+)
 from rdflib.term import Literal, URIRef
 
-from .context import RenderContext
-
-
-class HTMLable(ABC):
-    """Represents an object that can be rendered as html."""
-
-    @abstractmethod
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        """Turn this class into html."""
+from .core import HTMLable, RenderContext
 
 
 @dataclass
 class MetaOntology:
     """Information about a single ontology."""
 
-    uri: URIRef
+    iri: URIRef
     titles: Sequence[Literal]
 
-    def __contains__(self, uri: URIRef) -> bool:
-        """Check if the given url is contained in this ontology."""
-        return uri.startswith(self.uri)
+    def __contains__(self, iri: URIRef) -> bool:
+        """Check if the given iri is contained in this ontology."""
+        # TODO: Check where this is used and maybe go to something else insyead.
+        return iri.startswith(self.iri)
 
 
 @dataclass

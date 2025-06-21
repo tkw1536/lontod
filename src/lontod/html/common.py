@@ -1,36 +1,10 @@
 """common functionality between different utility modules."""
 
 import re
-from collections.abc import Collection
-from typing import TypeVar
 
-from rdflib.term import Identifier, Node, URIRef
+from rdflib.term import URIRef
 
 # spellchecker:words uriref
-
-
-def must_uriref(node: Node) -> URIRef:
-    """Ensure that a node is a URIRef, or."""
-    # TODO: fixme
-    if isinstance(node, URIRef):
-        return node
-
-    if isinstance(node, Identifier):
-        return URIRef(str(node))
-
-    msg = "unable to turn node into URIRef"
-    raise ValueError(msg)
-
-
-T = TypeVar("T")
-
-
-def intersperse(lst: Collection[T], sep: T) -> list[T]:
-    """Intersperses lst with instances of sep."""
-    # TODO: fixme
-    result = [sep] * (len(lst) * 2 - 1)
-    result[0::2] = lst
-    return result
 
 
 def iri_to_title(iri: URIRef) -> str | None:
