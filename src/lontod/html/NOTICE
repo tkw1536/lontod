@@ -1,6 +1,11 @@
-Some of the code in the lontod.html module is based on pylode <https://github.com/RDFLib/pyLODE>. 
-The original license requires that the distribution reproduce the following copyright and license terms. 
-Please be aware that the modified form is licensed under different terms, see top-level README.
+Some of the code in this (sub-)module is based on pylode
+<https://github.com/RDFLib/pyLODE>. 
+This derived work is neither authorized nor endorsed by the original authors. 
+
+The original license (see below) requires that the distribution reproduce the
+following copyright and license terms. Please be aware that this module has been
+reworked heavily, and this new form licensed under different terms, see
+top-level README.
 
 Copyright (c) 2002-2021, RDFLib Team
 All rights reserved.

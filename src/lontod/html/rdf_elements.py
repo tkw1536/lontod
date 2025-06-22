@@ -114,6 +114,7 @@ PROPS = frozenset(
     ONT_PROPS + CLASS_PROPS + PROP_PROPS + AGENT_PROPS + RESTRICTION_PROPS,
 )
 
+
 ONT_TYPES = {
     OWL.Class: ("c", "OWL/RDFS Class"),
     RDF.Property: ("p", "RDF Property"),

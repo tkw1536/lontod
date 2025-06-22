@@ -30,8 +30,8 @@ class MetaOntology:
 class MetaProperty(HTMLable):
     """Human-readable information about a specific property."""
 
-    # uri of this property
-    uri: URIRef
+    # iri of this property
+    iri: URIRef
 
     # title of the property
     titles: Sequence[Literal]
@@ -66,5 +66,5 @@ class MetaProperty(HTMLable):
             *titles,
             title=" ".join(description_parts) if len(description_parts) > 0 else None,
             _class="hover_property",
-            href=str(self.uri),
+            href=str(self.iri),
         )

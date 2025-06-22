@@ -23,8 +23,8 @@ from rdflib import Graph
 from rdflib.namespace import DCTERMS, OWL, RDF, RDFS
 from rdflib.term import Node, URIRef
 
-from .common import iri_to_title
 from .data.core import RenderContext
+from .extractors.core import iri_to_title
 from .extractors.meta import MetaExtractor
 from .extractors.resource import ResourceExtractor
 from .rdf_elements import (
@@ -60,9 +60,7 @@ def prop_obj_pair_html(
     Make a HTML Definition list dt & dd pair or a Table tr, th & td set, for a given RDF property & resource pair.
     """
     prop = back_onts[prop_iri]
-    res = ResourceExtractor(ont, back_onts)(
-        *objs, rdf_type=obj_type, prop=prop_iri
-    )
+    res = ResourceExtractor(ont, back_onts)(*objs, rdf_type=obj_type, prop=prop_iri)
 
     prop_html = prop.to_html(ctx)
     res_html = res.to_html(ctx)

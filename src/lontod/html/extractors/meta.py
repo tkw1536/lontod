@@ -21,11 +21,12 @@ from rdflib.namespace import (
 )
 from rdflib.term import Literal, URIRef
 
-from lontod.html.common import iri_to_title
 from lontod.html.data.meta import MetaOntology, MetaProperty
 from lontod.html.rdf_elements import PROPS
 from lontod.utils.cached import PickleCachedMeta
 from lontod.utils.graph import SubjectObjectQuery, subject_object_dicts
+
+from .core import iri_to_title
 
 RDF_FOLDER = resources.files(__package__).joinpath("ontologies")
 
@@ -142,7 +143,7 @@ class _MetaGraph:
             titles = [Literal(auto_title)]
 
         return MetaProperty(
-            uri=prop,
+            iri=prop,
             titles=titles,
             descriptions=self.descriptions.get(prop) or (),
             ontologies=[ontology for ontology in self.ontologies if prop in ontology],

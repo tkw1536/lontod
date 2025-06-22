@@ -35,15 +35,15 @@ class RenderContext:
     def close(self) -> None:
         """Close this context, reserved for future usage."""
 
-    def fragment(self, uri: URIRef, title: Node | None = None) -> str:
-        """Return a fragment identifier for this uri, using the given title node if it exists."""
+    def fragment(self, iri: URIRef, title: Node | None = None) -> str:
+        """Return a fragment identifier for this title, using the given title node if it exists."""
         # already have a fragment identifier!
-        if uri in self.__fids:
-            return self.__fids[uri]
+        if iri in self.__fids:
+            return self.__fids[iri]
 
         # iterate through the candidates until we find a new one!
         the_fid: str
-        for count, fid in enumerate(self.__fragment(uri, title)):
+        for count, fid in enumerate(self.__fragment(iri, title)):
             if count == RenderContext.MAX_FID_TRIES:
                 msg = "exceeded maximum tries when generating fragment identifier for {uri!r}"
                 raise OverflowError(msg)
@@ -52,7 +52,7 @@ class RenderContext:
                 break
 
         # cache and return
-        self.__fids[uri] = the_fid
+        self.__fids[iri] = the_fid
         if isinstance(the_fid, str):
             self.__fid_values.add(the_fid)
 
