@@ -43,9 +43,9 @@ class MetaOntologies(metaclass=PickleCachedMeta):
         self.__titles = g.titles
         self.__props = g.props
 
-    def __getitem__(self, uri: URIRef) -> MetaProperty:
+    def __getitem__(self, iri: URIRef) -> MetaProperty:
         """Get information about a specific property."""
-        return self.__props[uri]
+        return self.__props[iri]
 
     def types_of(self, iri: URIRef) -> Generator[URIRef]:
         """Iterate over the types of the given IRI."""
