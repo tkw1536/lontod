@@ -76,7 +76,7 @@ class Ontology(HTMLable):
         self.__ont = sort_ontology(ontology)
         self._ontdoc_inference(self.__ont)
 
-        self.__meta = MetaExtractor()
+        self.__meta = MetaExtractor()()
         self.__toc: dict[str, list[tuple[str, str]]] = {}
 
     def _ontdoc_inference(self, g: Graph) -> None:

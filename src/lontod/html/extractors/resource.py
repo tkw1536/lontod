@@ -10,6 +10,7 @@ from rdflib.namespace import DCTERMS, OWL, PROV, RDF, SDO, SKOS, XSD
 from rdflib.paths import ZeroOrMore
 from rdflib.term import BNode, Literal, Node, URIRef
 
+from lontod.html.data.meta import MetaOntologies
 from lontod.html.data.resource import (
     Affiliation,
     AgentResource,
@@ -33,15 +34,13 @@ from lontod.html.extractors._rdf import (
     RESTRICTION_TYPES,
 )
 
-from .meta import MetaExtractor
-
 
 @dataclass
 class ResourceExtractor:
     """Extract information about a single resource from an ontology."""
 
     ont: Graph
-    meta: MetaExtractor
+    meta: MetaOntologies
 
     def __call__(
         self, *objects: Node, rdf_type: URIRef | None, prop: URIRef | None

@@ -1,6 +1,7 @@
 """Dataclasses describing the meta ontology."""
 
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import override
 
@@ -11,6 +12,33 @@ from dominate.tags import (
 from rdflib.term import Literal, URIRef
 
 from .core import HTMLable, RenderContext
+
+
+@dataclass
+class MetaOntologies:
+    """Information about all meta ontologies."""
+
+    types: dict[URIRef, Sequence[URIRef]]
+    titles: dict[URIRef, Sequence[Literal]]
+    props: dict[str, "MetaProperty"]
+
+    def __getitem__(self, iri: URIRef) -> "MetaProperty":
+        """Get information about a specific property."""
+        return self.props[iri]
+
+    def types_of(self, iri: URIRef) -> Generator[URIRef]:
+        """Iterate over the types of the given IRI."""
+        with suppress(KeyError):
+            yield from self.types[iri]
+
+    def title_of(self, iri: URIRef) -> Literal | None:
+        """Return the title of the given IRI, if it exists in the metadata ontology."""
+        try:
+            return self.titles[iri][0]
+        except KeyError:
+            return None
+        except IndexError:
+            return None
 
 
 @dataclass
