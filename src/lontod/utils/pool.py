@@ -1,12 +1,9 @@
 """Implements a pool that recycles objects when needed."""
 
 from collections import deque
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from threading import Lock
-from typing import TypeVar
-
-T = TypeVar("T")
 
 
 class Pool[T]:
@@ -43,7 +40,7 @@ class Pool[T]:
         self._teardown = teardown if teardown is not None else lambda _: None
 
     @contextmanager
-    def use(self) -> Iterator[T]:
+    def use(self) -> Generator[T]:
         """Context manager that allows using an item from a pool."""
         item = self.get()
         yield item
@@ -69,7 +66,7 @@ class Pool[T]:
     def teardown(self) -> None:
         """Remove all objects from the pool."""
         with self._lock:
-            if len(self._q) > 0:
+            while len(self._q) > 0:
                 self._teardown(self._q.popleft())
 
 
