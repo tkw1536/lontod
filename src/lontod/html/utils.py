@@ -24,13 +24,13 @@ from rdflib.namespace import DCTERMS, OWL, RDF, RDFS
 from rdflib.term import Node, URIRef
 
 from .data.core import RenderContext
-from .extractors.core import iri_to_title
-from .extractors.meta import MetaExtractor
-from .extractors.resource import ResourceExtractor
-from .rdf_elements import (
+from .extractors._rdf import (
     ONT_TYPES,
     ONTDOC,
 )
+from .extractors.core import iri_to_title
+from .extractors.meta import MetaExtractor
+from .extractors.resource import ResourceExtractor
 
 
 def sort_ontology(ont_orig: Graph) -> Graph:

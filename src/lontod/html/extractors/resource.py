@@ -26,7 +26,7 @@ from lontod.html.data.resource import (
     _RDFResource,
     _ResourceReference,
 )
-from lontod.html.rdf_elements import (
+from lontod.html.extractors._rdf import (
     AGENT_PROPS,
     ONT_TYPES,
     OWL_SET_TYPES,

@@ -22,7 +22,7 @@ from rdflib.namespace import (
 from rdflib.term import Literal, URIRef
 
 from lontod.html.data.meta import MetaOntology, MetaProperty
-from lontod.html.rdf_elements import PROPS
+from lontod.html.extractors._rdf import PROPS
 from lontod.utils.cached import PickleCachedMeta
 from lontod.utils.graph import SubjectObjectQuery, subject_object_dicts
 

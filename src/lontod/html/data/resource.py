@@ -24,7 +24,7 @@ from dominate.tags import (
 from dominate.util import container, raw, text
 from rdflib.term import BNode, Literal, URIRef
 
-from lontod.html.rdf_elements import (
+from lontod.html.extractors._rdf import (
     ONT_TYPES,
 )
 from lontod.utils.intersperse import intersperse

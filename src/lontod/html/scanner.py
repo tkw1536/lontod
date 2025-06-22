@@ -48,14 +48,14 @@ from rdflib.namespace import (
 from rdflib.term import Node, URIRef
 
 from .data.core import HTMLable, RenderContext
-from .extractors.meta import MetaExtractor
-from .rdf_elements import (
+from .extractors._rdf import (
     AGENT_PROPS,
     CLASS_PROPS,
     ONT_PROPS,
     ONTDOC,
     PROP_PROPS,
 )
+from .extractors.meta import MetaExtractor
 from .utils import (
     PylodeError,
     prop_obj_pair_html,

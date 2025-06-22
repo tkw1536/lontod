@@ -126,6 +126,7 @@ ONT_TYPES = {
     OWL.NamedIndividual: ("ni", "OWL Named Individual"),
 }
 
+
 RESTRICTION_TYPES = (
     OWL.cardinality,
     OWL.qualifiedCardinality,
