@@ -37,7 +37,7 @@ from .meta import MetaExtractor
 
 
 @dataclass
-class SingleResourceExtractor:
+class ResourceExtractor:
     """Extract information about a single resource from an ontology."""
 
     ont: Graph

@@ -26,7 +26,7 @@ from rdflib.term import Node, URIRef
 from .common import iri_to_title
 from .data.core import RenderContext
 from .extractors.meta import MetaExtractor
-from .extractors.single import SingleResourceExtractor
+from .extractors.resource import ResourceExtractor
 from .rdf_elements import (
     ONT_TYPES,
     ONTDOC,
@@ -60,7 +60,7 @@ def prop_obj_pair_html(
     Make a HTML Definition list dt & dd pair or a Table tr, th & td set, for a given RDF property & resource pair.
     """
     prop = back_onts[prop_iri]
-    res = SingleResourceExtractor(ont, back_onts)(
+    res = ResourceExtractor(ont, back_onts)(
         *objs, rdf_type=obj_type, prop=prop_iri
     )
 
