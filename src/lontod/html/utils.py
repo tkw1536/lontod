@@ -25,8 +25,8 @@ from rdflib.term import Node, URIRef
 
 from .common import iri_to_title
 from .data.core import RenderContext
-from .extractor_meta import MetaOntologies
-from .extractor_single import SingleResourceExtractor
+from .extractors.meta import MetaExtractor
+from .extractors.single import SingleResourceExtractor
 from .rdf_elements import (
     ONT_TYPES,
     ONTDOC,
@@ -49,7 +49,7 @@ def sort_ontology(ont_orig: Graph) -> Graph:
 def prop_obj_pair_html(
     ctx: RenderContext,
     ont: Graph,
-    back_onts: MetaOntologies,
+    back_onts: MetaExtractor,
     table_or_dl: TLiteral["table", "dl"],
     prop_iri: URIRef,
     objs: list[Node],
@@ -78,7 +78,7 @@ def section_html(
     ctx: RenderContext,
     section_title: str,
     ont: Graph,
-    back_onts: MetaOntologies,
+    back_onts: MetaExtractor,
     obj_class: URIRef,
     prop_list: Sequence[URIRef],
     toc: dict[str, list[tuple[str, str]]],
@@ -90,7 +90,7 @@ def section_html(
 
     def _element_html(
         ont_: Graph,
-        back_onts_: MetaOntologies,
+        back_onts_: MetaExtractor,
         iri: URIRef,
         fid: str,
         title_: str | None,

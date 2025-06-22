@@ -7,7 +7,7 @@ from collections.abc import Generator, Sequence
 from functools import cached_property
 from importlib import resources
 from logging import getLogger
-from typing import TextIO, TypeVar, cast, final
+from typing import TextIO, cast, final
 
 from rdflib import Graph
 from rdflib.namespace import (
@@ -19,25 +19,24 @@ from rdflib.namespace import (
     SDO,
     SKOS,
 )
-from rdflib.term import Literal, Node, URIRef
+from rdflib.term import Literal, URIRef
 
+from lontod.html.common import iri_to_title
+from lontod.html.data.meta import MetaOntology, MetaProperty
+from lontod.html.rdf_elements import PROPS
 from lontod.utils.cached import PickleCachedMeta
 from lontod.utils.graph import SubjectObjectQuery, subject_object_dicts
-
-from .common import iri_to_title
-from .data.meta import MetaOntology, MetaProperty
-from .rdf_elements import PROPS
 
 RDF_FOLDER = resources.files(__package__).joinpath("ontologies")
 
 
 @final
-class MetaOntologies(metaclass=PickleCachedMeta):
+class MetaExtractor(metaclass=PickleCachedMeta):
     """Holds information about the meta ontologies."""
 
     def __init__(self) -> None:
         """Create a new MetaOntologies object."""
-        g = _MetaOntologiesGraph()
+        g = _MetaGraph()
 
         self.__types = g.types
         self.__titles = g.titles
@@ -62,12 +61,10 @@ class MetaOntologies(metaclass=PickleCachedMeta):
             return None
 
 
-T = TypeVar("T", bound=Node)
-
-logger = getLogger("lontod.ontology.background")
+logger = getLogger(__name__)
 
 
-class _MetaOntologiesGraph:
+class _MetaGraph:
     """In-memory representation for the loaded meta ontologies graph."""
 
     def __init__(self) -> None:

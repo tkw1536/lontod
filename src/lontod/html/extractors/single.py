@@ -5,19 +5,13 @@
 from dataclasses import dataclass
 from typing import Literal as TLiteral
 
-from dominate.tags import (
-    a,
-    em,
-    html_tag,
-    span,
-)
-from dominate.util import raw
 from rdflib import Graph
 from rdflib.namespace import DCTERMS, OWL, PROV, RDF, SDO, SKOS, XSD
 from rdflib.paths import ZeroOrMore
 from rdflib.term import BNode, Literal, Node, URIRef
 
-from .data.resource import (
+from lontod.html.data.resource import (
+    Affiliation,
     AgentResource,
     BlankNodeResource,
     CardinalityNumeric,
@@ -32,13 +26,14 @@ from .data.resource import (
     _RDFResource,
     _ResourceReference,
 )
-from .extractor_meta import MetaOntologies
-from .rdf_elements import (
+from lontod.html.rdf_elements import (
     AGENT_PROPS,
     ONT_TYPES,
     OWL_SET_TYPES,
     RESTRICTION_TYPES,
 )
+
+from .meta import MetaExtractor
 
 
 @dataclass
@@ -46,7 +41,7 @@ class SingleResourceExtractor:
     """Extract information about a single resource from an ontology."""
 
     ont: Graph
-    meta: MetaOntologies
+    meta: MetaExtractor
 
     def __call__(
         self, *objects: Node, rdf_type: URIRef | None, prop: URIRef | None
@@ -278,110 +273,55 @@ class SingleResourceExtractor:
 
     def __extract_agent(self, obj: URIRef | BNode) -> AgentResource:
         # TODO: Rework this
-        def _affiliation_html(
-            ont___: Graph,
-            obj___: URIRef | BNode | Literal,
-        ) -> html_tag:
-            name_ = None
-            url_ = None
 
-            for p_, o_ in ont___.predicate_objects(obj___):
-                if p_ in AGENT_PROPS:
-                    if p_ == SDO.name:
-                        name_ = str(o_)
-                    elif p_ == SDO.url:
-                        url_ = str(o_)
-
-            sp_ = span()
-            if name_ is not None:
-                if url_ is not None:
-                    sp_.appendChild(em(" of ", a(name_, href=url_)))
-                else:
-                    sp_.appendChild(em(" of ", name_))
-            elif "http" in obj___:
-                sp_.appendChild(em(" of ", a(obj___, href=obj___)))
-            return sp_
-
-        if isinstance(obj, Literal):
-            return AgentResource(span(str(obj)))
-
-        honorific_prefix = None
-        name = None
-        identifier = None
-        orcid = None
-        orcid_logo = """
-                <svg width="15px" height="15px" viewBox="0 0 72 72" version="1.1"
-                    xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink">
-                    <title>Orcid logo</title>
-                    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                        <g id="hero" transform="translate(-924.000000, -72.000000)" fill-rule="nonzero">
-                            <g id="Group-4">
-                                <g id="vector_iD_icon" transform="translate(924.000000, 72.000000)">
-                                    <path d="M72,36 C72,55.884375 55.884375,72 36,72 C16.115625,72 0,55.884375 0,36 C0,16.115625 16.115625,0 36,0 C55.884375,0 72,16.115625 72,36 Z" id="Path" fill="#A6CE39"></path>
-                                    <g id="Group" transform="translate(18.868966, 12.910345)" fill="#FFFFFF">
-                                        <polygon id="Path" points="5.03734929 39.1250878 0.695429861 39.1250878 0.695429861 9.14431787 5.03734929 9.14431787 5.03734929 22.6930505 5.03734929 39.1250878"></polygon>
-                                        <path d="M11.409257,9.14431787 L23.1380784,9.14431787 C34.303014,9.14431787 39.2088191,17.0664074 39.2088191,24.1486995 C39.2088191,31.846843 33.1470485,39.1530811 23.1944669,39.1530811 L11.409257,39.1530811 L11.409257,9.14431787 Z M15.7511765,35.2620194 L22.6587756,35.2620194 C32.49858,35.2620194 34.7541226,27.8438084 34.7541226,24.1486995 C34.7541226,18.1301509 30.8915059,13.0353795 22.4332213,13.0353795 L15.7511765,13.0353795 L15.7511765,35.2620194 Z" id="Shape"></path>
-                                        <path d="M5.71401206,2.90182329 C5.71401206,4.441452 4.44526937,5.72914146 2.86638958,5.72914146 C1.28750978,5.72914146 0.0187670918,4.441452 0.0187670918,2.90182329 C0.0187670918,1.33420133 1.28750978,0.0745051096 2.86638958,0.0745051096 C4.44526937,0.0745051096 5.71401206,1.36219458 5.71401206,2.90182329 Z" id="Path"></path>
-                                    </g>
-                                </g>
-                            </g>
-                        </g>
-                    </g>
-                </svg>"""
-        url = None
-        email = None
-        affiliation = None
-
-        if "orcid.org" in str(obj):
-            orcid = True
+        # TODO: not sure I like this!
+        names: list[Literal] = []
+        prefixes: list[Literal] = []
+        identifiers: list[str] = []
+        urls: list[str] = []
+        emails: list[str] = []
+        affiliations: list[Affiliation] = []
 
         for px, o in self.ont.predicate_objects(obj):
-            if px in AGENT_PROPS:
-                if px == SDO.name:
-                    name = str(o)
-                elif px == SDO.honorificPrefix:
-                    honorific_prefix = str(o)
-                elif px == SDO.identifier:
-                    identifier = str(o)
-                    if "orcid.org" in str(o):
-                        orcid = True
-                elif px == SDO.url:
-                    url = str(o)
-                elif px == SDO.email:
-                    email = str(o)
-                elif px == SDO.affiliation and isinstance(
-                    o,
-                    URIRef | BNode | Literal,
-                ):
-                    affiliation = o
+            if px not in AGENT_PROPS:
+                continue
 
-        sp = span()
+            lit = o if isinstance(o, Literal) else None
+            if lit is not None and isinstance(o, (Literal)):
+                names.append(lit)
+            elif px == SDO.honorificPrefix and isinstance(o, (Literal)):
+                prefixes.append(o)
+            elif px == SDO.identifier and isinstance(o, Literal | URIRef):
+                identifiers.append(str(o))
+            elif px == SDO.url:
+                urls.append(str(o))
+            elif px == SDO.email:
+                emails.append(str(o))
+            elif px == SDO.affiliation and isinstance(
+                o,
+                URIRef | BNode | Literal,
+            ):
+                affiliations.append(self._extract_affiliation(o))
 
-        if name is not None:
-            if honorific_prefix is not None:
-                name = honorific_prefix + " " + name
+        return AgentResource(
+            obj=obj,
+            names=names,
+            prefixes=prefixes,
+            identifiers=identifiers,
+            urls=urls,
+            emails=emails,
+            affiliations=affiliations,
+        )
 
-            if url is not None:
-                sp.appendChild(a(name, href=url))
-            else:
-                sp.appendChild(span(name))
+    def _extract_affiliation(self, obj: URIRef | BNode | Literal) -> Affiliation:
+        names: list[Literal] = []
+        urls: list[str] = []
+        for pa, o in self.ont.predicate_objects(obj):
+            if pa not in AGENT_PROPS:
+                continue
 
-            if orcid:
-                if "orcid.org" in obj:
-                    sp.appendChild(a(raw(orcid_logo), href=obj))
-                else:
-                    sp.appendChild(a(raw(orcid_logo), href=identifier))
-            elif identifier is not None:
-                sp.appendChild(a(identifier, href=identifier))
-            if email is not None:
-                email = email.replace("mailto:", "")
-                sp.appendChild(span("(", a(email, href="mailto:" + email), " )"))
-
-            if affiliation is not None:
-                sp.appendChild(_affiliation_html(self.ont, affiliation))
-        else:
-            if not orcid:
-                return AgentResource(obj)
-            sp.appendChild(a(obj, href=obj))
-        return AgentResource(sp)
+            if pa == SDO.name and isinstance(o, Literal):
+                names.append(o)
+            elif pa == SDO.URL:
+                urls.append(str(o))
+        return Affiliation(names=names, urls=urls)

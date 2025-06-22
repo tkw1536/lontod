@@ -48,7 +48,7 @@ from rdflib.namespace import (
 from rdflib.term import Node, URIRef
 
 from .data.core import HTMLable, RenderContext
-from .extractor_meta import MetaOntologies
+from .extractors.meta import MetaExtractor
 from .rdf_elements import (
     AGENT_PROPS,
     CLASS_PROPS,
@@ -76,7 +76,7 @@ class Ontology(HTMLable):
         self.__ont = sort_ontology(ontology)
         self._ontdoc_inference(self.__ont)
 
-        self.__meta = MetaOntologies()
+        self.__meta = MetaExtractor()
         self.__toc: dict[str, list[tuple[str, str]]] = {}
 
     def _ontdoc_inference(self, g: Graph) -> None:
