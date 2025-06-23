@@ -251,4 +251,4 @@ class LONTOD(DefinedNamespace):
     Namespaces: URIRef
     Legend: URIRef
 
-    _NS = Namespace("https://github.com/tkw1536/lontod")
+    _NS = Namespace("https://github.com/tkw1536/lontod#")
