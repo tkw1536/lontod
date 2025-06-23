@@ -4,7 +4,7 @@ from collections.abc import Generator, Sequence
 from dataclasses import dataclass
 from importlib import resources
 from itertools import chain
-from typing import override
+from typing import final, override
 
 from dominate.document import document
 from dominate.tags import (
@@ -41,10 +41,9 @@ from .core import HTMLable, RenderContext
 from .meta import MetaProperty
 from .resource import RDFResources
 
-# TODO: make everything final
 # TODO: ensure it's a sequence everywhere
 
-
+@final
 @dataclass
 class PropertyResourcePair:
     """a pair of information about a property and its' values."""
@@ -53,6 +52,7 @@ class PropertyResourcePair:
     resources: RDFResources
 
 
+@final
 @dataclass
 class Definiendum(HTMLable):
     """something being defined in the ontology."""

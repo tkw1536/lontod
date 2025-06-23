@@ -12,6 +12,7 @@ from lontod.utils.pool import Pool
 from lontod.utils.strings import as_utf8
 
 
+@final
 @dataclass
 class Ontology:
     """an ontology as stored in the database."""
@@ -24,6 +25,7 @@ class Ontology:
     definienda_count: int
 
 
+@final
 @dataclass
 class Definiendum:
     """a definiendum result."""

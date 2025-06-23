@@ -37,9 +37,6 @@ from .data.ontology import (
 from .extractors.meta import MetaExtractor
 from .extractors.ontology import OntologyExtractor
 from .extractors.resource import ResourceExtractor
-from .utils import (
-    sort_ontology,
-)
 
 # spellchecker:words ONTDOC FOAF RDFS onts Helper objectproperties datatypeproperties annotationproperties functionalproperties nses
 
@@ -69,16 +66,6 @@ class Scanner:
         # class types
         for s_ in g.subjects(RDF.type, RDFS.Class):
             g.add((s_, RDF.type, OWL.Class))
-
-        # # property types
-        # for s_ in chain(
-        #     g.subjects(RDF.type, OWL.ObjectProperty),
-        #     g.subjects(RDF.type, OWL.FunctionalProperty),
-        #     g.subjects(RDF.type, OWL.DatatypeProperty),
-        #     g.subjects(RDF.type, OWL.AnnotationProperty),
-        # ):
-        #     g.add((s_, RDF.type, RDF.Property))
-
         # name
         for s_, o in chain(
             g.subject_objects(DC.title),
@@ -330,3 +317,16 @@ class Scanner:
             )
 
         return tuple(sorted(nses.items(), key=lambda x: x[0]))
+
+
+def sort_ontology(ont_orig: Graph) -> Graph:
+    """Create a copy of the supplied ontology, sorted by subjects."""
+    trpls = ont_orig.triples((None, None, None))
+    trpls_srt = sorted(trpls)
+    ont_sorted = Graph(
+        bind_namespaces="core",
+        namespace_manager=ont_orig.namespace_manager,
+    )
+    for trpl in trpls_srt:
+        ont_sorted.add(trpl)
+    return ont_sorted

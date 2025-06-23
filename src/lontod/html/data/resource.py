@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import chain
-from typing import Final, override
+from typing import Final, final, override
 from typing import Literal as TLiteral
 
 import markdown
@@ -33,6 +33,7 @@ from .core import HTMLable, RenderContext
 type _RDFResource = "BlankNodeResource|SetClassResource|_ResourceReference|RestrictionResource|LiteralResource|AgentResource"
 
 
+@final
 @dataclass
 class SetClassResource(HTMLable):
     """representation of a restriction."""
@@ -58,6 +59,7 @@ class SetClassResource(HTMLable):
         )
 
 
+@final
 @dataclass
 class BlankNodeResource(HTMLable):
     """A BlankNode that isn't of a specific subtype."""
@@ -81,6 +83,7 @@ class _ResourceReference(HTMLable, ABC):
         """Indicates if this resource is defined in the local ontology."""
 
 
+@final
 @dataclass
 class LocalResource(_ResourceReference):
     """Resource defined in the local ontology."""
@@ -109,6 +112,7 @@ class LocalResource(_ResourceReference):
         return True
 
 
+@final
 @dataclass
 class ExternalResource(_ResourceReference):
     """Resource defined externally."""
@@ -132,6 +136,7 @@ class ExternalResource(_ResourceReference):
         return False
 
 
+@final
 @dataclass
 class RDFResources(HTMLable):
     """Information about a single RDF Resource."""
@@ -150,6 +155,7 @@ class RDFResources(HTMLable):
         return u
 
 
+@final
 @dataclass
 class RestrictionResource(HTMLable):
     """OWL Restriction."""
@@ -177,6 +183,7 @@ class RestrictionResource(HTMLable):
         return s
 
 
+@final
 @dataclass
 class LiteralResource(HTMLable):
     """references a literal object node in the local different."""
@@ -193,6 +200,7 @@ class LiteralResource(HTMLable):
         return raw(markdown.markdown(self.lit))
 
 
+@final
 @dataclass
 class AgentResource(HTMLable):
     """represents an agent."""
@@ -259,6 +267,7 @@ class AgentResource(HTMLable):
         return sp
 
 
+@final
 @dataclass
 class Affiliation(HTMLable):
     """Affiliation of an agent."""
@@ -302,6 +311,7 @@ class Affiliation(HTMLable):
 type _Cardinality = "CardinalityNumeric" | "CardinalityReference"
 
 
+@final
 @dataclass
 class CardinalityNumeric(HTMLable):
     """Numeric Cardinality."""
@@ -314,6 +324,7 @@ class CardinalityNumeric(HTMLable):
         return span(span(self.typ, _class="cardinality"), span(self.value))
 
 
+@final
 @dataclass
 class CardinalityReference(HTMLable):
     """Referencing Cardinality."""

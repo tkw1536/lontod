@@ -4,6 +4,7 @@
 
 from dataclasses import dataclass
 from typing import Literal as TLiteral
+from typing import final
 
 from rdflib import Graph
 from rdflib.namespace import DCTERMS, OWL, PROV, RDF, SDO, SKOS, XSD
@@ -36,6 +37,7 @@ from lontod.html.data.resource import (
 )
 
 
+@final
 @dataclass
 class ResourceExtractor:
     """Extract information about a single resource from an ontology."""

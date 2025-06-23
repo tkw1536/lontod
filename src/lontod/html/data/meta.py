@@ -3,7 +3,7 @@
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import override
+from typing import final, override
 
 from dominate.tags import (
     a,
@@ -14,6 +14,7 @@ from rdflib.term import Literal, URIRef
 from .core import HTMLable, RenderContext
 
 
+@final
 @dataclass
 class MetaOntologies:
     """Information about all meta ontologies."""
@@ -41,6 +42,7 @@ class MetaOntologies:
             return None
 
 
+@final
 @dataclass
 class MetaOntology:
     """Information about a single ontology."""
@@ -54,6 +56,7 @@ class MetaOntology:
         return iri.startswith(self.iri)
 
 
+@final
 @dataclass
 class MetaProperty(HTMLable):
     """Human-readable information about a specific property."""

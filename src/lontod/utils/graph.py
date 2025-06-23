@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import (
     Any,
     TypeGuard,
+    final,
 )
 
 from html_sanitizer.sanitizer import (
@@ -155,6 +156,7 @@ def _subject_predicates(g: Graph) -> Generator[tuple[_SubjectType, _PredicateTyp
             yield (s, p)
 
 
+@final
 @dataclass
 class SubjectObjectQuery:
     """Query for the subject_object_dicts function."""

@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import final
 
 from rdflib import Namespace
 from rdflib.namespace import (
@@ -119,6 +120,7 @@ PROPS = frozenset(
 )
 
 
+@final
 @dataclass
 class PropertyKind:
     """Properties listed."""
@@ -144,8 +146,11 @@ class InvalidPropertyKindError(ValueError):
     """Raised when a PropertyKind is not valid."""
 
 
+@final
 @dataclass
 class _OntTypeInfo:
+    """Information about an ontology type."""
+
     abbrev: str
     toc_id: str
 
