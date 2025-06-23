@@ -283,18 +283,11 @@ class Scanner:
         )
 
     def __make_sections(self) -> Generator[TypeDefinienda]:
-        for kind_iri in (
-            OWL.Class,
-            RDF.Property,
-            OWL.ObjectProperty,
-            OWL.DatatypeProperty,
-            OWL.AnnotationProperty,
-            OWL.FunctionalProperty,
-        ):
-            if (None, RDF.type, kind_iri) not in self.__ont:
+        for kind in PropertyKind:
+            if (None, RDF.type, kind.iri) not in self.__ont:
                 continue
 
-            yield self.__extractor.extract(PropertyKind(kind_iri))
+            yield self.__extractor.extract(kind)
 
     def __make_namespaces(self) -> Sequence[tuple[str, URIRef]]:
         # only get namespaces used in ont

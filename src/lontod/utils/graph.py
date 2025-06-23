@@ -157,7 +157,7 @@ def _subject_predicates(g: Graph) -> Generator[tuple[_SubjectType, _PredicateTyp
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class SubjectObjectQuery:
     """Query for the subject_object_dicts function."""
 

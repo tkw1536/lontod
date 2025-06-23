@@ -34,7 +34,7 @@ type _RDFResource = "BlankNodeResource|SetClassResource|_ResourceReference|Restr
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class SetClassResource(HTMLable):
     """representation of a restriction."""
 
@@ -60,7 +60,7 @@ class SetClassResource(HTMLable):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class BlankNodeResource(HTMLable):
     """A BlankNode that isn't of a specific subtype."""
 
@@ -84,7 +84,7 @@ class _ResourceReference(HTMLable, ABC):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class LocalResource(_ResourceReference):
     """Resource defined in the local ontology."""
 
@@ -95,13 +95,12 @@ class LocalResource(_ResourceReference):
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
         fragment = ctx.fragment(self.iri)
-        info = self.rdf_type.info
         return span(
             a(str(self.title.value), href="#" + fragment),
             sup(
-                info.abbrev,
-                _class="sup-" + info.abbrev,
-                title=info.inline_title,
+                self.rdf_type.abbrev,
+                _class="sup-" + self.rdf_type.abbrev,
+                title=self.rdf_type.inline_title,
             ),
         )
 
@@ -113,7 +112,7 @@ class LocalResource(_ResourceReference):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class ExternalResource(_ResourceReference):
     """Resource defined externally."""
 
@@ -137,7 +136,7 @@ class ExternalResource(_ResourceReference):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class RDFResources(HTMLable):
     """Information about a single RDF Resource."""
 
@@ -156,7 +155,7 @@ class RDFResources(HTMLable):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class RestrictionResource(HTMLable):
     """OWL Restriction."""
 
@@ -184,7 +183,7 @@ class RestrictionResource(HTMLable):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class LiteralResource(HTMLable):
     """references a literal object node in the local different."""
 
@@ -201,7 +200,7 @@ class LiteralResource(HTMLable):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class AgentResource(HTMLable):
     """represents an agent."""
 
@@ -268,7 +267,7 @@ class AgentResource(HTMLable):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class Affiliation(HTMLable):
     """Affiliation of an agent."""
 
@@ -312,7 +311,7 @@ type _Cardinality = "CardinalityNumeric" | "CardinalityReference"
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class CardinalityNumeric(HTMLable):
     """Numeric Cardinality."""
 
@@ -325,7 +324,7 @@ class CardinalityNumeric(HTMLable):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class CardinalityReference(HTMLable):
     """Referencing Cardinality."""
 

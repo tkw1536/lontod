@@ -15,12 +15,12 @@ dd {
     margin-bottom: 10px;
     padding-top: 7px;
 }
-#metadata ul,
-#classes ul {
+.metadata ul,
+.classes ul {
     list-style-type: none;
 }
-#metadata ul li,
-#classes ul li {
+.metadata ul li,
+.classes ul li {
     margin-left: -40px;
 }
 ul.hlist {
@@ -173,7 +173,7 @@ code {
     color: #336;
     text-decoration: none;
 }
-#toc {
+.toc {
     position: fixed;
     top: 0;
     right: 0;
@@ -185,18 +185,18 @@ code {
     font-size: small;
     width: 180px;
 }
-#toc h3 {
+.toc h3 {
     margin-top: 5px;
 }
-#toc ul {
+.toc ul {
     list-style: none;
     padding-left: 0;
 }
-#toc .first > li {
+.toc .first > li {
     margin-top: 5px;
 }
-#toc .second,
-#toc .third {
+.toc .second,
+.toc .third {
     padding-left: 10px;
 }
 #content {
@@ -220,7 +220,7 @@ table {
 td {
     word-wrap: break-word;
 }
-#legend table.entity {
+.legend table.entity {
     width: 25%;
 }
 

@@ -13,7 +13,7 @@ from lontod.utils.strings import as_utf8
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class Ontology:
     """an ontology as stored in the database."""
 
@@ -26,7 +26,7 @@ class Ontology:
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class Definiendum:
     """a definiendum result."""
 

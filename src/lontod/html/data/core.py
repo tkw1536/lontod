@@ -1,6 +1,7 @@
 """Holds RenderContext."""
 
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from collections.abc import Generator
 from hashlib import md5
 from typing import Final
@@ -22,24 +23,31 @@ class HTMLable(ABC):
 class RenderContext:
     """context used for rendering."""
 
-    __fids: dict[URIRef, str]
+    __fids: dict[str, dict[URIRef, str]]
+    __special_fids: dict[URIRef, str]
     __fid_values: set[str]
 
     MAX_FID_TRIES: Final = 1000
 
     def __init__(self) -> None:
         """Create a new RenderContext."""
-        self.__fids = {}
+        self.__fids = defaultdict(dict)
         self.__fid_values = set()
 
     def close(self) -> None:
         """Close this context, reserved for future usage."""
 
-    def fragment(self, iri: URIRef, title: Node | None = None) -> str:
-        """Return a fragment identifier for this title, using the given title node if it exists."""
+    def fragment(self, iri: URIRef, title: Node | None = None, group: str = "") -> str:
+        """Return a fragment identifier for this title, using the given title
+        node if it exists.
+
+        Identifiers for two different identifiers are guaranteed to be
+        identical if and only if they originate from the same iri and are
+        located in the same group.
+        """
         # already have a fragment identifier!
-        if iri in self.__fids:
-            return self.__fids[iri]
+        if iri in self.__fids[group]:
+            return self.__fids[group][iri]
 
         # iterate through the candidates until we find a new one!
         the_fid: str
@@ -47,16 +55,17 @@ class RenderContext:
             if count == RenderContext.MAX_FID_TRIES:
                 msg = "exceeded maximum tries when generating fragment identifier for {uri!r}"
                 raise OverflowError(msg)
-            if fid not in self.__fid_values:
-                the_fid = fid
+
+            candidate = fid if group == "" else f"{group}_" + fid
+            if candidate not in self.__fid_values:
+                the_fid = candidate
                 break
 
-        # cache and return
-        self.__fids[iri] = the_fid
-        if isinstance(the_fid, str):
-            self.__fid_values.add(the_fid)
+        # cache the fid and store that we used it.
+        self.__fids[group][iri] = the_fid
+        self.__fid_values.add(the_fid)
 
-        # return the fid
+        # return it!
         return the_fid
 
     def __fragment(self, uri: URIRef, title: Node | None = None) -> Generator[str]:
@@ -105,7 +114,7 @@ class RenderContext:
             else segments[-1].split("#")[-2]
         )
 
-        # the fid itself (if it isn't yet set)
+        # the fid itself
         yield fid
 
 

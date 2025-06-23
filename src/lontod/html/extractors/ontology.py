@@ -33,9 +33,9 @@ class OntologyExtractor:
         rdf_type: PropertyKind,
     ) -> TypeDefinienda:
         """Extract information about the given section."""
-        iri, info = rdf_type.uri, rdf_type.info
-        specials = info.specializations
-        props = set(info.properties)
+        iri = rdf_type.iri
+        specials = rdf_type.specializations
+        props = set(rdf_type.properties)
 
         definienda: list[Definiendum] = []
         for sub in self.ont.subjects(predicate=RDF.type, object=iri):
@@ -68,7 +68,7 @@ class OntologyExtractor:
                 ].append(o)
 
             def_props: list[PropertyResourcePair] = []
-            for prop_iri in info.properties:
+            for prop_iri in rdf_type.properties:
                 if prop_iri == DCTERMS.title or prop_iri not in this_props:
                     continue
 

@@ -36,15 +36,16 @@ from dominate.tags import (
 from dominate.util import container, raw
 from rdflib.term import Literal, URIRef
 
-from ._rdf import PropertyKind
+from ._rdf import LONTOD, PropertyKind
 from .core import HTMLable, RenderContext
 from .meta import MetaProperty
 from .resource import RDFResources
 
 # TODO: ensure it's a sequence everywhere
 
+
 @final
-@dataclass
+@dataclass(frozen=True)
 class PropertyResourcePair:
     """a pair of information about a property and its' values."""
 
@@ -53,7 +54,7 @@ class PropertyResourcePair:
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class Definiendum(HTMLable):
     """something being defined in the ontology."""
 
@@ -73,15 +74,13 @@ class Definiendum(HTMLable):
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
-        info = self.rdf_type.info
-
         d = div(
             h3(
                 *(span(t, lang=t.language) for t in self.titles),
                 sup(
-                    info.abbrev,
-                    _class=f"sup-{info.abbrev}",
-                    title=info.inline_title,
+                    self.rdf_type.abbrev,
+                    _class=f"sup-{self.rdf_type.abbrev}",
+                    title=self.rdf_type.inline_title,
                 ),
             ),
             id=ctx.fragment(self.iri, self.title),
@@ -102,7 +101,7 @@ class Definiendum(HTMLable):
 # TODO: join with TypedDefienda
 
 
-@dataclass
+@dataclass(frozen=True)
 class OntologyDefinienda(HTMLable):
     """Definienda about the ontology as a whole."""
 
@@ -119,12 +118,13 @@ class OntologyDefinienda(HTMLable):
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
+        metadata_id = ctx.fragment(LONTOD.Metadata, group="section")
         d = div(
             h1(
                 *(span(t, lang=t.language) for t in self.titles),
             ),
-            id="metadata",
-            _class="section",
+            id=metadata_id,
+            _class="section metadata",
         )
 
         d.appendChild(h2("Metadata"))
@@ -143,7 +143,7 @@ class OntologyDefinienda(HTMLable):
         return d
 
 
-@dataclass
+@dataclass(frozen=True)
 class TypeDefinienda(HTMLable):
     """Definienda of a specific type."""
 
@@ -153,16 +153,19 @@ class TypeDefinienda(HTMLable):
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
-        info = self.rdf_type.info
+        sec = section(
+            id=ctx.fragment(self.rdf_type.iri, group="section"),
+            _class="section classes",
+        )
+        sec.appendChild(h2(self.rdf_type.plural_title))
 
-        sec = section(id=info.toc_id, _class="section")
-        sec.appendChild(h2(info.plural_title))
-        for defienendum in self.definienda:
-            sec.appendChild(defienendum.to_html(ctx))
+        for definiendum in self.definienda:
+            sec.appendChild(definiendum.to_html(ctx))
+
         return sec
 
 
-@dataclass
+@dataclass(frozen=True)
 class Ontology(HTMLable):
     """Data about an entire ontology."""
 
@@ -204,20 +207,23 @@ class Ontology(HTMLable):
         for tag in chain(
             [self.metadata.to_html(ctx)],
             [s.to_html(ctx) for s in self.sections],
-            [self._make_namespaces()],
-            [self._make_legend()],
+            [self._make_namespaces(ctx)],
+            [self._make_legend(ctx)],
             [self._make_toc(ctx)],
         ):
             content.appendChild(tag)
 
         return content
 
-    def _make_legend(
-        self,
-    ) -> html_tag:
-        legend = div(id="legend")
+    def _make_legend(self, ctx: RenderContext) -> html_tag:
+        if len(self.sections) == 0:
+            return container()
 
-        h = h2("Legend")
+        legend_id = ctx.fragment(LONTOD.Legend, group="section")
+
+        legend = div(_class="legend")
+
+        h = h2("Legend", id=legend_id)
         legend.appendChild(h)
 
         t = table(_class="entity")
@@ -227,24 +233,27 @@ class Ontology(HTMLable):
             if len(sec.definienda) == 0:
                 continue
 
-            info = sec.rdf_type.info
-
             t.appendChild(
                 tr(
                     td(
                         sup(
-                            info.abbrev,
-                            _class="sup-" + info.abbrev,
-                            title=info.inline_title,
+                            sec.rdf_type.abbrev,
+                            _class="sup-" + sec.rdf_type.abbrev,
+                            title=sec.rdf_type.inline_title,
                         )
                     ),
-                    td(info.plural_title),
+                    td(sec.rdf_type.plural_title),
                 )
             )
         return legend
 
-    def _make_namespaces(self) -> html_tag:
-        namespaces = div(id="namespaces")
+    def _make_namespaces(self, ctx: RenderContext) -> html_tag:
+        if len(self.namespaces) == 0:
+            return container()
+
+        namespace_id = ctx.fragment(LONTOD.Namespaces, group="section")
+
+        namespaces = div(id=namespace_id)
         with namespaces:
             h2("Namespaces")
             with dl():
@@ -255,28 +264,73 @@ class Ontology(HTMLable):
         return namespaces
 
     def _make_toc(self, ctx: RenderContext) -> html_tag:
-        d = div(h3("Table of Contents"), id="toc")
+        d = div(h3("Table of Contents"), _class="toc")
 
         u1 = ul(_class="first")
         d.appendChild(u1)
+
+
+        metadata_id = ctx.fragment(LONTOD.Metadata, group="section")
+        u1.appendChild(
+            li(
+                h4(
+                    a(
+                        "Metadata",
+                        href="#" + metadata_id,
+                    )
+                )
+            )
+        )
 
         for sec in self.sections:
             if len(sec.definienda) == 0:
                 continue
 
-            info = sec.rdf_type.info
-
             u2 = ul(_class="second")
             c = container(
-                h4(a(info.plural_title, href="#" + info.toc_id)),
+                h4(
+                    a(
+                        sec.rdf_type.plural_title,
+                        href="#" + ctx.fragment(sec.rdf_type.iri, group="section"),
+                    )
+                ),
                 u2,
             )
             u1.appendChild(li(c))
 
-            for defi in sec.definienda:
-                href = "#" + ctx.fragment(defi.iri, defi.title)
-                title = defi.title or "(No title)"  # TODO: Smarter selection of title
+            for definiendum in sec.definienda:
+                href = "#" + ctx.fragment(definiendum.iri, definiendum.title)
+                title = (
+                    definiendum.title or "(No title)"
+                )  # TODO: Smarter selection of title
 
                 u2.appendChild(li(a(title, href=href)))
+
+        if len(self.namespaces) > 0:
+            namespace_id = ctx.fragment(LONTOD.Namespaces, group="section")
+            u1.appendChild(
+                li(
+                    h4(
+                        a(
+                            "Namespaces",
+                            href="#" + namespace_id,
+                        )
+                    )
+                )
+            )
+
+        if len(self.sections) > 0:
+            legend_id = ctx.fragment(LONTOD.Legend, group="section")
+
+            u1.appendChild(
+                li(
+                    h4(
+                        a(
+                            "Legend",
+                            href="#" + legend_id,
+                        )
+                    )
+                )
+            )
 
         return d

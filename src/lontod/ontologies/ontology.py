@@ -7,7 +7,7 @@ from typing import final
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class Ontology:
     """Represents an ontology that can be indexed."""
 

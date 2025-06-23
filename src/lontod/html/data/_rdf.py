@@ -2,9 +2,10 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from enum import Enum
+from functools import lru_cache
 from typing import final
 
-from rdflib import Namespace
 from rdflib.namespace import (
     DCTERMS,
     OWL,
@@ -13,6 +14,8 @@ from rdflib.namespace import (
     SDO,
     SKOS,
     VANN,
+    DefinedNamespace,
+    Namespace,
 )
 from rdflib.term import URIRef
 
@@ -120,115 +123,110 @@ PROPS = frozenset(
 )
 
 
-@final
-@dataclass
-class PropertyKind:
-    """Properties listed."""
-
-    # TODO: rename to iri
-    uri: URIRef
-
-    @property
-    def valid(self) -> bool:
-        """Checks if this is a valid property kind."""
-        return self.uri in ONT_TYPES
-
-    @property
-    def info(self) -> "_OntTypeInfo":
-        """Information about this PropertyKind."""
-        try:
-            return ONT_TYPES[self.uri]
-        except KeyError as err:
-            raise InvalidPropertyKindError from err
-
-
 class InvalidPropertyKindError(ValueError):
     """Raised when a PropertyKind is not valid."""
 
 
-@final
-@dataclass
-class _OntTypeInfo:
+@dataclass(frozen=True)
+class _PropertyKindInfo:
     """Information about an ontology type."""
 
-    abbrev: str
-    toc_id: str
+    iri: URIRef
 
     inline_title: str
     plural_title: str
-    properties: Sequence[URIRef]
+
+    abbrev: str
 
     specializations: Sequence[URIRef]
+    properties: Sequence[URIRef]
 
 
-ONT_TYPES = {
-    OWL.Class: _OntTypeInfo(
-        abbrev="c",
-        toc_id="",
-        inline_title="OWL/RDFS Class",
-        plural_title="Classes",
-        properties=CLASS_PROPS,
-        specializations=(),
-    ),
-    RDF.Property: _OntTypeInfo(
-        abbrev="p",
-        toc_id="properties",
-        inline_title="RDF Property",
-        plural_title="Properties",
-        properties=PROP_PROPS,
-        specializations=(
+@final
+class PropertyKind(_PropertyKindInfo, Enum):
+    """Classification of properties."""
+
+    CLASS = (OWL.Class, "OWL/RDFS Class", "Classes", "c", (), CLASS_PROPS)
+    PROPERTY = (
+        RDF.Property,
+        "RDF Property",
+        "Properties",
+        "p",
+        (
             OWL.ObjectProperty,
             OWL.DatatypeProperty,
             OWL.AnnotationProperty,
             OWL.FunctionalProperty,
+            OWL.InverseFunctionalProperty,
         ),
-    ),
-    OWL.ObjectProperty: _OntTypeInfo(
-        abbrev="op",
-        toc_id="objectproperties",
-        inline_title="OWL Object Property",
-        plural_title="Object Properties",
-        properties=PROP_PROPS,
-        specializations=(),
-    ),
-    OWL.DatatypeProperty: _OntTypeInfo(
-        abbrev="dp",
-        toc_id="datatypeproperties",
-        inline_title="OWL Datatype Property",
-        plural_title="Datatype Properties",
-        properties=PROP_PROPS,
-        specializations=(),
-    ),
-    OWL.AnnotationProperty: _OntTypeInfo(
-        abbrev="ap",
-        toc_id="annotationproperties",
-        inline_title="OWL Annotation Property",
-        plural_title="Annotation Properties",
-        properties=PROP_PROPS,
-        specializations=(),
-    ),
-    OWL.FunctionalProperty: _OntTypeInfo(
-        abbrev="fp",
-        toc_id="functionalproperties",
-        inline_title="OWL Functional Property",
-        plural_title="Functional Properties",
-        properties=PROP_PROPS,
-        specializations=(),
-    ),
-    # TODO: not sure about these!
-    # OWL.InverseFunctionalProperty: _OntTypeInfo(
-    #    abbrev="ifp",
-    #    toc_id="",
-    #    inline_title="OWL Inverse Functional Property",
-    #    plural_title="",
-    # ),
-    # OWL.NamedIndividual: _OntTypeInfo(
-    #    abbrev="ni",
-    #    toc_id="named_individuals",
-    #    inline_title="OWL Named Individual",
-    #    plural_title="Named Individuals",
-    # ),
-}
+        PROP_PROPS,
+    )
+    OBJECT_PROPERTY = (
+        OWL.ObjectProperty,
+        "OWL Object Property",
+        "Object Properties",
+        "op",
+        PROP_PROPS,
+        (),
+    )
+    DATATYPE_PROPERTY = (
+        OWL.DatatypeProperty,
+        "OWL Datatype Property",
+        "Datatype Properties",
+        "dp",
+        PROP_PROPS,
+        (),
+    )
+    ANNOTATION_PROPERTY = (
+        OWL.AnnotationProperty,
+        "OWL Annotation Property",
+        "Annotation Properties",
+        "ap",
+        PROP_PROPS,
+        (),
+    )
+    FUNCTIONAL_PROPERTY = (
+        OWL.FunctionalProperty,
+        "OWL Functional Property",
+        "Functional Properties",
+        "fp",
+        PROP_PROPS,
+        (),
+    )
+    INVERSE_FUNCTIONAL_PROPERTY = (
+        OWL.InverseFunctionalProperty,
+        "OWL Inverse Functional Property",
+        "Inverse Functional Properties",
+        "ifp",
+        (),
+        PROP_PROPS,
+    )
+    NAMED_INDIVIDUAL = (
+        OWL.NamedIndividual,
+        "OWL Named Individual",
+        "Named Individuals",
+        "ni",
+        (),
+        PROP_PROPS,
+    )
+
+    @staticmethod
+    @lru_cache
+    def __iri_dict() -> dict[URIRef, "PropertyKind"]:
+        return {kind.iri: kind for kind in PropertyKind}
+
+    @staticmethod
+    def valid(iri: URIRef) -> bool:
+        """Check if the given IRI has a matching PropertyKind."""
+        return iri in PropertyKind.__iri_dict()
+
+    @staticmethod
+    def from_iri(iri: URIRef) -> "PropertyKind":
+        """Return the PropertyKind with the given IRI or raise InvalidPropertyKindError."""
+        try:
+            return PropertyKind.__iri_dict()[iri]
+        except KeyError as err:
+            raise InvalidPropertyKindError from err
 
 
 RESTRICTION_TYPES = (
@@ -244,3 +242,13 @@ RESTRICTION_TYPES = (
 )
 
 OWL_SET_TYPES = (OWL.unionOf, OWL.intersectionOf)
+
+
+class LONTOD(DefinedNamespace):
+    """Special namespace used only internally by lontod."""
+
+    Metadata: URIRef
+    Namespaces: URIRef
+    Legend: URIRef
+
+    _NS = Namespace("https://github.com/tkw1536/lontod")

@@ -13,7 +13,6 @@ from rdflib.term import BNode, Literal, Node, URIRef
 
 from lontod.html.data._rdf import (
     AGENT_PROPS,
-    ONT_TYPES,
     OWL_SET_TYPES,
     RESTRICTION_TYPES,
     PropertyKind,
@@ -38,7 +37,7 @@ from lontod.html.data.resource import (
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class ResourceExtractor:
     """Extract information about a single resource from an ontology."""
 
@@ -92,7 +91,7 @@ class ResourceExtractor:
         """Find the type of an object if it is known."""
         # TODO: Move this into a constant
         types_we_know = tuple(
-            PropertyKind(p)
+            PropertyKind.from_iri(p)
             for p in (
                 OWL.Class,
                 OWL.ObjectProperty,
@@ -104,17 +103,19 @@ class ResourceExtractor:
         )
 
         this_objects_types = [
-            o for o in self.ont.objects(iri, RDF.type) if o in ONT_TYPES
+            o for o in self.ont.objects(iri, RDF.type) if PropertyKind.valid(iri)
         ]
 
         for x_ in types_we_know:
-            if x_.uri in this_objects_types:
+            if x_.iri in this_objects_types:
                 return x_
 
-        this_objects_types.extend(o for o in self.meta.types_of(iri) if o in ONT_TYPES)
+        this_objects_types.extend(
+            o for o in self.meta.types_of(iri) if PropertyKind.valid(iri)
+        )
 
         for x_ in types_we_know:
-            if x_.uri in this_objects_types:
+            if x_.iri in this_objects_types:
                 return x_
 
         return None
@@ -174,7 +175,7 @@ class ResourceExtractor:
             resources.extend(
                 self.__extract(
                     o2,
-                    PropertyKind(OWL.Class),
+                    PropertyKind.CLASS,
                 )
                 for o2 in self.ont.objects(o, RDF.rest * ZeroOrMore / RDF.first)  # type:ignore[operator]
             )
@@ -248,7 +249,7 @@ class ResourceExtractor:
                         msg = "never reached"
                         raise AssertionError(msg)
 
-                    link = self.__extract_uri_ref(o, PropertyKind(OWL.Class))
+                    link = self.__extract_uri_ref(o, PropertyKind.CLASS)
                     if not isinstance(link, _ResourceReference):
                         continue
 

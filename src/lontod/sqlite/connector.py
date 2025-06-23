@@ -18,7 +18,7 @@ class Mode(Enum):
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class Connector:
     """Represents connection parameter for an sqlite database."""
 

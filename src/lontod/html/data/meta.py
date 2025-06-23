@@ -15,7 +15,7 @@ from .core import HTMLable, RenderContext
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class MetaOntologies:
     """Information about all meta ontologies."""
 
@@ -43,7 +43,7 @@ class MetaOntologies:
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class MetaOntology:
     """Information about a single ontology."""
 
@@ -57,7 +57,7 @@ class MetaOntology:
 
 
 @final
-@dataclass
+@dataclass(frozen=True)
 class MetaProperty(HTMLable):
     """Human-readable information about a specific property."""
 
