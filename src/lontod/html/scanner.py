@@ -1,34 +1,10 @@
 """parses an ontology as html."""
 
 from collections import defaultdict
-from collections.abc import Generator
-from importlib import resources
+from collections.abc import Generator, Sequence
 from itertools import chain
 from typing import cast
 
-import dominate
-from dominate.tags import (
-    a,
-    code,
-    dd,
-    div,
-    dl,
-    dt,
-    h2,
-    h3,
-    h4,
-    html_tag,
-    li,
-    meta,
-    script,
-    style,
-    sup,
-    table,
-    td,
-    tr,
-    ul,
-)
-from dominate.util import raw
 from rdflib import Graph, Literal
 from rdflib.namespace import (
     DC,
@@ -51,23 +27,25 @@ from .data._rdf import (
     ONTDOC,
     PropertyKind,
 )
-from .data.core import HTMLable, RenderContext
-from .data.ontology import OntologyDefinienda, PropertyResourcePair
+from .data.core import RenderContext
+from .data.ontology import (
+    Ontology,
+    OntologyDefinienda,
+    PropertyResourcePair,
+    TypeDefinienda,
+)
 from .extractors.meta import MetaExtractor
 from .extractors.ontology import OntologyExtractor
 from .extractors.resource import ResourceExtractor
 from .utils import (
-    PylodeError,
     sort_ontology,
 )
 
 # spellchecker:words ONTDOC FOAF RDFS onts Helper objectproperties datatypeproperties annotationproperties functionalproperties nses
 
 
-class Ontology(HTMLable):
-    """Ontology Document class used to create HTML documentation
-    from OWL Ontologies.
-    """
+class Scanner:
+    """Scans an ontology."""
 
     def __init__(self, ontology: Graph) -> None:
         """Create a new Ontology."""
@@ -81,7 +59,6 @@ class Ontology(HTMLable):
             meta=self.__meta,
             res=self.__res,
         )
-        self.__toc: dict[str, list[tuple[str, str]]] = {}
 
     def _ontdoc_inference(self, g: Graph) -> None:
         """Expand the ontology's graph to make OntDoc querying easier.
@@ -213,81 +190,15 @@ class Ontology(HTMLable):
         for s_, o in g.subject_objects(ORG.memberOf):
             g.add((s_, SDO.affiliation, o))
 
-    @property
-    def title(self) -> Literal:
-        """Title of this ontology."""
-        for s in chain(
-            self.__ont.subjects(RDF.type, OWL.Ontology),
-            self.__ont.subjects(RDF.type, PROF.Profile),
-            self.__ont.subjects(RDF.type, SKOS.ConceptScheme),
-        ):
-            for o2 in self.__ont.objects(s, DCTERMS.title):
-                if not isinstance(o2, Literal):
-                    continue
-                return o2
-
-        msg = (
-            "You MUST supply a title property "
-            "(dcterms:title, rdfs:label or sdo:name) for your ontology"
-        )
-        raise PylodeError(
-            msg,
-        )
-
-    def to_html(self, ctx: RenderContext) -> dominate.document:
-        """Render this ontology into a document."""
-        doc = dominate.document(title=self.title)
-
-        with doc.head:
-            for tag in self._head():
-                tag.render()
-
-        body = self._make_body(ctx)
-        doc.appendChild(body)
-
-        return doc
-
     def render(self) -> str:
         """Render this document into a string."""
-        res = self.to_html(RenderContext()).render(pretty=True)
-        return cast("str", res)
+        ont = self._render()
+        html = ont.to_html(RenderContext())
+        return cast("str", html.render(pretty=True))
 
-    def _head(
-        self,
-    ) -> Generator[html_tag]:
-        """Make <head>???</head> content."""
-        css = resources.files(__package__).joinpath("assets", "style.css").read_text()
-        yield style(raw("\n" + css + "\n\t"))
-
-        yield meta(http_equiv="Content-Type", content="text/html; charset=utf-8")
-
-        yield script(
-            raw("\n" + self.schema.serialize(format="json-ld") + "\n\t"),
-            type="application/ld+json",
-            id="schema.org",
-        )
-
-    def _make_body(self, ctx: RenderContext) -> html_tag:
-        """Make <body>???</body> content.
-
-        Just calls other helper functions in order.
-        """
-        content = div(id="content")
-
-        for tag in chain(
-            self._make_metadata(ctx),
-            self._make_main_sections(ctx),
-            self._make_namespaces(),
-            self._make_legend(),
-            self._make_toc(),
-        ):
-            content.appendChild(tag)
-
-        return content
-
-    def _make_metadata(self, ctx: RenderContext) -> Generator[html_tag]:
+    def _make_metadata(self) -> OntologyDefinienda:
+        this_onts_props: dict[URIRef, list[Node]] = defaultdict(list)
         # get all ONT_PROPS props and their (multiple) values
-        this_onts_props: defaultdict[URIRef, list[Node]] = defaultdict(list)
         for s_ in chain(
             self.__ont.subjects(predicate=RDF.type, object=OWL.Ontology),
             self.__ont.subjects(predicate=RDF.type, object=SKOS.ConceptScheme),
@@ -318,14 +229,13 @@ class Ontology(HTMLable):
                 )
             )
 
-        us = OntologyDefinienda(
+        return OntologyDefinienda(
             iri=iri,
             titles=[
                 x for x in this_onts_props[DCTERMS.title] if isinstance(x, Literal)
             ],
             properties=our_props,
         )
-        yield us.to_html(ctx)
 
     @property
     def schema(self) -> Graph:
@@ -377,7 +287,15 @@ class Ontology(HTMLable):
 
         return sdo
 
-    def _make_main_sections(self, ctx: RenderContext) -> Generator[html_tag]:
+    def _render(self) -> Ontology:
+        return Ontology(
+            schema_json=self.schema.serialize(format="json-ld"),
+            metadata=self._make_metadata(),
+            sections=tuple(self.__make_sections()),
+            namespaces=self.__make_namespaces(),
+        )
+
+    def __make_sections(self) -> Generator[TypeDefinienda]:
         for kind_iri in (
             OWL.Class,
             RDF.Property,
@@ -389,68 +307,11 @@ class Ontology(HTMLable):
             if (None, RDF.type, kind_iri) not in self.__ont:
                 continue
 
-            sec = self.__extractor.extract(PropertyKind(kind_iri))
-            yield sec.to_html(ctx)
+            yield self.__extractor.extract(PropertyKind(kind_iri))
 
-            key, entries = sec.toc_entries(ctx)
-            self.__toc[key] = entries
-
-    def _make_legend(self) -> Generator[html_tag]:
-        legend = div(id="legend")
-        with legend:
-            h2("Legend")
-            with table(_class="entity"):
-                if self.__toc.get("classes") is not None:
-                    with tr():
-                        td(sup("c", _class="sup-c", title="OWL/RDFS Class"))
-                        td("Classes")
-                if self.__toc.get("properties") is not None:
-                    with tr():
-                        td(sup("p", _class="sup-p", title="RDF Property"))
-                        td("Properties")
-                if self.__toc.get("objectproperties") is not None:
-                    with tr():
-                        td(sup("op", _class="sup-op", title="OWL Object Property"))
-                        td("Object Properties")
-                if self.__toc.get("datatypeproperties") is not None:
-                    with tr():
-                        td(
-                            sup(
-                                "dp",
-                                _class="sup-dp",
-                                title="OWL Datatype Property",
-                            ),
-                        )
-                        td("Datatype Properties")
-                if self.__toc.get("annotationproperties") is not None:
-                    with tr():
-                        td(
-                            sup(
-                                "ap",
-                                _class="sup-ap",
-                                title="OWL Annotation Property",
-                            ),
-                        )
-                        td("Annotation Properties")
-                if self.__toc.get("functionalproperties") is not None:
-                    with tr():
-                        td(
-                            sup(
-                                "fp",
-                                _class="sup-fp",
-                                title="OWL Functional Property",
-                            ),
-                        )
-                        td("Functional Properties")
-                if self.__toc.get("named_individuals") is not None:
-                    with tr():
-                        td(sup("ni", _class="sup-ni", title="OWL Named Individual"))
-                        td("Named Individuals")
-        yield legend
-
-    def _make_namespaces(self) -> Generator[html_tag]:
+    def __make_namespaces(self) -> Sequence[tuple[str, URIRef]]:
         # only get namespaces used in ont
-        nses = {}
+        nses: dict[str, URIRef] = {}
         for n in chain(
             self.__ont.subjects(), self.__ont.predicates(), self.__ont.objects()
         ):
@@ -468,100 +329,4 @@ class Ontology(HTMLable):
                 }
             )
 
-        # # deduplicate namespaces
-        # temp = []
-        # res = dict()
-        # for k, v in nses.items():
-        #     if v not in temp:
-        #         temp.append(v)
-        #         res[k] = v
-        # nses = res
-
-        namespaces = div(id="namespaces")
-        with namespaces:
-            h2("Namespaces")
-            with dl():
-                if self.__toc.get("namespaces") is None:
-                    self.__toc["namespaces"] = []
-                for prefix, ns in sorted(nses.items()):
-                    p_ = prefix if prefix != "" else ":"
-                    dt(p_, id=p_)
-                    dd(code(ns))
-                    self.__toc["namespaces"].append(("#" + prefix, prefix))
-        yield namespaces
-
-    def _make_toc(self) -> Generator[html_tag]:
-        toc = div(id="toc")
-        with toc:
-            h3("Table of Contents")
-            with ul(_class="first"):
-                li(h4(a("Metadata", href="#metadata")))
-
-                if (
-                    self.__toc.get("classes") is not None
-                    and len(self.__toc["classes"]) > 0
-                ):
-                    with li():
-                        h4(a("Classes", href="#classes"))
-                        with ul(_class="second"):
-                            for c in self.__toc["classes"]:
-                                li(a(c[1], href=c[0]))
-
-                if (
-                    self.__toc.get("properties") is not None
-                    and len(self.__toc["properties"]) > 0
-                ):
-                    with li():
-                        h4(a("Properties", href="#properties"))
-                        with ul(_class="second"):
-                            for c in self.__toc["properties"]:
-                                li(a(c[1], href=c[0]))
-
-                if (
-                    self.__toc.get("objectproperties") is not None
-                    and len(self.__toc["objectproperties"]) > 0
-                ):
-                    with li():
-                        h4(a("Object Properties", href="#objectproperties"))
-                        with ul(_class="second"):
-                            for c in self.__toc["objectproperties"]:
-                                li(a(c[1], href=c[0]))
-
-                if (
-                    self.__toc.get("datatypeproperties") is not None
-                    and len(self.__toc["datatypeproperties"]) > 0
-                ):
-                    with li():
-                        h4(a("Datatype Properties", href="#datatypeproperties"))
-                        with ul(_class="second"):
-                            for c in self.__toc["datatypeproperties"]:
-                                li(a(c[1], href=c[0]))
-
-                if (
-                    self.__toc.get("annotationproperties") is not None
-                    and len(self.__toc["annotationproperties"]) > 0
-                ):
-                    with li():
-                        h4(a("Annotation Properties", href="#annotationproperties"))
-                        with ul(_class="second"):
-                            for c in self.__toc["annotationproperties"]:
-                                li(a(c[1], href=c[0]))
-
-                if (
-                    self.__toc.get("functionalproperties") is not None
-                    and len(self.__toc["functionalproperties"]) > 0
-                ):
-                    with li():
-                        h4(a("Functional Properties", href="#functionalproperties"))
-                        with ul(_class="second"):
-                            for c in self.__toc["functionalproperties"]:
-                                li(a(c[1], href=c[0]))
-
-                with li():
-                    h4(a("Namespaces", href="#namespaces"))
-                    with ul(_class="second"):
-                        for n in self.__toc["namespaces"]:
-                            li(a(n[1], href="#" + n[1]))
-
-                li(h4(a("Legend", href="#legend")), ul(_class="second"))
-        yield toc
+        return tuple(sorted(nses.items(), key=lambda x: x[0]))

@@ -1,10 +1,14 @@
 """Dataclasses describing the ontology itself."""
 
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from dataclasses import dataclass
+from importlib import resources
+from itertools import chain
 from typing import override
 
+from dominate.document import document
 from dominate.tags import (
+    a,
     code,
     dd,
     div,
@@ -13,16 +17,23 @@ from dominate.tags import (
     h1,
     h2,
     h3,
+    h4,
     html_tag,
+    li,
+    meta,
+    script,
     section,
     span,
     strong,
+    style,
     sup,
     table,
     td,
     th,
     tr,
+    ul,
 )
+from dominate.util import container, raw
 from rdflib.term import Literal, URIRef
 
 from ._rdf import PropertyKind
@@ -88,12 +99,22 @@ class Definiendum(HTMLable):
         return d
 
 
+# TODO: join with TypedDefienda
+
+
 @dataclass
 class OntologyDefinienda(HTMLable):
     """Definienda about the ontology as a whole."""
 
     iri: URIRef
     titles: Sequence[Literal]
+
+    def title(self) -> Literal | None:
+        """Primary title (if any)."""
+        if len(self.titles) == 0:
+            return None
+        return self.titles[0]
+
     properties: Sequence[PropertyResourcePair]
 
     @override
@@ -130,16 +151,6 @@ class TypeDefinienda(HTMLable):
 
     definienda: Sequence[Definiendum]
 
-    def toc_entries(self, ctx: RenderContext) -> tuple[str, list[tuple[str, str]]]:
-        """Entries in a table of contents for this section."""
-        return (
-            self.rdf_type.info.toc_id,
-            [
-                ("#" + ctx.fragment(defi.iri, defi.title), defi.title or "(No title)")
-                for defi in self.definienda
-            ],
-        )
-
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
         info = self.rdf_type.info
@@ -149,3 +160,123 @@ class TypeDefinienda(HTMLable):
         for defienendum in self.definienda:
             sec.appendChild(defienendum.to_html(ctx))
         return sec
+
+
+@dataclass
+class Ontology(HTMLable):
+    """Data about an entire ontology."""
+
+    schema_json: str  # TODO: re-consider this
+    metadata: OntologyDefinienda
+    sections: Sequence[TypeDefinienda]
+    namespaces: Sequence[tuple[str, URIRef]]
+
+    @override
+    def to_html(self, ctx: RenderContext) -> document:
+        doc = document(title=self.metadata.titles)
+
+        with doc.head:
+            for tag in self._head():
+                tag.render()
+
+        body = self._make_body(ctx)
+        doc.appendChild(body)
+
+        return doc
+
+    def _head(
+        self,
+    ) -> Generator[html_tag]:
+        """Make <head>???</head> content."""
+        css = resources.files(__package__).joinpath("assets", "style.css").read_text()
+        yield style(raw("\n" + css + "\n\t"))
+
+        yield meta(http_equiv="Content-Type", content="text/html; charset=utf-8")
+
+        yield script(
+            raw("\n" + self.schema_json + "\n\t"),
+            type="application/ld+json",
+            id="schema.org",
+        )
+
+    def _make_body(self, ctx: RenderContext) -> html_tag:
+        content = div(id="content")
+        for tag in chain(
+            [self.metadata.to_html(ctx)],
+            [s.to_html(ctx) for s in self.sections],
+            [self._make_namespaces()],
+            [self._make_legend()],
+            [self._make_toc(ctx)],
+        ):
+            content.appendChild(tag)
+
+        return content
+
+    def _make_legend(
+        self,
+    ) -> html_tag:
+        legend = div(id="legend")
+
+        h = h2("Legend")
+        legend.appendChild(h)
+
+        t = table(_class="entity")
+        legend.appendChild(t)
+
+        for sec in self.sections:
+            if len(sec.definienda) == 0:
+                continue
+
+            info = sec.rdf_type.info
+
+            t.appendChild(
+                tr(
+                    td(
+                        sup(
+                            info.abbrev,
+                            _class="sup-" + info.abbrev,
+                            title=info.inline_title,
+                        )
+                    ),
+                    td(info.plural_title),
+                )
+            )
+        return legend
+
+    def _make_namespaces(self) -> html_tag:
+        namespaces = div(id="namespaces")
+        with namespaces:
+            h2("Namespaces")
+            with dl():
+                for prefix, ns in self.namespaces:
+                    p_ = prefix if prefix != "" else ":"
+                    dt(p_, id=p_)
+                    dd(code(ns))
+        return namespaces
+
+    def _make_toc(self, ctx: RenderContext) -> html_tag:
+        d = div(h3("Table of Contents"), id="toc")
+
+        u1 = ul(_class="first")
+        d.appendChild(u1)
+
+        for sec in self.sections:
+            if len(sec.definienda) == 0:
+                continue
+
+            info = sec.rdf_type.info
+
+            u2 = ul(_class="second")
+            c = container(
+                h4(a(info.plural_title, href="#" + info.toc_id)),
+                u2,
+            )
+            u1.appendChild(li(c))
+
+            for defi in sec.definienda:
+                href = "#" + ctx.fragment(defi.iri, defi.title)
+                title = defi.title or "(No title)"  # TODO: Smarter selection of title
+
+                u2.appendChild(li(a(title, href=href)))
+
+        return d

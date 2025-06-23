@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from rdflib import Graph, Literal, Node
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 
-from lontod.html.scanner import Ontology as HTMLOntology
+from lontod.html.scanner import Scanner
 from lontod.utils.graph import restrict_languages, sanitize
 from lontod.utils.strings import as_utf8
 
@@ -46,7 +46,7 @@ def owl_ontology(logger: Logger, graph: Graph, html_languages: list[str]) -> Ont
     sanitize(graph)
 
     # make html
-    result = HTMLOntology(graph).render()
+    result = Scanner(graph).render()
     html = as_utf8(result)
     types.append(("text/html", html))
 

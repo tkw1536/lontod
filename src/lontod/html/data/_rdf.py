@@ -161,7 +161,7 @@ ONT_TYPES = {
         abbrev="c",
         toc_id="",
         inline_title="OWL/RDFS Class",
-        plural_title="classes",
+        plural_title="Classes",
         properties=CLASS_PROPS,
         specializations=(),
     ),
