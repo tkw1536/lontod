@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from rdflib import Graph, Literal, Node
 from rdflib.namespace import DCTERMS, OWL, PROF, RDF, SKOS, XSD
 
+from lontod.html.data.core import RenderContext
 from lontod.html.scanner import Scanner
 from lontod.utils.graph import restrict_languages, sanitize
 from lontod.utils.strings import as_utf8
@@ -45,16 +46,22 @@ def owl_ontology(logger: Logger, graph: Graph, html_languages: list[str]) -> Ont
     # cleanup, to prevent at least some html injections!
     sanitize(graph)
 
-    # make html
-    result = Scanner(graph).render()
-    html = as_utf8(result)
+    # create an ontology and a render context to go along with it
+    ont = Scanner(graph)()
+    ctx = RenderContext(ont)
+
+    # render it as html
+    html = as_utf8(ont.to_html(ctx).render())
     types.append(("text/html", html))
+
+    # extract the definienda
+    definienda = [(str(defi.iri), ctx.fragment(defi.iri)) for defi in ont]
 
     return Ontology(
         uri=uri,
         alternate_uris=list(get_alternate_uris(graph)),
         encodings=dict(types),
-        definienda=list(definienda_of(BeautifulSoup(html, "html.parser"))),
+        definienda=definienda,
     )
 
 

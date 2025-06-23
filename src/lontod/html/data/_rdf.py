@@ -3,7 +3,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from functools import lru_cache
 from typing import final
 
 from rdflib.namespace import (
@@ -209,24 +208,6 @@ class PropertyKind(_PropertyKindInfo, Enum):
         (),
         PROP_PROPS,
     )
-
-    @staticmethod
-    @lru_cache
-    def __iri_dict() -> dict[URIRef, "PropertyKind"]:
-        return {kind.iri: kind for kind in PropertyKind}
-
-    @staticmethod
-    def valid(iri: URIRef) -> bool:
-        """Check if the given IRI has a matching PropertyKind."""
-        return iri in PropertyKind.__iri_dict()
-
-    @staticmethod
-    def from_iri(iri: URIRef) -> "PropertyKind":
-        """Return the PropertyKind with the given IRI or raise InvalidPropertyKindError."""
-        try:
-            return PropertyKind.__iri_dict()[iri]
-        except KeyError as err:
-            raise InvalidPropertyKindError from err
 
 
 RESTRICTION_TYPES = (

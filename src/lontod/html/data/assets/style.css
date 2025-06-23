@@ -123,6 +123,14 @@ a:active {
     color: #c00;
     background: transparent;
 }
+.sup-lang {
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+}
 .sup-c,
 .sup-op,
 .sup-fp,

@@ -1,7 +1,10 @@
 """Dataclasses describing the ontology itself."""
 
+from abc import ABC
+from collections import defaultdict
 from collections.abc import Generator, Sequence
 from dataclasses import dataclass
+from functools import cached_property
 from importlib import resources
 from itertools import chain
 from typing import final, override
@@ -34,6 +37,7 @@ from dominate.tags import (
     ul,
 )
 from dominate.util import container, raw
+from rdflib.namespace import XSD
 from rdflib.term import Literal, URIRef
 
 from ._rdf import LONTOD, PropertyKind
@@ -53,44 +57,57 @@ class PropertyResourcePair:
     resources: RDFResources
 
 
-@final
+_PREF_LANGUAGES = [None, "en"]
+
+
 @dataclass(frozen=True)
-class Definiendum(HTMLable):
-    """something being defined in the ontology."""
-
+class _DefiniendumLike(ABC):
     iri: URIRef
-    rdf_type: PropertyKind
-
     titles: Sequence[Literal]
 
-    @property
-    def title(self) -> Literal | None:
-        """Primary title (if any)."""
-        if len(self.titles) == 0:
-            return None
-        return self.titles[0]
+    properties: Sequence[PropertyResourcePair]
 
-    props: Sequence[PropertyResourcePair]
+    def title(self, ctx: RenderContext) -> Literal:
+        """Primary titles of this definiendum used for the given context."""
+        # no title available
+        if len(self.titles) == 0:
+            # TODO: Use the old iri_from_title here?
+            return Literal(str(self.iri), datatype=XSD.anyURI)
+
+        # group by languages, but keep relative order.
+        titles_sorted = sorted(self.titles, key=lambda lit: lit.language or "")
+
+        # find the language with the smallest preference.
+        return min(titles_sorted, key=lambda lit: ctx.language_preference(lit.language))
+
+
+@final
+@dataclass(frozen=True)
+class Definiendum(_DefiniendumLike, HTMLable):
+    """something being defined in the ontology."""
+
+    rdf_type: PropertyKind
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
+        title = self.title(ctx)
         d = div(
             h3(
-                *(span(t, lang=t.language) for t in self.titles),
+                span(str(title.value), lang=title.language),
                 sup(
                     self.rdf_type.abbrev,
                     _class=f"sup-{self.rdf_type.abbrev}",
                     title=self.rdf_type.inline_title,
                 ),
             ),
-            id=ctx.fragment(self.iri, self.title),
+            id=ctx.fragment(self.iri, self.title(ctx)),
             _class="property entity",
         )
 
         t = table(tr(th("IRI"), td(code(str(self.iri)))))
         d.appendChild(t)
 
-        for pair in self.props:
+        for pair in self.properties:
             t.appendChild(
                 tr(th(pair.prop.to_html(ctx)), td(pair.resources.to_html(ctx)))
             )
@@ -98,30 +115,18 @@ class Definiendum(HTMLable):
         return d
 
 
-# TODO: join with TypedDefienda
-
-
 @dataclass(frozen=True)
-class OntologyDefinienda(HTMLable):
+class OntologyDefinienda(_DefiniendumLike, HTMLable):
     """Definienda about the ontology as a whole."""
-
-    iri: URIRef
-    titles: Sequence[Literal]
-
-    def title(self) -> Literal | None:
-        """Primary title (if any)."""
-        if len(self.titles) == 0:
-            return None
-        return self.titles[0]
-
-    properties: Sequence[PropertyResourcePair]
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
         metadata_id = ctx.fragment(LONTOD.Metadata, group="section")
+        title = self.title(ctx)
+
         d = div(
             h1(
-                *(span(t, lang=t.language) for t in self.titles),
+                span(str(title.value), lang=title.language),
             ),
             id=metadata_id,
             _class="section metadata",
@@ -148,7 +153,6 @@ class TypeDefinienda(HTMLable):
     """Definienda of a specific type."""
 
     rdf_type: PropertyKind
-
     definienda: Sequence[Definiendum]
 
     @override
@@ -173,6 +177,30 @@ class Ontology(HTMLable):
     metadata: OntologyDefinienda
     sections: Sequence[TypeDefinienda]
     namespaces: Sequence[tuple[str, URIRef]]
+
+    @cached_property
+    def __definienda(self) -> dict[URIRef, list[Definiendum]]:
+        defs: dict[URIRef, list[Definiendum]] = defaultdict(list)
+        for sec in self.sections:
+            for definiendum in sec.definienda:
+                defs[definiendum.iri].append(definiendum)
+        return defs
+
+    def __iter__(self) -> Generator[Definiendum]:
+        """Iterate through all definienda in this ontology."""
+        for sec in self.sections:
+            yield from sec.definienda
+
+    def __call__(self, iri: URIRef) -> Generator[Definiendum]:
+        """Return the definienda for the given URIRef."""
+        yield from self.__definienda[iri]
+
+    def __getitem__(self, iri: URIRef) -> Definiendum | None:
+        """Return the first Definiendum for the given IRI or None."""
+        try:
+            return self.__definienda[iri][0]
+        except IndexError:
+            return None
 
     @override
     def to_html(self, ctx: RenderContext) -> document:
@@ -269,7 +297,6 @@ class Ontology(HTMLable):
         u1 = ul(_class="first")
         d.appendChild(u1)
 
-
         metadata_id = ctx.fragment(LONTOD.Metadata, group="section")
         u1.appendChild(
             li(
@@ -299,12 +326,9 @@ class Ontology(HTMLable):
             u1.appendChild(li(c))
 
             for definiendum in sec.definienda:
-                href = "#" + ctx.fragment(definiendum.iri, definiendum.title)
-                title = (
-                    definiendum.title or "(No title)"
-                )  # TODO: Smarter selection of title
-
-                u2.appendChild(li(a(title, href=href)))
+                title = definiendum.title(ctx)
+                href = "#" + ctx.fragment(definiendum.iri, title)
+                u2.appendChild(li(a(str(title.value), href=href)))
 
         if len(self.namespaces) > 0:
             namespace_id = ctx.fragment(LONTOD.Namespaces, group="section")

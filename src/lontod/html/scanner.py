@@ -3,7 +3,6 @@
 from collections import defaultdict
 from collections.abc import Generator, Sequence
 from itertools import chain
-from typing import cast
 
 from rdflib import Graph, Literal
 from rdflib.namespace import (
@@ -27,7 +26,6 @@ from .data._rdf import (
     ONTDOC,
     PropertyKind,
 )
-from .data.core import RenderContext
 from .data.ontology import (
     Ontology,
     OntologyDefinienda,
@@ -177,12 +175,6 @@ class Scanner:
         for s_, o in g.subject_objects(ORG.memberOf):
             g.add((s_, SDO.affiliation, o))
 
-    def render(self) -> str:
-        """Render this document into a string."""
-        ont = self._render()
-        html = ont.to_html(RenderContext())
-        return cast("str", html.render(pretty=True))
-
     def _make_metadata(self) -> OntologyDefinienda:
         this_onts_props: dict[URIRef, list[Node]] = defaultdict(list)
         # get all ONT_PROPS props and their (multiple) values
@@ -210,9 +202,7 @@ class Scanner:
             our_props.append(
                 PropertyResourcePair(
                     prop=self.__meta[prop_iri],
-                    resources=self.__res(
-                        *this_onts_props[prop_iri], rdf_type=None, prop=prop_iri
-                    ),
+                    resources=self.__res(*this_onts_props[prop_iri], prop=prop_iri),
                 )
             )
 
@@ -274,7 +264,8 @@ class Scanner:
 
         return sdo
 
-    def _render(self) -> Ontology:
+    def __call__(self) -> Ontology:
+        """Extract an ontology."""
         return Ontology(
             schema_json=self.schema.serialize(format="json-ld"),
             metadata=self._make_metadata(),

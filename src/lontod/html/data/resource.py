@@ -2,7 +2,6 @@
 
 # spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing noopener noreferer
 
-from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import chain
@@ -13,6 +12,7 @@ import markdown
 from dominate.tags import (
     a,
     br,
+    div,
     em,
     html_tag,
     li,
@@ -27,10 +27,9 @@ from rdflib.term import BNode, Literal, URIRef
 from lontod.utils.intersperse import intersperse
 from lontod.utils.partition import partition
 
-from ._rdf import PropertyKind
 from .core import HTMLable, RenderContext
 
-type _RDFResource = "BlankNodeResource|SetClassResource|_ResourceReference|RestrictionResource|LiteralResource|AgentResource"
+type _RDFResource = "BlankNodeResource|SetClassResource|ResourceReference|RestrictionResource|LiteralResource|AgentResource"
 
 
 @final
@@ -71,68 +70,41 @@ class BlankNodeResource(HTMLable):
         return pre(str(self.node))
 
 
-class _ResourceReference(HTMLable, ABC):
+@final
+@dataclass(frozen=True)
+class ResourceReference(HTMLable):
     """Reference to a resource by IRI."""
 
     iri: URIRef
-    title: Literal
-
-    @property
-    @abstractmethod
-    def is_local(self) -> bool:
-        """Indicates if this resource is defined in the local ontology."""
-
-
-@final
-@dataclass(frozen=True)
-class LocalResource(_ResourceReference):
-    """Resource defined in the local ontology."""
-
-    iri: URIRef
-    title: Literal
-    rdf_type: PropertyKind
+    possible_title: Literal
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
+        definiendum = ctx.ontology[self.iri]
+        if definiendum is None:
+            return a(
+                str(self.possible_title.value),
+                href=str(self.iri),
+                target="_blank",
+                rel="noreferrer noopener",
+            )
+
         fragment = ctx.fragment(self.iri)
+        title = definiendum.title(ctx)
+
         return span(
-            a(str(self.title.value), href="#" + fragment),
+            a(
+                str(title.value),
+                lang=title.language,
+                title=self.iri,
+                href="#" + fragment,
+            ),
             sup(
-                self.rdf_type.abbrev,
-                _class="sup-" + self.rdf_type.abbrev,
-                title=self.rdf_type.inline_title,
+                definiendum.rdf_type.abbrev,
+                _class="sup-" + definiendum.rdf_type.abbrev,
+                title=definiendum.rdf_type.inline_title,
             ),
         )
-
-    @property
-    @override
-    def is_local(self) -> TLiteral[True]:
-        """Indicates that this resource is defined within the local document."""
-        return True
-
-
-@final
-@dataclass(frozen=True)
-class ExternalResource(_ResourceReference):
-    """Resource defined externally."""
-
-    iri: URIRef
-    title: Literal
-
-    @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        return a(
-            str(self.title.value),
-            href=str(self.iri),
-            target="_blank",
-            rel="noreferrer noopener",
-        )
-
-    @property
-    @override
-    def is_local(self) -> TLiteral[False]:
-        """Indicates that this resource is not defined within the local document."""
-        return False
 
 
 @final
@@ -140,7 +112,7 @@ class ExternalResource(_ResourceReference):
 class RDFResources(HTMLable):
     """Information about a single RDF Resource."""
 
-    resources: list[_RDFResource]
+    resources: Sequence[_RDFResource]
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
@@ -160,7 +132,7 @@ class RestrictionResource(HTMLable):
     """OWL Restriction."""
 
     # list of properties this restriction is on
-    properties: Sequence["_ResourceReference|AgentResource"]
+    properties: Sequence["ResourceReference|AgentResource"]
     cardinalities: Sequence["_Cardinality"]
 
     @override
@@ -195,8 +167,18 @@ class LiteralResource(HTMLable):
         if self.is_example:
             return pre(str(self.lit))
 
-        # TODO: Language and smarter Content Type!
-        return raw(markdown.markdown(self.lit))
+        content_markdown = str(self.lit.value)
+        if self.lit.language is not None:
+            content_markdown = (
+                sup(
+                    str(self.lit.language),
+                    _class="sup-lang",
+                    lang="en",
+                ).render()
+                + content_markdown
+            )
+
+        return div(raw(markdown.markdown(content_markdown)), lang=self.lit.language)
 
 
 @final
@@ -329,7 +311,7 @@ class CardinalityReference(HTMLable):
     """Referencing Cardinality."""
 
     typ: TLiteral["only", "some", "value", "union", "intersection"]
-    value: _ResourceReference
+    value: ResourceReference
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:

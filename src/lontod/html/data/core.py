@@ -2,14 +2,17 @@
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from hashlib import md5
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from dominate.tags import (
     html_tag,
 )
 from rdflib.term import Node, URIRef
+
+if TYPE_CHECKING:
+    from .ontology import Ontology
 
 
 class HTMLable(ABC):
@@ -24,15 +27,38 @@ class RenderContext:
     """context used for rendering."""
 
     __fids: dict[str, dict[URIRef, str]]
-    __special_fids: dict[URIRef, str]
     __fid_values: set[str]
 
     MAX_FID_TRIES: Final = 1000
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        ontology: "Ontology",
+        language_preferences: Sequence[None | str] = (None, "en"),
+    ) -> None:
         """Create a new RenderContext."""
+        self.__ontology = ontology
         self.__fids = defaultdict(dict)
         self.__fid_values = set()
+        self.__language_preferences = {
+            lang: i for (i, lang) in enumerate(language_preferences)
+        }
+
+    __ontology: "Ontology"
+
+    @property
+    def ontology(self) -> "Ontology":
+        """Return the ontology that is used in this RenderContext."""
+        return self.__ontology
+
+    def language_preference(self, lang: str | None) -> int:
+        """Return an integer representing the preference of a literal of the given language during rendering.
+        The smaller the returned integer, the higher the preference.
+        """
+        try:
+            return self.__language_preferences[lang]
+        except KeyError:
+            return len(self.__language_preferences)
 
     def close(self) -> None:
         """Close this context, reserved for future usage."""

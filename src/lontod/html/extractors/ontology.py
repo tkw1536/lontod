@@ -69,7 +69,7 @@ class OntologyExtractor:
 
             def_props: list[PropertyResourcePair] = []
             for prop_iri in rdf_type.properties:
-                if prop_iri == DCTERMS.title or prop_iri not in this_props:
+                if prop_iri not in this_props:
                     continue
 
                 nodes = this_props[prop_iri]
@@ -78,7 +78,7 @@ class OntologyExtractor:
                     # or we can remove it completely!
                     PropertyResourcePair(
                         prop=self.meta[prop_iri],
-                        resources=self.res(*nodes, rdf_type=rdf_type, prop=prop_iri),
+                        resources=self.res(*nodes, prop=prop_iri),
                     )
                 )
 
@@ -95,7 +95,7 @@ class OntologyExtractor:
                     iri=sub,
                     rdf_type=rdf_type,
                     titles=titles,
-                    props=def_props,
+                    properties=def_props,
                 )
             )
         return TypeDefinienda(rdf_type=rdf_type, definienda=definienda)
