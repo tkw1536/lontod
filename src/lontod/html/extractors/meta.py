@@ -19,14 +19,14 @@ from rdflib.namespace import (
 )
 from rdflib.term import Literal, URIRef
 
+from lontod.html.data._rdf import PROPS
 from lontod.html.data.meta import MetaOntologies, MetaOntology, MetaProperty
-from lontod.html.extractors._rdf import PROPS
 from lontod.utils.cached import PickleCachedMeta
 from lontod.utils.graph import SubjectObjectQuery, subject_object_dicts
 
 from .core import iri_to_title
 
-RDF_FOLDER = resources.files(__package__).joinpath("ontologies")
+RDF_FOLDER = resources.files(__package__).joinpath("meta_rdf")
 
 logger = getLogger(__name__)
 

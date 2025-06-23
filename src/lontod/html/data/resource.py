@@ -24,12 +24,10 @@ from dominate.tags import (
 from dominate.util import container, raw, text
 from rdflib.term import BNode, Literal, URIRef
 
-from lontod.html.extractors._rdf import (
-    ONT_TYPES,
-)
 from lontod.utils.intersperse import intersperse
 from lontod.utils.partition import partition
 
+from ._rdf import PropertyKind
 from .core import HTMLable, RenderContext
 
 type _RDFResource = "BlankNodeResource|SetClassResource|_ResourceReference|RestrictionResource|LiteralResource|AgentResource"
@@ -89,17 +87,18 @@ class LocalResource(_ResourceReference):
 
     iri: URIRef
     title: Literal
-    rdf_type: URIRef
+    rdf_type: PropertyKind
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
         fragment = ctx.fragment(self.iri)
+        info = self.rdf_type.info
         return span(
             a(str(self.title.value), href="#" + fragment),
             sup(
-                ONT_TYPES[self.rdf_type][0],
-                _class="sup-" + ONT_TYPES[self.rdf_type][0],
-                title=ONT_TYPES[self.rdf_type][1],
+                info.abbrev,
+                _class="sup-" + info.abbrev,
+                title=info.inline_title,
             ),
         )
 

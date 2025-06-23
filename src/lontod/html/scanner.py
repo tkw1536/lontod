@@ -14,7 +14,6 @@ from dominate.tags import (
     div,
     dl,
     dt,
-    h1,
     h2,
     h3,
     h4,
@@ -22,7 +21,6 @@ from dominate.tags import (
     li,
     meta,
     script,
-    strong,
     style,
     sup,
     table,
@@ -47,19 +45,19 @@ from rdflib.namespace import (
 )
 from rdflib.term import Node, URIRef
 
-from .data.core import HTMLable, RenderContext
-from .extractors._rdf import (
+from .data._rdf import (
     AGENT_PROPS,
-    CLASS_PROPS,
     ONT_PROPS,
     ONTDOC,
-    PROP_PROPS,
+    PropertyKind,
 )
+from .data.core import HTMLable, RenderContext
+from .data.ontology import OntologyDefinienda, PropertyResourcePair
 from .extractors.meta import MetaExtractor
+from .extractors.ontology import OntologyExtractor
+from .extractors.resource import ResourceExtractor
 from .utils import (
     PylodeError,
-    prop_obj_pair_html,
-    section_html,
     sort_ontology,
 )
 
@@ -77,6 +75,12 @@ class Ontology(HTMLable):
         self._ontdoc_inference(self.__ont)
 
         self.__meta = MetaExtractor()()
+        self.__res = ResourceExtractor(self.__ont, self.__meta)
+        self.__extractor = OntologyExtractor(
+            ont=self.__ont,
+            meta=self.__meta,
+            res=self.__res,
+        )
         self.__toc: dict[str, list[tuple[str, str]]] = {}
 
     def _ontdoc_inference(self, g: Graph) -> None:
@@ -289,6 +293,8 @@ class Ontology(HTMLable):
             self.__ont.subjects(predicate=RDF.type, object=SKOS.ConceptScheme),
             self.__ont.subjects(predicate=RDF.type, object=PROF.Profile),
         ):
+            if not isinstance(s_, URIRef):
+                continue
             iri = s_
             for p_, o in self.__ont.predicate_objects(s_):
                 if p_ not in ONT_PROPS:
@@ -299,24 +305,27 @@ class Ontology(HTMLable):
                     raise TypeError(msg)
                 this_onts_props[p_].append(o)
 
-        # make HTML for all props in order of ONT_PROPS
-        sec = div(h1(this_onts_props[DCTERMS.title]), id="metadata", _class="section")
-        sec.appendChild(h2("Metadata"))
-        d = dl(div(dt(strong("IRI")), dd(code(str(iri)))))
-        for prop in ONT_PROPS:
-            if prop in this_onts_props:
-                d.appendChild(
-                    prop_obj_pair_html(
-                        ctx,
-                        self.__ont,
-                        self.__meta,
-                        "dl",
-                        prop,
-                        this_onts_props[prop],
+        our_props: list[PropertyResourcePair] = []
+        for prop_iri in ONT_PROPS:
+            if prop_iri not in this_onts_props:
+                continue
+            our_props.append(
+                PropertyResourcePair(
+                    prop=self.__meta[prop_iri],
+                    resources=self.__res(
+                        *this_onts_props[prop_iri], rdf_type=None, prop=prop_iri
                     ),
                 )
-        sec.appendChild(d)
-        yield sec
+            )
+
+        us = OntologyDefinienda(
+            iri=iri,
+            titles=[
+                x for x in this_onts_props[DCTERMS.title] if isinstance(x, Literal)
+            ],
+            properties=our_props,
+        )
+        yield us.to_html(ctx)
 
     @property
     def schema(self) -> Graph:
@@ -369,81 +378,22 @@ class Ontology(HTMLable):
         return sdo
 
     def _make_main_sections(self, ctx: RenderContext) -> Generator[html_tag]:
-        if (None, RDF.type, OWL.Class) in self.__ont:
-            yield section_html(
-                ctx,
-                "Classes",
-                self.__ont,
-                self.__meta,
-                OWL.Class,
-                CLASS_PROPS,
-                self.__toc,
-                "classes",
-            )
-
-        if (
-            None,
-            RDF.type,
+        for kind_iri in (
+            OWL.Class,
             RDF.Property,
-        ) in self.__ont:
-            yield section_html(
-                ctx,
-                "Properties",
-                self.__ont,
-                self.__meta,
-                RDF.Property,
-                PROP_PROPS,
-                self.__toc,
-                "properties",
-            )
+            OWL.ObjectProperty,
+            OWL.DatatypeProperty,
+            OWL.AnnotationProperty,
+            OWL.FunctionalProperty,
+        ):
+            if (None, RDF.type, kind_iri) not in self.__ont:
+                continue
 
-        if (None, RDF.type, OWL.ObjectProperty) in self.__ont:
-            yield section_html(
-                ctx,
-                "Object Properties",
-                self.__ont,
-                self.__meta,
-                OWL.ObjectProperty,
-                PROP_PROPS,
-                self.__toc,
-                "objectproperties",
-            )
+            sec = self.__extractor.extract(PropertyKind(kind_iri))
+            yield sec.to_html(ctx)
 
-        if (None, RDF.type, OWL.DatatypeProperty) in self.__ont:
-            yield section_html(
-                ctx,
-                "Datatype Properties",
-                self.__ont,
-                self.__meta,
-                OWL.DatatypeProperty,
-                PROP_PROPS,
-                self.__toc,
-                "datatypeproperties",
-            )
-
-        if (None, RDF.type, OWL.AnnotationProperty) in self.__ont:
-            yield section_html(
-                ctx,
-                "Annotation Properties",
-                self.__ont,
-                self.__meta,
-                OWL.AnnotationProperty,
-                PROP_PROPS,
-                self.__toc,
-                "annotationproperties",
-            )
-
-        if (None, RDF.type, OWL.FunctionalProperty) in self.__ont:
-            yield section_html(
-                ctx,
-                "Functional Properties",
-                self.__ont,
-                self.__meta,
-                OWL.FunctionalProperty,
-                PROP_PROPS,
-                self.__toc,
-                "functionalproperties",
-            )
+            key, entries = sec.toc_entries(ctx)
+            self.__toc[key] = entries
 
     def _make_legend(self) -> Generator[html_tag]:
         legend = div(id="legend")

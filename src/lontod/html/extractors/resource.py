@@ -10,6 +10,13 @@ from rdflib.namespace import DCTERMS, OWL, PROV, RDF, SDO, SKOS, XSD
 from rdflib.paths import ZeroOrMore
 from rdflib.term import BNode, Literal, Node, URIRef
 
+from lontod.html.data._rdf import (
+    AGENT_PROPS,
+    ONT_TYPES,
+    OWL_SET_TYPES,
+    RESTRICTION_TYPES,
+    PropertyKind,
+)
 from lontod.html.data.meta import MetaOntologies
 from lontod.html.data.resource import (
     Affiliation,
@@ -27,12 +34,6 @@ from lontod.html.data.resource import (
     _RDFResource,
     _ResourceReference,
 )
-from lontod.html.extractors._rdf import (
-    AGENT_PROPS,
-    ONT_TYPES,
-    OWL_SET_TYPES,
-    RESTRICTION_TYPES,
-)
 
 
 @dataclass
@@ -43,7 +44,7 @@ class ResourceExtractor:
     meta: MetaOntologies
 
     def __call__(
-        self, *objects: Node, rdf_type: URIRef | None, prop: URIRef | None
+        self, *objects: Node, rdf_type: PropertyKind | None = None, prop: URIRef | None
     ) -> RDFResources:
         """Extract information about a given set of objects."""
         return RDFResources(
@@ -53,7 +54,7 @@ class ResourceExtractor:
     def __extract(
         self,
         obj: Node,
-        rdf_type: URIRef | None,
+        rdf_type: PropertyKind | None,
         prop: URIRef | None = None,
     ) -> _RDFResource:
         """Extract information about a single object."""
@@ -85,30 +86,33 @@ class ResourceExtractor:
 
         return BlankNodeResource(node=node)
 
-    def _get_ont_type(self, iri: URIRef) -> URIRef | None:
+    def _get_ont_type(self, iri: URIRef) -> PropertyKind | None:
         """Find the type of an object if it is known."""
-        # TODO: Use this as an enum or something
-        types_we_know = [
-            OWL.Class,
-            OWL.ObjectProperty,
-            OWL.DatatypeProperty,
-            OWL.AnnotationProperty,
-            OWL.FunctionalProperty,
-            RDF.Property,
-        ]
+        # TODO: Move this into a constant
+        types_we_know = tuple(
+            PropertyKind(p)
+            for p in (
+                OWL.Class,
+                OWL.ObjectProperty,
+                OWL.DatatypeProperty,
+                OWL.AnnotationProperty,
+                OWL.FunctionalProperty,
+                RDF.Property,
+            )
+        )
 
         this_objects_types = [
             o for o in self.ont.objects(iri, RDF.type) if o in ONT_TYPES
         ]
 
         for x_ in types_we_know:
-            if x_ in this_objects_types:
+            if x_.uri in this_objects_types:
                 return x_
 
         this_objects_types.extend(o for o in self.meta.types_of(iri) if o in ONT_TYPES)
 
         for x_ in types_we_know:
-            if x_ in this_objects_types:
+            if x_.uri in this_objects_types:
                 return x_
 
         return None
@@ -116,7 +120,7 @@ class ResourceExtractor:
     def __extract_uri_ref(
         self,
         iri: URIRef,
-        rdf_type: URIRef | None = None,
+        rdf_type: PropertyKind | None = None,
     ) -> "_ResourceReference|AgentResource":
         if (iri, RDF.type, PROV.Agent) in self.ont:
             return self.__extract_agent(iri)
@@ -168,7 +172,7 @@ class ResourceExtractor:
             resources.extend(
                 self.__extract(
                     o2,
-                    OWL.Class,
+                    PropertyKind(OWL.Class),
                 )
                 for o2 in self.ont.objects(o, RDF.rest * ZeroOrMore / RDF.first)  # type:ignore[operator]
             )
@@ -242,7 +246,7 @@ class ResourceExtractor:
                         msg = "never reached"
                         raise AssertionError(msg)
 
-                    link = self.__extract_uri_ref(o, OWL.Class)
+                    link = self.__extract_uri_ref(o, PropertyKind(OWL.Class))
                     if not isinstance(link, _ResourceReference):
                         continue
 
