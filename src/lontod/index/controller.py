@@ -51,7 +51,9 @@ class Controller:
     def index_and_commit(self) -> None:
         """Perform an indexing operation, and always commits the result."""
         with self.__lock:
-            self.__logger.info("ingesting paths %r", self.__paths)
+            self.__logger.info(
+                "ingesting paths [%s]", ",".join(repr(str(p)) for p in self.__paths)
+            )
             self.__conn.execute("BEGIN;")
             self.__ingester(*self.__paths, initialize=True, truncate=False)
             self.__conn.commit()
@@ -71,7 +73,7 @@ class Controller:
 
         self.__observer = Observer()
         for path in self.__paths:
-            self.__logger.info("starting to watch %r", path)
+            self.__logger.info("starting to watch %r", str(path))
             self.__observer.schedule(handler, str(path), recursive=True)
         self.__observer.start()
 
@@ -80,7 +82,9 @@ class Controller:
         self.__conn.close()
 
         if self.__observer is not None:
-            self.__logger.info("stopping watch of %r", self.__paths)
+            self.__logger.info(
+                "stopping watch of [%s]", ",".join(repr(str(p)) for p in self.__paths)
+            )
             self.__observer.stop()
 
 
