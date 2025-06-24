@@ -113,6 +113,7 @@ class RenderContext:
 
     def language_preference(self, lang: str | None) -> int:
         """Return an integer representing the preference of a literal of the given language during rendering.
+
         The smaller the returned integer, the higher the preference.
         """
         try:
@@ -124,8 +125,7 @@ class RenderContext:
         """Close this context, reserved for future usage."""
 
     def fragment(self, iri: URIRef, title: Node | None = None, group: str = "") -> str:
-        """Return a fragment identifier for this title, using the given title
-        node if it exists.
+        """Return a fragment identifier for this title, using the given title node if it exists.
 
         Identifiers for two different identifiers are guaranteed to be
         identical if and only if they originate from the same iri and are

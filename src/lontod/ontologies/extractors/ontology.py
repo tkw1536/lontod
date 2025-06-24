@@ -4,7 +4,6 @@ from collections import defaultdict
 from collections.abc import Generator, Sequence
 from functools import cached_property
 from itertools import chain
-from typing import final
 
 from rdflib import Graph, Literal, Node, URIRef
 from rdflib.namespace import (
@@ -49,7 +48,7 @@ class OntologyExtractor:
         self.__res = ResourceExtractor(self.__ont, self.__meta)
 
     @staticmethod
-    def __ontdoc_inference(graph: Graph) -> None:
+    def __ontdoc_inference(graph: Graph) -> None:  # noqa: PLR0912 C901
         """Expand the ontology's graph to make OntDoc querying easier.
 
         Uses axioms made up for OntDoc, but they are simple and obvious
@@ -209,7 +208,7 @@ class OntologyExtractor:
         )
 
     @cached_property
-    def schema(self) -> Graph:
+    def schema(self) -> Graph:  # noqa: PLR0912 C901
         """Generic schema.org description for this graph."""
         sdo = Graph()
         for ont_iri in chain(
@@ -236,15 +235,17 @@ class OntologyExtractor:
                     if isinstance(o, Literal):
                         continue
                     for p2, o2 in self.__ont.predicate_objects(o):
-                        if p2 in AGENT_PROPS:
-                            sdo.add((o, p2, o2))
+                        if p2 not in AGENT_PROPS:
+                            continue
+                        sdo.add((o, p2, o2))
                 elif p_ == DCTERMS.contributor:
                     sdo.add((ont_iri, SDO.contributor, o))
                     if isinstance(o, Literal):
                         continue
                     for p2, o2 in self.__ont.predicate_objects(o):
-                        if p2 in AGENT_PROPS:
-                            sdo.add((o, p2, o2))
+                        if p2 not in AGENT_PROPS:
+                            continue
+                        sdo.add((o, p2, o2))
                 elif p_ == DCTERMS.created:
                     sdo.add((ont_iri, SDO.dateCreated, o))
                 elif p_ == DCTERMS.modified:
@@ -296,24 +297,22 @@ class OntologyExtractor:
 
         return tuple(sorted(nses.items(), key=lambda x: x[0]))
 
-    def __extract_section(
+    def __extract_section(  # noqa: C901
         self,
         prop: IndexedProperty,
     ) -> TypeDefinienda:
         """Extract information about the given section."""
-        iri = prop.iri
-        specials = prop.specializations
         props = set(prop.properties)
 
         definienda: list[Definiendum] = []
-        for sub in self.__ont.subjects(predicate=RDF.type, object=iri):
+        for sub in self.__ont.subjects(predicate=RDF.type, object=prop.iri):
             # TODO: Do we want to support blank node definitions?
             if not isinstance(sub, URIRef):
                 continue
 
             # skip any specialized subtypes
-            if len(specials) > 0:
-                special_queries = [(sub, RDF.type, sub) for sub in specials]
+            if len(prop.specializations) > 0:
+                special_queries = [(sub, RDF.type, sub) for sub in prop.specializations]
                 if any(q in self.__ont for q in special_queries):
                     continue
 
@@ -356,7 +355,7 @@ class OntologyExtractor:
                 if title is not None:
                     titles = [Literal(title)]
                 else:
-                    titles = [Literal(iri, datatype=XSD.anyURI)]
+                    titles = [Literal(prop.iri, datatype=XSD.anyURI)]
 
             definienda.append(
                 Definiendum(
@@ -367,11 +366,3 @@ class OntologyExtractor:
                 )
             )
         return TypeDefinienda(prop=prop, definienda=definienda)
-
-
-# spellchecker:words ONTDOC FOAF RDFS onts Helper objectproperties datatypeproperties annotationproperties functionalproperties nses
-
-
-@final
-class Scanner:
-    """Scans an ontology."""

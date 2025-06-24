@@ -1,6 +1,6 @@
 """rendering a single object."""
 
-# spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing
+# spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing classset
 
 from dataclasses import dataclass
 from typing import Literal as TLiteral
@@ -147,6 +147,7 @@ class ResourceExtractor:
                 continue
 
             if px in RESTRICTION_TYPES + OWL_SET_TYPES:
+                card: _Cardinality | None = None
                 if px in {
                     OWL.minCardinality,
                     OWL.minQualifiedCardinality,
@@ -155,55 +156,62 @@ class ResourceExtractor:
                     OWL.cardinality,
                     OWL.qualifiedCardinality,
                 }:
-                    typ: TLiteral["min", "max", "exactly"]
-                    if px in {OWL.minCardinality, OWL.minQualifiedCardinality}:
-                        typ = "min"
-                    elif px in {
-                        OWL.maxCardinality,
-                        OWL.maxQualifiedCardinality,
-                    }:
-                        typ = "max"
-                    elif px in {OWL.cardinality, OWL.qualifiedCardinality}:
-                        typ = "exactly"
-                    else:
-                        msg = "never reached"
-                        raise AssertionError(msg)
+                    card = self.__extract_cardinality_numeric(px, o)
+                elif isinstance(o, URIRef):
+                    card = self.__extract_cardinality_reference(px, o)
 
-                    # TODO: not sure about the literal here
-                    cards.append(
-                        CardinalityNumeric(typ=typ, value=str(o)),
-                    )
-                else:
-                    if not isinstance(o, URIRef):
-                        continue
+                if card is not None:
+                    cards.append(card)
 
-                    card: TLiteral["only", "some", "value", "union", "intersection"]
-                    if px == OWL.allValuesFrom:
-                        card = "only"
-                    elif px == OWL.someValuesFrom:
-                        card = "some"
-                    elif px == OWL.hasValue:
-                        card = "value"
-                    elif px == OWL.unionOf:
-                        card = "union"
-                    elif px == OWL.intersectionOf:
-                        card = "intersection"
-                    else:
-                        msg = "never reached"
-                        raise AssertionError(msg)
-
-                    link = self.__extract_uri_ref(o)
-                    if not isinstance(link, ResourceReference):
-                        continue
-
-                    # TODO: Ensure that the type is actually an OWL.Class!
-                    cards.append(
-                        CardinalityReference(
-                            typ=card,
-                            value=link,
-                        ),
-                    )
         return RestrictionResource(properties=props, cardinalities=cards)
+
+    def __extract_cardinality_numeric(
+        self, px: Node, o: Node
+    ) -> CardinalityNumeric | None:
+        typ: TLiteral["min", "max", "exactly"]
+        if px in {OWL.minCardinality, OWL.minQualifiedCardinality}:
+            typ = "min"
+        elif px in {
+            OWL.maxCardinality,
+            OWL.maxQualifiedCardinality,
+        }:
+            typ = "max"
+        elif px in {OWL.cardinality, OWL.qualifiedCardinality}:
+            typ = "exactly"
+        else:
+            msg = "never reached"
+            raise AssertionError(msg)
+
+        # TODO: not sure about the literal here
+        return CardinalityNumeric(typ=typ, value=str(o))
+
+    def __extract_cardinality_reference(
+        self, px: Node, o: URIRef
+    ) -> CardinalityReference | None:
+        card: TLiteral["only", "some", "value", "union", "intersection"]
+        if px == OWL.allValuesFrom:
+            card = "only"
+        elif px == OWL.someValuesFrom:
+            card = "some"
+        elif px == OWL.hasValue:
+            card = "value"
+        elif px == OWL.unionOf:
+            card = "union"
+        elif px == OWL.intersectionOf:
+            card = "intersection"
+        else:
+            msg = "never reached"
+            raise AssertionError(msg)
+
+        link = self.__extract_uri_ref(o)
+        if not isinstance(link, ResourceReference):
+            return None
+
+        # TODO: Ensure that the type is actually an OWL.Class!
+        return CardinalityReference(
+            typ=card,
+            value=link,
+        )
 
     def __extract_literal(
         self,

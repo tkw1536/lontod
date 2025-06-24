@@ -14,6 +14,8 @@ from .extractors import OntologyExtractor
 from .ontology import NoOntologyFoundError, Ontology
 from .types import media_types
 
+# spellchecker:words defi
+
 
 def owl_ontology(
     logger: Logger, graph: Graph, html_languages: Sequence[str | None]
