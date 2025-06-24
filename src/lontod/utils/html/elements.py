@@ -2,13 +2,13 @@
 
 from abc import ABC
 
-from .node import ElementNode, _AttributeLike, _NodeLike
+from .node import AttributeLike, ElementNode, NodeLike
 
 
 class _PreDefinedElementNode(ElementNode, ABC):
     """A pre-defined element."""
 
-    def __init__(self, *children: _NodeLike, **attributes: _AttributeLike) -> None:
+    def __init__(self, *children: NodeLike, **attributes: AttributeLike) -> None:
         super().__init__(type(self).__name__, *children, **attributes)
 
 
@@ -46,6 +46,11 @@ ASIDE = _element("aside")
 FOOTER = _element("footer")
 HEADER = _element("header")
 H1 = _element("h1")
+H2 = _element("h2")
+H3 = _element("h3")
+H4 = _element("h4")
+H5 = _element("h5")
+H6 = _element("h6")
 HGROUP = _element("hgroup")
 MAIN = _element("main")
 NAV = _element("nav")
@@ -233,6 +238,11 @@ __all__ = [
     "FRAME",
     "FRAMESET",
     "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
     "HEAD",
     "HEADER",
     "HGROUP",

@@ -131,17 +131,12 @@ a:active {
     -o-user-select: none;
     user-select: none;
 }
-.sup-c,
-.sup-op,
-.sup-fp,
-.sup-dp,
-.sup-ap,
-.sup-p,
-.sup-ni,
-.sup-con,
-.sup-col {
+
+.resource-ref sup {
     cursor: help;
+    margin-left: 0.2em;
 }
+
 .sup-c {
     color: orange;
 }

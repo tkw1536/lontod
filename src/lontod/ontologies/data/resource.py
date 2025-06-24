@@ -8,20 +8,9 @@ from itertools import chain
 from typing import Final, final, override
 from typing import Literal as TLiteral
 
-from dominate.tags import (
-    a,
-    br,
-    em,
-    html_tag,
-    li,
-    pre,
-    span,
-    sup,
-    ul,
-)
-from dominate.util import container, raw, text
 from rdflib.term import BNode, Literal, URIRef
 
+from lontod.utils.html import BR, DIV, EM, LI, PRE, SPAN, SUP, UL, A, NodeLike, RawNode
 from lontod.utils.intersperse import intersperse
 from lontod.utils.partition import partition
 
@@ -39,7 +28,7 @@ class SetClassResource(HTMLable):
     resources: Sequence[HTMLable]
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
+    def to_html(self, ctx: RenderContext) -> NodeLike:
         joining_word: str
         if self.cardinality == "union":
             joining_word = "or"
@@ -48,11 +37,9 @@ class SetClassResource(HTMLable):
         else:
             joining_word = ","
 
-        return container(
-            *intersperse(
-                [resource.to_html(ctx) for resource in self.resources],
-                span(joining_word, _class="_cardinality"),
-            )
+        return intersperse(
+            [resource.to_html(ctx) for resource in self.resources],
+            SPAN(joining_word, _class="_cardinality"),
         )
 
 
@@ -64,8 +51,8 @@ class BlankNodeResource(HTMLable):
     node: BNode
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        return pre(str(self.node))
+    def to_html(self, ctx: RenderContext) -> NodeLike:
+        return PRE(str(self.node))
 
 
 @final
@@ -77,10 +64,10 @@ class ResourceReference(HTMLable):
     possible_title: Literal
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
+    def to_html(self, ctx: RenderContext) -> NodeLike:
         definiendum = ctx.ontology[self.iri]
         if definiendum is None:
-            return a(
+            return A(
                 str(self.possible_title.value),
                 href=str(self.iri),
                 target="_blank",
@@ -90,18 +77,19 @@ class ResourceReference(HTMLable):
         fragment = ctx.fragment(self.iri)
         title = definiendum.title(ctx)
 
-        return span(
-            a(
+        return DIV(
+            A(
                 str(title.value),
                 lang=title.language,
                 title=self.iri,
                 href="#" + fragment,
             ),
-            sup(
+            SUP(
                 definiendum.prop.abbrev,
                 _class="sup-" + definiendum.prop.abbrev,
                 title=definiendum.prop.inline_title,
             ),
+            _class="resource-ref",
         )
 
 
@@ -113,15 +101,13 @@ class RDFResources(HTMLable):
     resources: Sequence[_RDFResource]
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
+    def to_html(self, ctx: RenderContext) -> NodeLike:
         if len(self.resources) == 0:
-            return container()
+            return None
         if len(self.resources) == 1:
             return self.resources[0].to_html(ctx)
-        u = ul()
-        for resource in self.resources:
-            u.appendChild(li(resource.to_html(ctx)))
-        return u
+
+        return UL(LI(resource.to_html(ctx) for resource in self.resources))
 
 
 @final
@@ -134,22 +120,18 @@ class RestrictionResource(HTMLable):
     cardinalities: Sequence["_Cardinality"]
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
+    def to_html(self, ctx: RenderContext) -> NodeLike:
         if len(self.properties) == 0 and len(self.cardinalities) == 0:
-            return text("None")
+            return "None"
 
-        s = span()
-        for elem in chain(
-            (ref.to_html(ctx) for ref in self.properties),
-            (card.to_html(ctx) for card in self.cardinalities),
-        ):
-            s.appendChild(elem)
-
-        # TODO: not sure when we need this br!
-        if len(self.properties) > 0 and len(self.cardinalities) > 0:
-            s.appendChild(br())
-
-        return s
+        return SPAN(
+            chain(
+                (ref.to_html(ctx) for ref in self.properties),
+                (card.to_html(ctx) for card in self.cardinalities),
+            ),
+            # TODO: not sure when we need this br!
+            BR() if len(self.properties) > 0 and len(self.cardinalities) > 0 else None,
+        )
 
 
 @final
@@ -161,9 +143,9 @@ class LiteralResource(HTMLable):
     lit: Literal
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
+    def to_html(self, ctx: RenderContext) -> NodeLike:
         if self.is_example:
-            return pre(str(self.lit))
+            return PRE(str(self.lit))
 
         return ctx.render_content(self.lit)
 
@@ -182,15 +164,15 @@ class AgentResource(HTMLable):
     affiliations: Sequence["Affiliation"]
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        sp = span()
-
+    def to_html(self, ctx: RenderContext) -> NodeLike:
         # no names, just render the raw object!
         if len(self.names) == 0:
-            return span(str(self.obj))
+            return SPAN(str(self.obj))
+
+        children: list[NodeLike] = []
 
         # build the names, grouped by language
-        name_spans: list[html_tag] = []
+        name_spans: list[NodeLike] = []
         for lang, lits in partition(
             chain(
                 self.prefixes,
@@ -198,41 +180,38 @@ class AgentResource(HTMLable):
             ),
             lambda lit: lit.language,
         ):
-            name_spans.extend(span(*(text(lit.value) for lit in lits), lang=lang))
+            name_spans.append(SPAN((str(lit.value) for lit in lits), lang=lang))
 
         # build a name element
-        name = container(*intersperse(name_spans, br()))
+        name: NodeLike = intersperse(name_spans, BR())
         if len(self.urls) > 0:
-            name = a(name, href=self.urls[0], target="_blank", rel="noopener noreferer")
-        sp.appendChild(name)
+            name = A(name, href=self.urls[0], target="_blank", rel="noopener noreferer")
+        children.append(name)
 
         if "orcid.org" in self.obj:
-            sp.appendChild(a(raw(_ORCID_LOGO), href=str(self.obj)))
+            children.append(A(RawNode(_ORCID_LOGO), href=str(self.obj)))
 
-        for identifier in self.identifiers:
-            sp.appendChild(
-                a(
-                    raw(_ORCID_LOGO) if "orcid.org" in identifier else pre(identifier),
-                    href=identifier,
-                )
+        children.extend(
+            A(
+                RawNode(_ORCID_LOGO) if "orcid.org" in identifier else PRE(identifier),
+                href=identifier,
             )
+            for identifier in self.identifiers
+        )
 
-        emails = []
+        emails: list[NodeLike] = []
         for email in self.emails:
             mail = email.replace("mailto:", "")
-            emails.append(a(mail, href="mailto:" + mail))
+            emails.append(A(mail, href="mailto:" + mail))
 
-        # add the
         if len(emails) > 0:
-            sp.appendChild("(")
-            for child in intersperse(emails, text(",")):
-                sp.appendChild(child)
-            sp.appendChild(")")
+            children.append("(")
+            children.extend(intersperse(emails, ","))
+            children.append(")")
 
-        for af in self.affiliations:
-            sp.appendChild(af.to_html(ctx))
+        children.extend(af.to_html(ctx) for af in self.affiliations)
 
-        return sp
+        return SPAN(children)
 
 
 @final
@@ -244,36 +223,34 @@ class Affiliation(HTMLable):
     urls: Sequence[str]
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        sp = span()
-
-        # TODO: Multiple urls
+    def to_html(self, ctx: RenderContext) -> NodeLike:
+        # TODO: Multiple urls?
         the_url = self.urls[0] if len(self.urls) > 0 else None
 
         if len(self.names) > 0:
-            for lang, names in partition(self.names, lambda x: x.language):
-                sp.appendChild(
-                    em(
-                        " of ",
-                        span(
-                            *intersperse(
-                                (
-                                    a(str(name.value), href=the_url)
-                                    if the_url is not None
-                                    else name
-                                    for name in names
-                                ),
-                                text(","),
+            return SPAN(
+                EM(
+                    " of ",
+                    SPAN(
+                        intersperse(
+                            (
+                                A(str(name.value), href=the_url)
+                                if the_url is not None
+                                else name
+                                for name in names
                             ),
-                            lang=lang,
+                            ",",
                         ),
-                    )
+                        lang=lang,
+                    ),
                 )
+                for lang, names in partition(self.names, lambda x: x.language)
+            )
 
-        elif the_url is not None:
-            sp.appendChild(em(" of ", a(the_url, href=the_url)))
+        if the_url is not None:
+            return SPAN(EM(" of ", A(the_url, href=the_url)))
 
-        return sp
+        return SPAN()
 
 
 type _Cardinality = "CardinalityNumeric" | "CardinalityReference"
@@ -288,8 +265,11 @@ class CardinalityNumeric(HTMLable):
     value: str  # TODO: Should this be a literal?
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        return span(span(self.typ, _class="cardinality"), span(self.value))
+    def to_html(self, ctx: RenderContext) -> NodeLike:
+        return SPAN(
+            SPAN(self.typ, _class="cardinality"),
+            SPAN(self.value),
+        )
 
 
 @final
@@ -301,10 +281,10 @@ class CardinalityReference(HTMLable):
     value: ResourceReference
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        return span(
-            span(self.typ, _class="cardinality"),
-            span(
+    def to_html(self, ctx: RenderContext) -> NodeLike:
+        return SPAN(
+            SPAN(self.typ, _class="cardinality"),
+            SPAN(
                 self.value.to_html(ctx),
             ),
         )

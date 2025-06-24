@@ -5,11 +5,9 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import final, override
 
-from dominate.tags import (
-    a,
-    span,
-)
 from rdflib.term import Literal, URIRef
+
+from lontod.utils.html import SPAN, A, NodeLike
 
 from .core import HTMLable, RenderContext
 
@@ -74,7 +72,7 @@ class MetaProperty(HTMLable):
     ontologies: Sequence[MetaOntology]
 
     @override
-    def to_html(self, ctx: RenderContext | None = None) -> a:
+    def to_html(self, ctx: RenderContext | None = None) -> NodeLike:
         description_parts: list[str] = [
             str(description.value).rstrip(".") + "."
             for description in self.descriptions
@@ -85,16 +83,14 @@ class MetaProperty(HTMLable):
             for ontology in self.ontologies
         )
 
-        titles = [
-            span(
-                str(title.value).title(),
-                lang=title.language,
-            )
-            for title in self.titles
-        ]
-
-        return a(
-            *titles,
+        return A(
+            (
+                SPAN(
+                    str(title.value).title(),
+                    lang=title.language,
+                )
+                for title in self.titles
+            ),
             title=" ".join(description_parts) if len(description_parts) > 0 else None,
             _class="hover_property",
             href=str(self.iri),

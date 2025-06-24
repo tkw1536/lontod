@@ -41,7 +41,7 @@ def owl_ontology(
     ctx = RenderContext(ont, html_languages)
 
     # render it as html
-    html = as_utf8(ont.to_html(ctx).render())
+    html = as_utf8(ont.html(ctx).render())
     types.append(("text/html", html))
 
     # extract the definienda

@@ -6,39 +6,42 @@ from collections.abc import Generator, Sequence
 from dataclasses import dataclass
 from functools import cached_property
 from importlib import resources
-from itertools import chain
 from typing import final, override
 
-from dominate.document import document
-from dominate.tags import (
-    a,
-    code,
-    dd,
-    div,
-    dl,
-    dt,
-    h1,
-    h2,
-    h3,
-    h4,
-    html_tag,
-    li,
-    meta,
-    script,
-    section,
-    span,
-    strong,
-    style,
-    sup,
-    table,
-    td,
-    th,
-    tr,
-    ul,
-)
-from dominate.util import container, raw
 from rdflib.namespace import XSD
 from rdflib.term import Literal, URIRef
+
+from lontod.utils.html import (
+    BODY,
+    CODE,
+    DD,
+    DIV,
+    DL,
+    DT,
+    H1,
+    H2,
+    H3,
+    H4,
+    HEAD,
+    HTML,
+    LI,
+    META,
+    SCRIPT,
+    SECTION,
+    SPAN,
+    STRONG,
+    STYLE,
+    SUP,
+    TABLE,
+    TD,
+    TH,
+    TITLE,
+    TR,
+    UL,
+    A,
+    NodeLike,
+    RawNode,
+)
 
 from .core import HTMLable, RenderContext
 from .meta import MetaProperty
@@ -86,30 +89,32 @@ class Definiendum(_DefiniendumLike, HTMLable):
     prop: IndexedProperty
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
+    def to_html(self, ctx: RenderContext) -> NodeLike:
         title = self.title(ctx)
-        d = div(
-            h3(
-                span(str(title.value), lang=title.language),
-                sup(
+
+        return DIV(
+            H3(
+                SPAN(str(title.value), lang=title.language),
+                " ",
+                SUP(
                     self.prop.abbrev,
                     _class=f"sup-{self.prop.abbrev}",
                     title=self.prop.inline_title,
                 ),
             ),
+            TABLE(
+                TR(
+                    TH("IRI"),
+                    TD(CODE(str(self.iri))),
+                ),
+                (
+                    TR(TH(pair.prop.to_html(ctx)), TD(pair.resources.to_html(ctx)))
+                    for pair in self.properties
+                ),
+            ),
             id=ctx.fragment(self.iri, self.title(ctx)),
             _class="property entity",
         )
-
-        t = table(tr(th("IRI"), td(code(str(self.iri)))))
-        d.appendChild(t)
-
-        for pair in self.properties:
-            t.appendChild(
-                tr(th(pair.prop.to_html(ctx)), td(pair.resources.to_html(ctx)))
-            )
-
-        return d
 
 
 @dataclass(frozen=True)
@@ -117,32 +122,31 @@ class OntologyDefinienda(_DefiniendumLike, HTMLable):
     """Definienda about the ontology as a whole."""
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
+    def to_html(self, ctx: RenderContext) -> NodeLike:
         metadata_id = ctx.fragment(LONTOD.Metadata, group="section")
         title = self.title(ctx)
 
-        d = div(
-            h1(
-                span(str(title.value), lang=title.language),
+        return DIV(
+            H1(
+                SPAN(str(title.value), lang=title.language),
+            ),
+            H2("Metadata"),
+            DL(
+                DIV(
+                    DT(STRONG("IRI")),
+                    DD(CODE(str(self.iri))),
+                ),
+                (
+                    DIV(
+                        DT(pair.prop.to_html(ctx)),
+                        DD(pair.resources.to_html(ctx)),
+                    )
+                    for pair in self.properties
+                ),
             ),
             id=metadata_id,
             _class="section metadata",
         )
-
-        d.appendChild(h2("Metadata"))
-
-        defs = dl(div(dt(strong("IRI")), dd(code(str(self.iri)))))
-        d.appendChild(defs)
-
-        for pair in self.properties:
-            defs.appendChild(
-                div(
-                    dt(pair.prop.to_html(ctx)),
-                    dd(pair.resources.to_html(ctx)),
-                )
-            )
-
-        return d
 
 
 @dataclass(frozen=True)
@@ -153,17 +157,13 @@ class TypeDefinienda(HTMLable):
     definienda: Sequence[Definiendum]
 
     @override
-    def to_html(self, ctx: RenderContext) -> html_tag:
-        sec = section(
+    def to_html(self, ctx: RenderContext) -> NodeLike:
+        return SECTION(
+            H2(self.prop.plural_title),
+            (definiendum.to_html(ctx) for definiendum in self.definienda),
             id=ctx.fragment(self.prop.iri, group="section"),
             _class="section classes",
         )
-        sec.appendChild(h2(self.prop.plural_title))
-
-        for definiendum in self.definienda:
-            sec.appendChild(definiendum.to_html(ctx))
-
-        return sec
 
 
 @dataclass(frozen=True)
@@ -200,139 +200,130 @@ class Ontology(HTMLable):
             return None
 
     @override
-    def to_html(self, ctx: RenderContext) -> document:
-        doc = document(title=self.metadata.title(ctx))
-
-        with doc.head:
-            for tag in self._head():
-                tag.render()
-
-        body = self._make_body(ctx)
-        doc.appendChild(body)
-
-        return doc
-
-    def _head(
-        self,
-    ) -> Generator[html_tag]:
-        """Make <head>???</head> content."""
-        css = resources.files(__package__).joinpath("assets", "style.css").read_text()
-        yield style(raw("\n" + css + "\n\t"))
-
-        yield meta(http_equiv="Content-Type", content="text/html; charset=utf-8")
-
-        yield script(
-            raw("\n" + self.schema_json + "\n\t"),
-            type="application/ld+json",
-            id="schema.org",
+    def to_html(self, ctx: RenderContext) -> NodeLike:
+        return HTML(
+            self.__head(ctx),
+            self.__body(ctx),
         )
 
-    def _make_body(self, ctx: RenderContext) -> html_tag:
-        content = div(id="content")
-        for tag in chain(
-            [self.metadata.to_html(ctx)],
-            [s.to_html(ctx) for s in self.sections],
-            [self._make_namespaces(ctx)],
-            [self._make_legend(ctx)],
-            [self._make_toc(ctx)],
-        ):
-            content.appendChild(tag)
+    def __head(
+        self,
+        ctx: RenderContext,
+    ) -> NodeLike:
+        """Make <head>???</head> content."""
+        css = resources.files(__package__).joinpath("assets", "style.css").read_text()
 
-        return content
+        return HEAD(
+            TITLE(str(self.metadata.title(ctx).value)),
+            STYLE(RawNode("\n" + css + "\n\t")),
+            META(http_equiv="Content-Type", content="text/html; charset=utf-8"),
+            SCRIPT(
+                RawNode("\n" + self.schema_json + "\n\t"),
+                type="application/ld+json",
+                id="schema.org",
+            ),
+        )
 
-    def _make_legend(self, ctx: RenderContext) -> html_tag:
+    def __body(self, ctx: RenderContext) -> NodeLike:
+        return BODY(
+            DIV(
+                self.metadata.to_html(ctx),
+                (s.to_html(ctx) for s in self.sections),
+                self._make_namespaces(ctx),
+                self._make_legend(ctx),
+                self._make_toc(ctx),
+                id="content",
+            )
+        )
+
+    def _make_legend(self, ctx: RenderContext) -> NodeLike:
         if len(self.sections) == 0:
-            return container()
+            return None
 
         legend_id = ctx.fragment(LONTOD.Legend, group="section")
 
-        legend = div(_class="legend")
+        return DIV(
+            H2("Legend", id=legend_id),
+            TABLE(
+                (
+                    TR(
+                        TD(
+                            SUP(
+                                sec.prop.abbrev,
+                                _class="sup-" + sec.prop.abbrev,
+                                title=sec.prop.inline_title,
+                            )
+                        ),
+                        TD(sec.prop.plural_title),
+                    )
+                    for sec in self.sections
+                    if len(sec.definienda) > 0
+                ),
+                _class="entity",
+            ),
+            _class="legend",
+        )
 
-        h = h2("Legend", id=legend_id)
-        legend.appendChild(h)
-
-        t = table(_class="entity")
-        legend.appendChild(t)
-
-        for sec in self.sections:
-            if len(sec.definienda) == 0:
-                continue
-
-            t.appendChild(
-                tr(
-                    td(
-                        sup(
-                            sec.prop.abbrev,
-                            _class="sup-" + sec.prop.abbrev,
-                            title=sec.prop.inline_title,
-                        )
-                    ),
-                    td(sec.prop.plural_title),
-                )
-            )
-        return legend
-
-    def _make_namespaces(self, ctx: RenderContext) -> html_tag:
+    def _make_namespaces(self, ctx: RenderContext) -> NodeLike:
         if len(self.namespaces) == 0:
-            return container()
+            return None
 
         namespace_id = ctx.fragment(LONTOD.Namespaces, group="section")
 
-        namespaces = div(id=namespace_id)
-        with namespaces:
-            h2("Namespaces")
-            with dl():
-                for prefix, ns in self.namespaces:
-                    p_ = prefix if prefix != "" else ":"
-                    dt(p_, id=p_)
-                    dd(code(ns))
-        return namespaces
+        return DIV(
+            H2("Namespaces"),
+            DL(
+                (DT(prefix if prefix != "" else ":"), DD(CODE(ns)))
+                for prefix, ns in self.namespaces
+            ),
+            id=namespace_id,
+        )
 
-    def _make_toc(self, ctx: RenderContext) -> html_tag:
-        d = div(h3("Table of Contents"), _class="toc")
-
-        u1 = ul(_class="first")
-        d.appendChild(u1)
-
+    def _make_toc(self, ctx: RenderContext) -> NodeLike:
         metadata_id = ctx.fragment(LONTOD.Metadata, group="section")
-        u1.appendChild(
-            li(
-                h4(
-                    a(
+
+        children: list[NodeLike] = [
+            LI(
+                H4(
+                    A(
                         "Metadata",
                         href="#" + metadata_id,
                     )
                 )
-            )
-        )
+            ),
+        ]
 
         for sec in self.sections:
             if len(sec.definienda) == 0:
                 continue
 
-            u2 = ul(_class="second")
-            c = container(
-                h4(
-                    a(
-                        sec.prop.plural_title,
-                        href="#" + ctx.fragment(sec.prop.iri, group="section"),
-                    )
-                ),
-                u2,
-            )
-            u1.appendChild(li(c))
-
+            defs: list[NodeLike] = []
             for definiendum in sec.definienda:
                 title = definiendum.title(ctx)
                 href = "#" + ctx.fragment(definiendum.iri, title)
-                u2.appendChild(li(a(str(title.value), href=href)))
+                defs.append(LI(A(str(title.value), href=href)))
+
+            children.append(
+                LI(
+                    H4(
+                        A(
+                            sec.prop.plural_title,
+                            href="#" + ctx.fragment(sec.prop.iri, group="section"),
+                        )
+                    ),
+                    UL(
+                        defs,
+                        _class="second",
+                    ),
+                )
+            )
 
         if len(self.namespaces) > 0:
             namespace_id = ctx.fragment(LONTOD.Namespaces, group="section")
-            u1.appendChild(
-                li(
-                    h4(
-                        a(
+            children.append(
+                LI(
+                    H4(
+                        A(
                             "Namespaces",
                             href="#" + namespace_id,
                         )
@@ -343,10 +334,10 @@ class Ontology(HTMLable):
         if len(self.sections) > 0:
             legend_id = ctx.fragment(LONTOD.Legend, group="section")
 
-            u1.appendChild(
-                li(
-                    h4(
-                        a(
+            children.append(
+                LI(
+                    H4(
+                        A(
                             "Legend",
                             href="#" + legend_id,
                         )
@@ -354,4 +345,8 @@ class Ontology(HTMLable):
                 )
             )
 
-        return d
+        return DIV(
+            H3("Table of Contents"),
+            UL(children, _class="first"),
+            _class="toc",
+        )

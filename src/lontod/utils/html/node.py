@@ -1,7 +1,7 @@
 """HTML Nodes."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
 from typing import final, override
 
@@ -33,22 +33,24 @@ class TextNode(HTMLNode):
         yield TextToken(self.text)
 
 
-type _AttributeLike = str | bool | None
+type AttributeLike = str | bool | None
 """Anything that can be treated like an attribute.
 True or None indicate an attribute without a value.
 False attributes are omitted.
 """
 
 
-def to_attributes(**attributes: _AttributeLike) -> Sequence[tuple[str, str | None]]:
+def to_attributes(**attributes: AttributeLike) -> Sequence[tuple[str, str | None]]:
     """Parse an attribute-like dictionary into actual attribute pairs.
 
-    Use "_" to escape reserved words in attribute names, e.g. "_class = 'my-class'".
+    Use a leading "_" to escape reserved words in attribute names, e.g. "_class = 'my-class'".
     To set an attribute "_class", repeat the "_": "__class='I start with an underscore.'".
+    Use _ instead of "-" in attribute names.
     """
+    # TODO: Support "_" in attribute names.
     pairs: list[tuple[str, str | None]] = []
     for attr, value in attributes.items():
-        attr_name = attr.removeprefix("_")
+        attr_name = attr.removeprefix("_").replace("_", "-")
         if isinstance(value, str | None):
             pairs.append((attr_name, value))
             continue
@@ -58,16 +60,19 @@ def to_attributes(**attributes: _AttributeLike) -> Sequence[tuple[str, str | Non
                 pairs.append((attr_name, None))
             continue
 
+        msg = f"invalid attribute value {value!r}"
+        raise TypeError(msg)
+
     return pairs
 
 
-type _NodeLike = HTMLNode | str | None
+type NodeLike = Iterable["NodeLike"] | HTMLNode | str | None
 """Anything that can be treated like a node.
 When Node, the node is ignored.
 """
 
 
-def to_nodes(*nodes: _NodeLike) -> Sequence[HTMLNode]:
+def to_nodes(*nodes: NodeLike) -> Sequence[HTMLNode]:
     """Parse a sequence of node-like objects into a sequence of actual nodes."""
     node_list: list[HTMLNode] = []
     for child_like in nodes:
@@ -78,6 +83,13 @@ def to_nodes(*nodes: _NodeLike) -> Sequence[HTMLNode]:
         if isinstance(child_like, HTMLNode):
             node_list.append(child_like)
             continue
+
+        if isinstance(child_like, Iterable):
+            node_list.append(FragmentNode(*child_like))
+            continue
+
+        msg = f"invalid node {child_like!r}"
+        raise TypeError(msg)
     return node_list
 
 
@@ -102,12 +114,12 @@ class ElementNode(HTMLNode):
     children: Sequence[HTMLNode]
 
     def __init__(
-        self, tag_name: str, *children: _NodeLike, **attributes: _AttributeLike
+        self, tag_name: str, *children: NodeLike, **attributes: AttributeLike
     ) -> None:
         """Create a new ElementNode."""
         object.__setattr__(self, "tag_name", tag_name)
         object.__setattr__(self, "children", to_nodes(*children))
-        object.__setattr__(self, "attribute", to_attributes(**attributes))
+        object.__setattr__(self, "attributes", to_attributes(**attributes))
 
     @override
     def tokens(self) -> Generator[_HTMLToken]:
@@ -124,7 +136,7 @@ class FragmentNode(HTMLNode):
 
     children: Sequence[HTMLNode]
 
-    def __init__(self, *children: _NodeLike) -> None:
+    def __init__(self, *children: NodeLike) -> None:
         """Create a new FragmentNode."""
         object.__setattr__(self, "children", to_nodes(*children))
 
@@ -135,9 +147,11 @@ class FragmentNode(HTMLNode):
 
 
 __all__ = [
+    "AttributeLike",
     "ElementNode",
     "FragmentNode",
     "HTMLNode",
+    "NodeLike",
     "RawNode",
     "TextNode",
 ]

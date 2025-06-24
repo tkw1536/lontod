@@ -5,17 +5,12 @@ from collections import defaultdict
 from collections.abc import Generator, Sequence
 from enum import Enum, auto
 from hashlib import md5
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, final
 
-from dominate.tags import (
-    div,
-    html_tag,
-    sup,
-)
-from dominate.util import raw, text
 from markdown import markdown
 from rdflib.term import Literal, Node, URIRef
 
+from lontod.utils.html import DIV, SUP, FragmentNode, HTMLNode, NodeLike, RawNode
 from lontod.utils.sanitize import sanitize
 
 if TYPE_CHECKING:
@@ -25,9 +20,15 @@ if TYPE_CHECKING:
 class HTMLable(ABC):
     """Represents an object that can be rendered as html."""
 
+    @final
+    def html(self, ctx: "RenderContext") -> HTMLNode:
+        """Turn this HTMLable into a single html node."""
+        return FragmentNode(self.to_html(ctx))
+
     @abstractmethod
-    def to_html(self, ctx: "RenderContext") -> html_tag:
+    def to_html(self, ctx: "RenderContext") -> NodeLike:
         """Turn this class into html."""
+        # TODO: Make this private.
 
 
 class ContentRendering(Enum):
@@ -37,12 +38,10 @@ class ContentRendering(Enum):
     SHOW_SANITIZED_MARKDOWN = auto()
     SHOW_RAW_MARKDOWN = auto()
 
-    def __call__(self, lit: Literal) -> html_tag:
+    def __call__(self, lit: Literal) -> HTMLNode:
         """Render the given literal."""
-        d = div()
-
         lang_sup = (
-            sup(
+            SUP(
                 str(lit.language),
                 _class="sup-lang",
                 lang="en",
@@ -55,10 +54,13 @@ class ContentRendering(Enum):
         content = str(lit.value)
 
         if self == ContentRendering.SHOW_AS_TEXT:
-            if lang_sup is not None:
-                d.appendChild(lang_sup)
-            d.appendChild(div(text(content), lang=lit.language))
-            return d
+            return DIV(
+                lang_sup,
+                DIV(
+                    content,
+                    lang=lit.language,
+                ),
+            )
 
         # HACK: Prepend the lang_sup to the markdown to be rendered.
         if lang_sup is not None:
@@ -71,8 +73,7 @@ class ContentRendering(Enum):
         if self == ContentRendering.SHOW_SANITIZED_MARKDOWN:
             md = sanitize(md)
 
-        d.appendChild(div(raw(str(md)), lang=lit.language))
-        return d
+        return DIV(DIV(RawNode(md), lang=lit.language))
 
 
 class RenderContext:
@@ -100,7 +101,7 @@ class RenderContext:
 
     __content_rendering: ContentRendering
 
-    def render_content(self, lit: Literal) -> html_tag:
+    def render_content(self, lit: Literal) -> HTMLNode:
         """Render literal content."""
         return self.__content_rendering(lit)
 
