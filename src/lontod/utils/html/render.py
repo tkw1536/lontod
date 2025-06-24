@@ -2,7 +2,7 @@
 
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from html import escape
 from typing import ClassVar, final, override
@@ -36,12 +36,8 @@ class InvalidAttributeNameError(_InvalidError):
 
 class _HTMLToken(ABC):
     @abstractmethod
-    def __iter__(self) -> Generator[str]:
-        """Render this token as safe html."""
-
-    def token(self) -> str:
-        """Turn this token into a string."""
-        return "".join(self)
+    def render(self) -> str:
+        """Render this token into a string."""
 
 
 @final
@@ -53,26 +49,26 @@ class StartTagToken(_HTMLToken):
     attributes: Sequence[tuple[str, str | None]]
 
     @override
-    def __iter__(self) -> Generator[str]:
-        yield "<"
+    def render(self) -> str:
+        buffer: str = "<"
 
         InvalidTagNameError.assert_valid(self.tag_name)
-        yield self.tag_name.lower()
+        buffer += self.tag_name
 
         for name, value in self.attributes:
-            yield " "
+            buffer += " "
 
             InvalidAttributeNameError.assert_valid(name)
-            yield name
+            buffer += name
 
             if not isinstance(value, str):
                 continue
 
-            yield '="'
-            yield escape(value, quote=True)
-            yield '"'
+            buffer += f'="{escape(value, quote=True)}"'
 
-        yield ">"
+        buffer += ">"
+
+        return buffer
 
 
 @final
@@ -83,13 +79,9 @@ class EndTagToken(_HTMLToken):
     tag_name: str
 
     @override
-    def __iter__(self) -> Generator[str]:
-        yield "</"
-
+    def render(self) -> str:
         InvalidTagNameError.assert_valid(self.tag_name)
-        yield self.tag_name.lower()
-
-        yield ">"
+        return f"</{self.tag_name}>"
 
 
 @final
@@ -100,8 +92,8 @@ class TextToken(_HTMLToken):
     content: str
 
     @override
-    def __iter__(self) -> Generator[str]:
-        yield escape(self.content, quote=False)
+    def render(self) -> str:
+        return escape(self.content, quote=False)
 
 
 @final
@@ -112,5 +104,5 @@ class RawToken(_HTMLToken):
     html: str
 
     @override
-    def __iter__(self) -> Generator[str]:
-        yield self.html
+    def render(self) -> str:
+        return self.html

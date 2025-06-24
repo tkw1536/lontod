@@ -18,7 +18,7 @@ class HTMLNode(ABC):
     @final
     def render(self) -> str:
         """Render this node into html."""
-        return "".join(part for token in self.tokens() for part in token)
+        return "".join(tok.render() for tok in self.tokens())
 
 
 @final
