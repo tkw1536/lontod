@@ -11,13 +11,13 @@ from rdflib.namespace import DCTERMS, OWL, PROV, RDF, SDO, SKOS, XSD
 from rdflib.paths import ZeroOrMore
 from rdflib.term import BNode, Literal, Node, URIRef
 
-from lontod.html.data.meta import MetaOntologies
-from lontod.html.data.rdf import (
+from lontod.ontologies.data.meta import MetaOntologies
+from lontod.ontologies.data.rdf import (
     AGENT_PROPS,
     OWL_SET_TYPES,
     RESTRICTION_TYPES,
 )
-from lontod.html.data.resource import (
+from lontod.ontologies.data.resource import (
     Affiliation,
     AgentResource,
     BlankNodeResource,

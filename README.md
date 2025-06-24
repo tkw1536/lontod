@@ -195,7 +195,7 @@ Each indexed ontology is first loaded and then converted into each of the follow
 | HTML                                             | `text/html`            |
 
 The HTML representation is created using heavily adapted code from [pyLODE](https://github.com/rdflib/pyLODE/). 
-The original code requires including a [LICENSING INFORMATION](src/lontod/html/NOTICE).
+The original code requires including a [LICENSING INFORMATION](src/lontod/ontologies/NOTICE).
 All other representations are created using rdflib.
 They are all stored in the `DATA` table.
 

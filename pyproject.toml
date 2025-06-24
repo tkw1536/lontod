@@ -141,16 +141,6 @@ ignore = [
     "PLR2004",
 ]
 
-# TODO: remove these when the rework is finished
-"src/lontod/html/*" = [
-    "C901",
-    "PLR0913",
-    "PLR0912",
-    "D205",
-    "PLR0915",
-    "PLR0911",
-]
-
 
 [tool.poetry]
 packages = [{include = "lontod", from = "src"}]

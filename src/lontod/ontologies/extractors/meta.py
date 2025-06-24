@@ -19,8 +19,8 @@ from rdflib.namespace import (
 )
 from rdflib.term import Literal, URIRef
 
-from lontod.html.data.meta import MetaOntologies, MetaOntology, MetaProperty
-from lontod.html.data.rdf import PROPS
+from lontod.ontologies.data.meta import MetaOntologies, MetaOntology, MetaProperty
+from lontod.ontologies.data.rdf import PROPS
 from lontod.utils.cached import PickleCachedMeta
 from lontod.utils.graph import SubjectObjectQuery, subject_object_dicts
 

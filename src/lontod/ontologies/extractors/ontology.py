@@ -22,16 +22,16 @@ from rdflib.namespace import (
     XSD,
 )
 
-from lontod.html.data.ontology import (
+from lontod.ontologies.data.ontology import (
     Definiendum,
     Ontology,
     OntologyDefinienda,
     PropertyResourcePair,
     TypeDefinienda,
 )
-from lontod.html.data.rdf import AGENT_PROPS, ONT_PROPS, ONTDOC, IndexedProperty
-from lontod.html.extractors.core import iri_to_title
-from lontod.html.extractors.resource import ResourceExtractor
+from lontod.ontologies.data.rdf import AGENT_PROPS, ONT_PROPS, ONTDOC, IndexedProperty
+from lontod.ontologies.extractors.core import iri_to_title
+from lontod.ontologies.extractors.resource import ResourceExtractor
 from lontod.utils.graph import sort
 
 from .meta import MetaExtractor

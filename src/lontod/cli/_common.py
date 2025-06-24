@@ -33,7 +33,7 @@ def legal_info(logger: Logger) -> None:
         text = _first(package.license_texts)
         logger.debug(text)
 
-    with (Path(__file__).parent.parent / "html" / "NOTICE").open("r") as file:
+    with (Path(__file__).parent.parent / "ontologies" / "NOTICE").open("r") as file:
         logger.debug(file.read())
 
 

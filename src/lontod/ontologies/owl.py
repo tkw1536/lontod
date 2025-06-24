@@ -7,10 +7,10 @@ from logging import Logger
 from rdflib import Graph
 from rdflib.namespace import OWL, PROF, RDF, SKOS
 
-from lontod.html.data import RenderContext
-from lontod.html.extractors import OntologyExtractor
 from lontod.utils.strings import as_utf8
 
+from .data import RenderContext
+from .extractors import OntologyExtractor
 from .ontology import NoOntologyFoundError, Ontology
 from .types import media_types
 
