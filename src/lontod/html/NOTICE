@@ -1,4 +1,4 @@
-Some of the code in this (sub-)module is based on pylode
+Some of the code in the data and extractor (sub-)modules is based on pylode
 <https://github.com/RDFLib/pyLODE>. 
 This derived work is neither authorized nor endorsed by the original authors. 
 

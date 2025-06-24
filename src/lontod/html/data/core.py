@@ -3,13 +3,20 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Generator, Sequence
+from enum import Enum, auto
 from hashlib import md5
 from typing import TYPE_CHECKING, Final
 
 from dominate.tags import (
+    div,
     html_tag,
+    sup,
 )
-from rdflib.term import Node, URIRef
+from dominate.util import raw, text
+from markdown import markdown
+from rdflib.term import Literal, Node, URIRef
+
+from lontod.utils.sanitize import sanitize
 
 if TYPE_CHECKING:
     from .ontology import Ontology
@@ -23,6 +30,51 @@ class HTMLable(ABC):
         """Turn this class into html."""
 
 
+class ContentRendering(Enum):
+    """How to render resource literal content."""
+
+    SHOW_AS_TEXT = auto()
+    SHOW_SANITIZED_MARKDOWN = auto()
+    SHOW_RAW_MARKDOWN = auto()
+
+    def __call__(self, lit: Literal) -> html_tag:
+        """Render the given literal."""
+        d = div()
+
+        lang_sup = (
+            sup(
+                str(lit.language),
+                _class="sup-lang",
+                lang="en",
+            )
+            if lit.language is not None
+            else None
+        )
+
+        # TODO: Maybe do a check based on type here?
+        content = str(lit.value)
+
+        if self == ContentRendering.SHOW_AS_TEXT:
+            if lang_sup is not None:
+                d.appendChild(lang_sup)
+            d.appendChild(div(text(content), lang=lit.language))
+            return d
+
+        # HACK: Prepend the lang_sup to the markdown to be rendered.
+        if lang_sup is not None:
+            content = lang_sup.render() + content
+
+        # render the markdown
+        md = markdown(content)
+
+        # sanitize it!
+        if self == ContentRendering.SHOW_SANITIZED_MARKDOWN:
+            md = sanitize(md)
+
+        d.appendChild(div(raw(str(md)), lang=lit.language))
+        return d
+
+
 class RenderContext:
     """context used for rendering."""
 
@@ -34,7 +86,8 @@ class RenderContext:
     def __init__(
         self,
         ontology: "Ontology",
-        language_preferences: Sequence[None | str] = (None, "en"),
+        language_preferences: Sequence[None | str],
+        content_rendering: ContentRendering = ContentRendering.SHOW_SANITIZED_MARKDOWN,
     ) -> None:
         """Create a new RenderContext."""
         self.__ontology = ontology
@@ -43,6 +96,13 @@ class RenderContext:
         self.__language_preferences = {
             lang: i for (i, lang) in enumerate(language_preferences)
         }
+        self.__content_rendering = content_rendering
+
+    __content_rendering: ContentRendering
+
+    def render_content(self, lit: Literal) -> html_tag:
+        """Render literal content."""
+        return self.__content_rendering(lit)
 
     __ontology: "Ontology"
 

@@ -16,6 +16,7 @@ from ._common import (
     file_or_none,
     legal_info,
     list_or_environment,
+    parse_languages,
     setup_logging,
 )
 
@@ -92,13 +93,15 @@ def main(args: Sequence[str] | None = None) -> None:
         result.insecure_skip_routes,
         result.log,
         result.watch,
-        list_or_environment(result.language, "LONTOD_LANG"),
+        parse_languages(
+            list_or_environment(result.language, "LONTOD_LANGUAGES", ";en")
+        ),
     )
 
 
 def run(  # noqa: PLR0913
     db: str | None,
-    paths: list[Path],
+    paths: Sequence[Path],
     port: int,
     host: str,
     public_domain: str | None,
@@ -106,7 +109,7 @@ def run(  # noqa: PLR0913
     insecure_skip_routes: bool,
     log_level: str,
     watch: bool,
-    languages: list[str],
+    languages: Sequence[str | None],
 ) -> None:
     """Start the lontod server."""
     # setup logging

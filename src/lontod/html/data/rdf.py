@@ -127,7 +127,7 @@ class InvalidPropertyKindError(ValueError):
 
 
 @dataclass(frozen=True)
-class _PropertyKindInfo:
+class _IndexedProperty:
     """Information about an ontology type."""
 
     iri: URIRef
@@ -142,7 +142,7 @@ class _PropertyKindInfo:
 
 
 @final
-class PropertyKind(_PropertyKindInfo, Enum):
+class IndexedProperty(_IndexedProperty, Enum):
     """Classification of properties."""
 
     CLASS = (OWL.Class, "OWL/RDFS Class", "Classes", "c", (), CLASS_PROPS)

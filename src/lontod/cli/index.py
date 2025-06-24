@@ -8,7 +8,13 @@ from pathlib import Path
 from lontod.index import Indexer, Ingester
 from lontod.sqlite import Connector
 
-from ._common import add_logging_arg, legal_info, list_or_environment, setup_logging
+from ._common import (
+    add_logging_arg,
+    legal_info,
+    list_or_environment,
+    parse_languages,
+    setup_logging,
+)
 
 
 def main(args: Sequence[str] | None = None) -> None:
@@ -58,7 +64,9 @@ def main(args: Sequence[str] | None = None) -> None:
     run(
         [Path(p) for p in list_or_environment(result.input, "LONTOD_PATHS")],
         result.clean,
-        list_or_environment(result.languages, "LONTOD_LANGUAGES"),
+        parse_languages(
+            list_or_environment(result.languages, "LONTOD_LANGUAGES", ";en")
+        ),
         result.simulate,
         result.database,
         result.remove,
@@ -67,9 +75,9 @@ def main(args: Sequence[str] | None = None) -> None:
 
 
 def run(  # noqa: PLR0913
-    paths: list[Path],
+    paths: Sequence[Path],
     clean: bool,
-    html_languages: list[str],
+    html_languages: Sequence[str | None],
     simulate: bool,
     db: str,
     remove: bool,

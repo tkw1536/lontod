@@ -40,9 +40,9 @@ from dominate.util import container, raw
 from rdflib.namespace import XSD
 from rdflib.term import Literal, URIRef
 
-from ._rdf import LONTOD, PropertyKind
 from .core import HTMLable, RenderContext
 from .meta import MetaProperty
+from .rdf import LONTOD, IndexedProperty
 from .resource import RDFResources
 
 # TODO: ensure it's a sequence everywhere
@@ -55,9 +55,6 @@ class PropertyResourcePair:
 
     prop: MetaProperty
     resources: RDFResources
-
-
-_PREF_LANGUAGES = [None, "en"]
 
 
 @dataclass(frozen=True)
@@ -86,7 +83,7 @@ class _DefiniendumLike(ABC):
 class Definiendum(_DefiniendumLike, HTMLable):
     """something being defined in the ontology."""
 
-    rdf_type: PropertyKind
+    prop: IndexedProperty
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
@@ -95,9 +92,9 @@ class Definiendum(_DefiniendumLike, HTMLable):
             h3(
                 span(str(title.value), lang=title.language),
                 sup(
-                    self.rdf_type.abbrev,
-                    _class=f"sup-{self.rdf_type.abbrev}",
-                    title=self.rdf_type.inline_title,
+                    self.prop.abbrev,
+                    _class=f"sup-{self.prop.abbrev}",
+                    title=self.prop.inline_title,
                 ),
             ),
             id=ctx.fragment(self.iri, self.title(ctx)),
@@ -152,16 +149,16 @@ class OntologyDefinienda(_DefiniendumLike, HTMLable):
 class TypeDefinienda(HTMLable):
     """Definienda of a specific type."""
 
-    rdf_type: PropertyKind
+    prop: IndexedProperty
     definienda: Sequence[Definiendum]
 
     @override
     def to_html(self, ctx: RenderContext) -> html_tag:
         sec = section(
-            id=ctx.fragment(self.rdf_type.iri, group="section"),
+            id=ctx.fragment(self.prop.iri, group="section"),
             _class="section classes",
         )
-        sec.appendChild(h2(self.rdf_type.plural_title))
+        sec.appendChild(h2(self.prop.plural_title))
 
         for definiendum in self.definienda:
             sec.appendChild(definiendum.to_html(ctx))
@@ -204,7 +201,7 @@ class Ontology(HTMLable):
 
     @override
     def to_html(self, ctx: RenderContext) -> document:
-        doc = document(title=self.metadata.titles)
+        doc = document(title=self.metadata.title(ctx))
 
         with doc.head:
             for tag in self._head():
@@ -265,12 +262,12 @@ class Ontology(HTMLable):
                 tr(
                     td(
                         sup(
-                            sec.rdf_type.abbrev,
-                            _class="sup-" + sec.rdf_type.abbrev,
-                            title=sec.rdf_type.inline_title,
+                            sec.prop.abbrev,
+                            _class="sup-" + sec.prop.abbrev,
+                            title=sec.prop.inline_title,
                         )
                     ),
-                    td(sec.rdf_type.plural_title),
+                    td(sec.prop.plural_title),
                 )
             )
         return legend
@@ -317,8 +314,8 @@ class Ontology(HTMLable):
             c = container(
                 h4(
                     a(
-                        sec.rdf_type.plural_title,
-                        href="#" + ctx.fragment(sec.rdf_type.iri, group="section"),
+                        sec.prop.plural_title,
+                        href="#" + ctx.fragment(sec.prop.iri, group="section"),
                     )
                 ),
                 u2,

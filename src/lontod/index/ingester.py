@@ -1,5 +1,6 @@
 """ingestion functionality."""
 
+from collections.abc import Sequence
 from logging import Logger
 from pathlib import Path
 from sqlite3 import Connection
@@ -24,7 +25,7 @@ class Ingester:
     def __init__(
         self,
         indexer: Indexer,
-        html_languages: list[str],
+        html_languages: Sequence[str | None],
         logger: Logger,
     ) -> None:
         """Create a new ingester."""

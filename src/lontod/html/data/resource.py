@@ -8,11 +8,9 @@ from itertools import chain
 from typing import Final, final, override
 from typing import Literal as TLiteral
 
-import markdown
 from dominate.tags import (
     a,
     br,
-    div,
     em,
     html_tag,
     li,
@@ -100,9 +98,9 @@ class ResourceReference(HTMLable):
                 href="#" + fragment,
             ),
             sup(
-                definiendum.rdf_type.abbrev,
-                _class="sup-" + definiendum.rdf_type.abbrev,
-                title=definiendum.rdf_type.inline_title,
+                definiendum.prop.abbrev,
+                _class="sup-" + definiendum.prop.abbrev,
+                title=definiendum.prop.inline_title,
             ),
         )
 
@@ -167,18 +165,7 @@ class LiteralResource(HTMLable):
         if self.is_example:
             return pre(str(self.lit))
 
-        content_markdown = str(self.lit.value)
-        if self.lit.language is not None:
-            content_markdown = (
-                sup(
-                    str(self.lit.language),
-                    _class="sup-lang",
-                    lang="en",
-                ).render()
-                + content_markdown
-            )
-
-        return div(raw(markdown.markdown(content_markdown)), lang=self.lit.language)
+        return ctx.render_content(self.lit)
 
 
 @final
