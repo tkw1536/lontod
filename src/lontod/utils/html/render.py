@@ -2,7 +2,7 @@
 
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from dataclasses import dataclass
 from html import escape
 from typing import ClassVar, final, override
@@ -36,7 +36,7 @@ class InvalidAttributeNameError(_InvalidError):
 
 class _HTMLToken(ABC):
     @abstractmethod
-    def render(self) -> str:
+    def render(self) -> Generator[str]:
         """Render this token into a string."""
 
 
@@ -49,26 +49,24 @@ class StartTagToken(_HTMLToken):
     attributes: Sequence[tuple[str, str | None]]
 
     @override
-    def render(self) -> str:
-        buffer: str = "<"
+    def render(self) -> Generator[str]:
+        yield "<"
 
         InvalidTagNameError.assert_valid(self.tag_name)
-        buffer += self.tag_name
+        yield self.tag_name
 
         for name, value in self.attributes:
-            buffer += " "
+            yield " "
 
             InvalidAttributeNameError.assert_valid(name)
-            buffer += name
+            yield name
 
             if not isinstance(value, str):
                 continue
 
-            buffer += f'="{escape(value, quote=True)}"'
+            yield f'="{escape(value, quote=True)}"'
 
-        buffer += ">"
-
-        return buffer
+        yield ">"
 
 
 @final
@@ -79,9 +77,9 @@ class EndTagToken(_HTMLToken):
     tag_name: str
 
     @override
-    def render(self) -> str:
+    def render(self) -> Generator[str]:
         InvalidTagNameError.assert_valid(self.tag_name)
-        return f"</{self.tag_name}>"
+        yield f"</{self.tag_name}>"
 
 
 @final
@@ -92,8 +90,8 @@ class TextToken(_HTMLToken):
     content: str
 
     @override
-    def render(self) -> str:
-        return escape(self.content, quote=False)
+    def render(self) -> Generator[str]:
+        yield escape(self.content, quote=False)
 
 
 @final
@@ -104,5 +102,5 @@ class RawToken(_HTMLToken):
     html: str
 
     @override
-    def render(self) -> str:
-        return self.html
+    def render(self) -> Generator[str]:
+        yield self.html
