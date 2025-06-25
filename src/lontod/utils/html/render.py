@@ -34,7 +34,11 @@ class InvalidAttributeNameError(_InvalidError):
     REGEX = re.compile(r'^([^\t\n\f \/>"\'=]+)$')
 
 
-class _HTMLToken(ABC):
+type Token = "StartTagToken|EndTagToken|TextToken|RawToken"
+"""Token used during html rendering."""
+
+
+class _BaseToken(ABC):
     @abstractmethod
     def render(self) -> Generator[str]:
         """Render this token into a string."""
@@ -42,7 +46,7 @@ class _HTMLToken(ABC):
 
 @final
 @dataclass
-class StartTagToken(_HTMLToken):
+class StartTagToken(_BaseToken):
     """Represents a start tag."""
 
     tag_name: str
@@ -64,14 +68,16 @@ class StartTagToken(_HTMLToken):
             if not isinstance(value, str):
                 continue
 
-            yield f'="{escape(value, quote=True)}"'
+            yield '="'
+            yield escape(value, quote=True)
+            yield '"'
 
         yield ">"
 
 
 @final
 @dataclass(frozen=True)
-class EndTagToken(_HTMLToken):
+class EndTagToken(_BaseToken):
     """Represents a close tag."""
 
     tag_name: str
@@ -79,12 +85,15 @@ class EndTagToken(_HTMLToken):
     @override
     def render(self) -> Generator[str]:
         InvalidTagNameError.assert_valid(self.tag_name)
-        yield f"</{self.tag_name}>"
+
+        yield "</"
+        yield self.tag_name
+        yield ">"
 
 
 @final
 @dataclass(frozen=True)
-class TextToken(_HTMLToken):
+class TextToken(_BaseToken):
     """Represents text content."""
 
     content: str
@@ -96,7 +105,7 @@ class TextToken(_HTMLToken):
 
 @final
 @dataclass(frozen=True)
-class RawToken(_HTMLToken):
+class RawToken(_BaseToken):
     """An unsafe token that does not escape."""
 
     html: str

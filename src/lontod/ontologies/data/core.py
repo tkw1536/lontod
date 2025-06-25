@@ -10,7 +10,16 @@ from typing import TYPE_CHECKING, Final, final
 from markdown import markdown
 from rdflib.term import Literal, Node, URIRef
 
-from lontod.utils.html import DIV, SUP, FragmentNode, HTMLNode, NodeLike, RawNode
+from lontod.utils.html import (
+    DIV,
+    SUP,
+    FragmentNode,
+    NodeLike,
+    RawNode,
+)
+from lontod.utils.html import (
+    Node as HTMLNode,
+)
 from lontod.utils.sanitize import sanitize
 
 if TYPE_CHECKING:

@@ -5,14 +5,43 @@ from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
 from typing import final, override
 
-from .render import EndTagToken, RawToken, StartTagToken, TextToken, _HTMLToken
+from .render import EndTagToken, RawToken, StartTagToken, TextToken, Token
+
+type Node = "TextNode|RawNode|ElementNode|FragmentNode"
+"""A Node that can be rendered into HTML."""
+
+type NodeLike = Node | str | None | Iterable["NodeLike"]
+"""Anything that can be treated like a node.
+When Node, the node is ignored.
+"""
 
 
-class HTMLNode(ABC):
-    """A html node."""
+def to_nodes(*nodes: NodeLike) -> Sequence[Node]:
+    """Parse a sequence of node-like objects into a sequence of actual nodes."""
+    node_list: list[Node] = []
+    for child_like in nodes:
+        if isinstance(child_like, str):
+            node_list.append(TextNode(text=child_like))
+            continue
+
+        if isinstance(child_like, TextNode | RawNode | ElementNode | FragmentNode):
+            node_list.append(child_like)
+            continue
+
+        if isinstance(child_like, Iterable):
+            node_list.append(FragmentNode(*child_like))
+            continue
+
+        msg = f"invalid node {child_like!r}"
+        raise TypeError(msg)
+    return node_list
+
+
+class BaseNode(ABC):
+    """A node that generates token for html rendering."""
 
     @abstractmethod
-    def tokens(self) -> Generator[_HTMLToken]:
+    def tokens(self) -> Generator[Token]:
         """Yield that tokens that make up this node."""
 
     @final
@@ -23,14 +52,43 @@ class HTMLNode(ABC):
 
 @final
 @dataclass(frozen=True)
-class TextNode(HTMLNode):
+class TextNode(BaseNode):
     """Text content."""
 
     text: str
 
     @override
-    def tokens(self) -> Generator[_HTMLToken]:
+    def tokens(self) -> Generator[Token]:
         yield TextToken(self.text)
+
+
+@final
+@dataclass(frozen=True)
+class RawNode(BaseNode):
+    """Raw unescaped html."""
+
+    html: str
+
+    @override
+    def tokens(self) -> Generator[Token]:
+        yield RawToken(self.html)
+
+
+@final
+@dataclass(frozen=True, init=False)
+class FragmentNode(BaseNode):
+    """A set of children grouped together."""
+
+    children: Sequence[Node]
+
+    def __init__(self, *children: NodeLike) -> None:
+        """Create a new FragmentNode."""
+        object.__setattr__(self, "children", to_nodes(*children))
+
+    @override
+    def tokens(self) -> Generator[Token]:
+        for node in self.children:
+            yield from node.tokens()
 
 
 type AttributeLike = str | bool | None
@@ -66,52 +124,13 @@ def to_attributes(**attributes: AttributeLike) -> Sequence[tuple[str, str | None
     return pairs
 
 
-type NodeLike = Iterable["NodeLike"] | HTMLNode | str | None
-"""Anything that can be treated like a node.
-When Node, the node is ignored.
-"""
-
-
-def to_nodes(*nodes: NodeLike) -> Sequence[HTMLNode]:
-    """Parse a sequence of node-like objects into a sequence of actual nodes."""
-    node_list: list[HTMLNode] = []
-    for child_like in nodes:
-        if isinstance(child_like, str):
-            node_list.append(TextNode(text=child_like))
-            continue
-
-        if isinstance(child_like, HTMLNode):
-            node_list.append(child_like)
-            continue
-
-        if isinstance(child_like, Iterable):
-            node_list.append(FragmentNode(*child_like))
-            continue
-
-        msg = f"invalid node {child_like!r}"
-        raise TypeError(msg)
-    return node_list
-
-
-@final
-@dataclass(frozen=True)
-class RawNode(HTMLNode):
-    """Raw unescaped html."""
-
-    html: str
-
-    @override
-    def tokens(self) -> Generator[_HTMLToken]:
-        yield RawToken(self.html)
-
-
 @dataclass(frozen=True, init=False)
-class ElementNode(HTMLNode):
+class ElementNode(BaseNode):
     """Represents an html node."""
 
     tag_name: str
     attributes: Sequence[tuple[str, str | None]]
-    children: Sequence[HTMLNode]
+    children: Sequence[Node]
 
     def __init__(
         self, tag_name: str, *children: NodeLike, **attributes: AttributeLike
@@ -122,35 +141,18 @@ class ElementNode(HTMLNode):
         object.__setattr__(self, "attributes", to_attributes(**attributes))
 
     @override
-    def tokens(self) -> Generator[_HTMLToken]:
+    def tokens(self) -> Generator[Token]:
         yield StartTagToken(self.tag_name, self.attributes)
         for child in self.children:
             yield from child.tokens()
         yield EndTagToken(self.tag_name)
 
 
-@final
-@dataclass(frozen=True, init=False)
-class FragmentNode(HTMLNode):
-    """A set of children grouped together."""
-
-    children: Sequence[HTMLNode]
-
-    def __init__(self, *children: NodeLike) -> None:
-        """Create a new FragmentNode."""
-        object.__setattr__(self, "children", to_nodes(*children))
-
-    @override
-    def tokens(self) -> Generator[_HTMLToken]:
-        for node in self.children:
-            yield from node.tokens()
-
-
 __all__ = [
     "AttributeLike",
     "ElementNode",
     "FragmentNode",
-    "HTMLNode",
+    "Node",
     "NodeLike",
     "RawNode",
     "TextNode",
