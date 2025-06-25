@@ -3,7 +3,6 @@
 from collections import OrderedDict
 from collections.abc import Callable, Generator
 from functools import wraps
-from html import escape
 from logging import Logger
 from traceback import format_exception
 from typing import Any, Final, final
@@ -17,6 +16,18 @@ from starlette.routing import BaseRoute, Route
 
 from lontod.index import Query
 from lontod.ontologies.types import extension_from_type
+from lontod.utils.html import (
+    BR,
+    CODE,
+    FIELDSET,
+    LEGEND,
+    LI,
+    SPAN,
+    UL,
+    A,
+    RawNode,
+    stream,
+)
 from lontod.utils.pool import Pool
 
 from .http import LoggingMiddleware, negotiate
@@ -68,8 +79,6 @@ class Handler(Starlette):
     __insecure_skip_routes: bool
     __index_txt_header: str
     __index_txt_footer: str
-    __index_html_header: str
-    __index_html_footer: str
     __pool: Pool[Query]
     __logger: Logger
 
@@ -94,8 +103,12 @@ class Handler(Starlette):
         self.__logger = logger
         self.__insecure_skip_routes = insecure_skip_routes
 
-        self.__index_html_header = index_html_header or DEFAULT_INDEX_HTML_HEADER
-        self.__index_html_footer = index_html_footer or DEFAULT_INDEX_HTML_FOOTER
+        self.__index_html_header = RawNode(
+            index_html_header or DEFAULT_INDEX_HTML_HEADER
+        )
+        self.__index_html_footer = RawNode(
+            index_html_footer or DEFAULT_INDEX_HTML_FOOTER
+        )
         self.__index_txt_header = index_txt_header or DEFAULT_INDEX_TXT_HEADER
         self.__index_txt_footer = index_txt_footer or DEFAULT_INDEX_TXT_FOOTER
 
@@ -350,68 +363,65 @@ class Handler(Starlette):
         if typ not in {"text/plain", "text/html"}:
             return self.error_response(404, "Not Found")
 
-        is_html = typ == "text/html"
-        return StreamingResponse(self.__stream_root(is_html), media_type=typ)
+        if typ != "text/html":
+            return StreamingResponse(self.__stream_root_text(), media_type="text/plain")
+        return StreamingResponse(self.__stream_root_html(), media_type="text/html")
 
-    def __stream_root(self, html: bool) -> Generator[str]:
-        if html:
-            yield self.__index_html_header
-        else:
+    def __stream_root_html(self) -> Generator[str]:
+        with self.__pool.use() as query:
+            return stream(
+                self.__index_html_header,
+                (
+                    FIELDSET(
+                        LEGEND(onto.uri),
+                        SPAN(
+                            A(
+                                "View In Default Format",
+                                href=self.reverse_url(onto.identifier),
+                            ),
+                            BR(),
+                            f"{onto.definienda_count} Definienda",
+                        ),
+                        "Alternate URIs:",
+                        SPAN(UL(LI(CODE(uri)) for uri in onto.alternate_uris)),
+                        "Download in other formats:",
+                        SPAN(
+                            UL(
+                                LI(
+                                    A(
+                                        typ,
+                                        href=self.reverse_url(
+                                            onto.identifier, typ, download=True
+                                        ),
+                                    )
+                                ) for typ in onto.mime_types
+                            ),
+                        ),
+                    )
+                    for onto in query.list_ontologies()
+                ),
+                self.__index_html_footer,
+            )
+
+    def __stream_root_text(self) -> Generator[str]:
+        with self.__pool.use() as query:
             yield self.__index_txt_header
 
-        with self.__pool.use() as query:
             for onto in query.list_ontologies():
-                if html:
-                    yield "<fieldset>"
+                yield f"## Ontology {onto.uri}:\n"
 
-                    yield "<legend>"
-                    yield escape(onto.uri)
-                    yield "</legend>"
+                yield f"[{self.reverse_url(onto.identifier, None, download=False)}]\n"
+                yield f"{onto.definienda_count} Definienda\n"
+                yield "\n"
 
-                    yield "<span>"
-                    yield f'<a href="{escape(self.reverse_url(onto.identifier), True)}">View In Default Format</a>'
-                    yield "<br>"
-                    yield f"{onto.definienda_count} Definienda"
-                    yield "</span>"
+                yield "Available URIs:\n"
+                for uri in onto.alternate_uris:
+                    yield f"* {uri}\n"
+                yield "\n"
 
-                    yield "Alternate URIs:"
-                    yield "<ul>"
-                    for uri in onto.alternate_uris:
-                        yield "<li>"
-                        yield f"<code>{escape(uri)}</code>"
-                        yield "</li>"
-                    yield "</ul>"
+                yield "Available Formats:\n"
+                for typ in onto.mime_types:
+                    yield f"* {typ} [{self.reverse_url(onto.identifier, typ, download=True)}]\n"
+                yield "\n"
 
-                    yield "Download in other formats:"
-
-                    yield "<ul>"
-                    for typ in onto.mime_types:
-                        yield "<li>"
-                        link = self.reverse_url(onto.identifier, typ, download=True)
-                        yield f'<a href="{escape(link, True)}">{escape(typ)}</a>'
-                        yield "</li>"
-                    yield "</ul>"
-
-                    yield "</fieldset>"
-                else:
-                    yield f"## Ontology {onto.uri}:\n"
-
-                    yield f"[{self.reverse_url(onto.identifier, None, download=False)}]\n"
-                    yield f"{onto.definienda_count} Definienda\n"
-                    yield "\n"
-
-                    yield "Available URIs:\n"
-                    for uri in onto.alternate_uris:
-                        yield f"* {uri}\n"
-                    yield "\n"
-
-                    yield "Available Formats:\n"
-                    for typ in onto.mime_types:
-                        yield f"* {typ} [{self.reverse_url(onto.identifier, typ, download=True)}]\n"
-
-                    yield "\n"
-
-        if html:
-            yield self.__index_html_footer
-        else:
-            yield self.__index_txt_footer
+                yield self.__index_txt_footer
