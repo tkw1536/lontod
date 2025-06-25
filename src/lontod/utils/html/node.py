@@ -19,6 +19,9 @@ When Node, the node is ignored.
 def to_nodes(*nodes: NodeLike) -> Generator[Node]:
     """Parse a sequence of node-like objects into a sequence of actual nodes."""
     for child_like in nodes:
+        if child_like is None:
+            continue
+
         if isinstance(child_like, str):
             yield TextNode(text=child_like)
             continue

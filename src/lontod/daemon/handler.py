@@ -382,8 +382,16 @@ class Handler(Starlette):
                             BR(),
                             f"{onto.definienda_count} Definienda",
                         ),
-                        "Alternate URIs:",
-                        SPAN(UL(LI(CODE(uri)) for uri in onto.alternate_uris)),
+                        (
+                            "Alternate URIs:",
+                            SPAN(
+                                UL(
+                                    LI(
+                                        CODE(uri)
+                                    ) for uri in onto.alternate_uris
+                                ),
+                            ),
+                        ) if len(onto.alternate_uris) > 0 else None,
                         "Download in other formats:",
                         SPAN(
                             UL(
