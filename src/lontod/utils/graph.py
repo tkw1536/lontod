@@ -3,6 +3,7 @@
 from collections import defaultdict
 from collections.abc import Generator, Sequence
 from dataclasses import dataclass
+from itertools import chain
 from typing import (
     final,
 )
@@ -55,3 +56,22 @@ def sort(graph: Graph) -> Graph:
     for triple in sorted(graph.triples((None, None, None))):
         sorted_graph.add(triple)
     return sorted_graph
+
+
+def used_namespaces(graph: Graph) -> Generator[tuple[str, URIRef]]:
+    """Yield all namespaces that are used in a graph."""
+    iris = {
+        iri
+        for iri in chain(
+            graph.subjects(),
+            graph.predicates(),
+            graph.objects(),
+        )
+        if isinstance(iri, URIRef)
+    }
+
+    return (
+        (prefix, ns)
+        for prefix, ns in graph.namespaces()
+        if any(iri.startswith(ns) for iri in iris)
+    )

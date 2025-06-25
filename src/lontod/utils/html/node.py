@@ -16,25 +16,23 @@ When Node, the node is ignored.
 """
 
 
-def to_nodes(*nodes: NodeLike) -> Sequence[Node]:
+def to_nodes(*nodes: NodeLike) -> Generator[Node]:
     """Parse a sequence of node-like objects into a sequence of actual nodes."""
-    node_list: list[Node] = []
     for child_like in nodes:
         if isinstance(child_like, str):
-            node_list.append(TextNode(text=child_like))
+            yield TextNode(text=child_like)
             continue
 
         if isinstance(child_like, TextNode | RawNode | ElementNode | FragmentNode):
-            node_list.append(child_like)
+            yield child_like
             continue
 
         if isinstance(child_like, Iterable):
-            node_list.append(FragmentNode(*child_like))
+            yield FragmentNode(*child_like)
             continue
 
         msg = f"invalid node {child_like!r}"
         raise TypeError(msg)
-    return node_list
 
 
 class BaseNode(ABC):
@@ -48,6 +46,18 @@ class BaseNode(ABC):
     def render(self) -> str:
         """Render this node into html."""
         return "".join(part for tok in self.tokens() for part in tok.render())
+
+
+def stream(*nodes: NodeLike) -> Generator[str]:
+    """Yield rendered tokens from the given NodeLike."""
+    for node in to_nodes(nodes):
+        for token in node.tokens():
+            yield from token.render()
+
+
+def render(*nodes: NodeLike) -> str:
+    """Render rendered tokens into a single string."""
+    return "".join(stream(*nodes))
 
 
 @final
@@ -83,7 +93,7 @@ class FragmentNode(BaseNode):
 
     def __init__(self, *children: NodeLike) -> None:
         """Create a new FragmentNode."""
-        object.__setattr__(self, "children", to_nodes(*children))
+        object.__setattr__(self, "children", tuple(to_nodes(*children)))
 
     @override
     def tokens(self) -> Generator[Token]:
@@ -98,7 +108,7 @@ False attributes are omitted.
 """
 
 
-def to_attributes(**attributes: AttributeLike) -> Sequence[tuple[str, str | None]]:
+def to_attributes(**attributes: AttributeLike) -> Generator[tuple[str, str | None]]:
     """Parse an attribute-like dictionary into actual attribute pairs.
 
     Use a leading "_" to escape reserved words in attribute names, e.g. "_class = 'my-class'".
@@ -106,22 +116,19 @@ def to_attributes(**attributes: AttributeLike) -> Sequence[tuple[str, str | None
     Use _ instead of "-" in attribute names.
     """
     # TODO: Support "_" in attribute names.
-    pairs: list[tuple[str, str | None]] = []
     for attr, value in attributes.items():
         attr_name = attr.removeprefix("_").replace("_", "-")
         if isinstance(value, str | None):
-            pairs.append((attr_name, value))
+            yield (attr_name, value)
             continue
 
         if isinstance(value, bool):
             if value:
-                pairs.append((attr_name, None))
+                yield (attr_name, None)
             continue
 
         msg = f"invalid attribute value {value!r}"
         raise TypeError(msg)
-
-    return pairs
 
 
 @dataclass(frozen=True, init=False)
@@ -137,8 +144,8 @@ class ElementNode(BaseNode):
     ) -> None:
         """Create a new ElementNode."""
         object.__setattr__(self, "tag_name", tag_name)
-        object.__setattr__(self, "children", to_nodes(*children))
-        object.__setattr__(self, "attributes", to_attributes(**attributes))
+        object.__setattr__(self, "children", tuple(to_nodes(*children)))
+        object.__setattr__(self, "attributes", tuple(to_attributes(**attributes)))
 
     @override
     def tokens(self) -> Generator[Token]:
@@ -156,4 +163,6 @@ __all__ = [
     "NodeLike",
     "RawNode",
     "TextNode",
+    "render",
+    "stream",
 ]

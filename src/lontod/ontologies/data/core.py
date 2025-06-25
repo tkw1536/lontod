@@ -13,9 +13,9 @@ from rdflib.term import Literal, Node, URIRef
 from lontod.utils.html import (
     DIV,
     SUP,
-    FragmentNode,
     NodeLike,
     RawNode,
+    render,
 )
 from lontod.utils.html import (
     Node as HTMLNode,
@@ -30,9 +30,9 @@ class HTMLable(ABC):
     """Represents an object that can be rendered as html."""
 
     @final
-    def html(self, ctx: "RenderContext") -> HTMLNode:
+    def html(self, ctx: "RenderContext") -> str:
         """Turn this HTMLable into a single html node."""
-        return FragmentNode(self.to_html(ctx))
+        return render(self.to_html(ctx))
 
     @abstractmethod
     def to_html(self, ctx: "RenderContext") -> NodeLike:

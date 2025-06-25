@@ -31,7 +31,7 @@ from lontod.ontologies.data.ontology import (
 from lontod.ontologies.data.rdf import AGENT_PROPS, ONT_PROPS, ONTDOC, IndexedProperty
 from lontod.ontologies.extractors.core import iri_to_title
 from lontod.ontologies.extractors.resource import ResourceExtractor
-from lontod.utils.graph import sort
+from lontod.utils.graph import sort, used_namespaces
 
 from .meta import MetaExtractor
 
@@ -276,26 +276,7 @@ class OntologyExtractor:
             yield self.__extract_section(prop)
 
     def __make_namespaces(self) -> Sequence[tuple[str, URIRef]]:
-        # only get namespaces used in ont
-        nses: dict[str, URIRef] = {}
-        for n in chain(
-            self.__ont.subjects(), self.__ont.predicates(), self.__ont.objects()
-        ):
-            # a list of prefixes we don't like
-            excluded_namespaces = (
-                # "https://linked.data.gov.au/def/"
-            )
-            if str(n).startswith(excluded_namespaces):
-                continue
-            nses.update(
-                {
-                    prefix: ns
-                    for (prefix, ns) in self.__ont.namespaces()
-                    if str(n).startswith(ns)
-                }
-            )
-
-        return tuple(sorted(nses.items(), key=lambda x: x[0]))
+        return sorted(used_namespaces(self.__ont), key=lambda prefix_ns: prefix_ns[0])
 
     def __extract_section(  # noqa: C901
         self,

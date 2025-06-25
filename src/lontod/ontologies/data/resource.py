@@ -125,10 +125,8 @@ class RestrictionResource(HTMLable):
             return "None"
 
         return SPAN(
-            chain(
-                (ref.to_html(ctx) for ref in self.properties),
-                (card.to_html(ctx) for card in self.cardinalities),
-            ),
+            (ref.to_html(ctx) for ref in self.properties),
+            (card.to_html(ctx) for card in self.cardinalities),
             # TODO: not sure when we need this br!
             BR() if len(self.properties) > 0 and len(self.cardinalities) > 0 else None,
         )
@@ -172,15 +170,16 @@ class AgentResource(HTMLable):
         children: list[NodeLike] = []
 
         # build the names, grouped by language
-        name_spans: list[NodeLike] = []
-        for lang, lits in partition(
-            chain(
-                self.prefixes,
-                self.names,
-            ),
-            lambda lit: lit.language,
-        ):
-            name_spans.append(SPAN((str(lit.value) for lit in lits), lang=lang))
+        name_spans = (
+            SPAN((str(lit.value) for lit in lits), lang=lang)
+            for (lang, lits) in partition(
+                chain(
+                    self.prefixes,
+                    self.names,
+                ),
+                lambda lit: lit.language,
+            )
+        )
 
         # build a name element
         name: NodeLike = intersperse(name_spans, BR())
