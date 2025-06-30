@@ -5,6 +5,8 @@ from collections.abc import Sequence
 from os import environ
 from pathlib import Path
 
+from threading import Thread
+
 from uvicorn import run as uv_run
 
 from lontod.daemon import Handler
@@ -133,19 +135,25 @@ def run(  # noqa: PLR0913
         server_conn = Connector("lontod", mode=Mode.MEMORY_SHARED_CACHE)
         index_conn = server_conn
 
-    # an optional controller
-    controller: Controller | None = None
+    # an optional controller for indexing
+    indexing_thread: Thread | None = None
+    indexing_controller: Controller | None = None
     if len(paths) > 0:
-        logger.info("opening database at %r", index_conn.connect_url)
-        conn = index_conn.connect()
+        def _index() -> None:
+            nonlocal indexing_controller
+            logger.info("opening database at %r", index_conn.connect_url)
+            conn = index_conn.connect()
 
-        # create a watcher and use the ingester to ingest!
-        controller = Controller(conn, paths, languages, logger)
-        controller.index_and_commit()
+            # create a watcher and use the ingester to ingest!
+            indexing_controller = Controller(conn, paths, languages, logger)
+            indexing_controller.index_and_commit()
 
-        # start the watcher if given
-        if watch:
-            controller.start_watching()
+            # start the watcher if given
+            if watch:
+                indexing_controller.start_watching()
+
+        indexing_thread = Thread(target=_index)
+        indexing_thread.start()
 
     if insecure_skip_routes:
         logger.warning("skipping routes blocked for safety, use with caution")
@@ -169,10 +177,11 @@ def run(  # noqa: PLR0913
         logger.info("starting server at %s:%s", host, port)
         uv_run(app, log_level="error", host=host, port=port)
     finally:
-        if controller is not None:
-            controller.close()
         pool.teardown()
-
+        if indexing_thread is not None:
+            indexing_thread.join()
+            if indexing_controller is not None:
+                indexing_controller.close()
 
 if __name__ == "__main__":
     main()
