@@ -56,6 +56,7 @@ ci = [
 disable = [
     "C0301", "E1121", "R0801", "R0902", "R0903", "R0911", "R0912", "R0913", "R0914", "R0915", "R0917", "R1702", "W0511", "W0718",
     "W0611", # ignore unused imports -these should be fixed by 
+    "W0212" # should be fixed by ruff
 ]
 
 [tool.ruff]

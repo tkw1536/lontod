@@ -26,7 +26,7 @@ from lontod.utils.html import (
     UL,
     A,
     RawNode,
-    stream,
+    stream_nodes,
 )
 from lontod.utils.pool import Pool
 
@@ -369,7 +369,7 @@ class Handler(Starlette):
 
     def __stream_root_html(self) -> Generator[str]:
         with self.__pool.use() as query:
-            return stream(
+            return stream_nodes(
                 self.__index_html_header,
                 (
                     FIELDSET(
@@ -385,13 +385,11 @@ class Handler(Starlette):
                         (
                             "Alternate URIs:",
                             SPAN(
-                                UL(
-                                    LI(
-                                        CODE(uri)
-                                    ) for uri in onto.alternate_uris
-                                ),
+                                UL(LI(CODE(uri)) for uri in onto.alternate_uris),
                             ),
-                        ) if len(onto.alternate_uris) > 0 else None,
+                        )
+                        if len(onto.alternate_uris) > 0
+                        else None,
                         "Download in other formats:",
                         SPAN(
                             UL(
@@ -402,7 +400,8 @@ class Handler(Starlette):
                                             onto.identifier, typ, download=True
                                         ),
                                     )
-                                ) for typ in onto.mime_types
+                                )
+                                for typ in onto.mime_types
                             ),
                         ),
                     )

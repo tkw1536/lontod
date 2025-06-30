@@ -51,16 +51,16 @@ class BaseNode(ABC):
         return "".join(part for tok in self.tokens() for part in tok.render())
 
 
-def stream(*nodes: NodeLike) -> Generator[str]:
+def stream_nodes(*nodes: NodeLike) -> Generator[str]:
     """Yield rendered tokens from the given NodeLike."""
     for node in to_nodes(nodes):
         for token in node.tokens():
             yield from token.render()
 
 
-def render(*nodes: NodeLike) -> str:
+def render_nodes(*nodes: NodeLike) -> str:
     """Render rendered tokens into a single string."""
-    return "".join(stream(*nodes))
+    return "".join(stream_nodes(*nodes))
 
 
 @final
@@ -166,6 +166,6 @@ __all__ = [
     "NodeLike",
     "RawNode",
     "TextNode",
-    "render",
-    "stream",
+    "render_nodes",
+    "stream_nodes",
 ]

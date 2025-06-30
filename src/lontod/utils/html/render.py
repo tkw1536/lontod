@@ -21,6 +21,11 @@ class _InvalidError(ValueError, ABC):
 
 
 @final
+class RepeatedAttributeError(_InvalidError):
+    """Indicates that an attribute value was repeated."""
+
+
+@final
 class InvalidTagNameError(_InvalidError):
     """Indicates an invalid tag name."""
 
@@ -59,7 +64,14 @@ class StartTagToken(_BaseToken):
         InvalidTagNameError.assert_valid(self.tag_name)
         yield self.tag_name
 
+        seen = set[str]()
         for name, value in self.attributes:
+            norm_name = name.lower()
+            if norm_name in seen:
+                msg = f"attribute {name!r} repeated"
+                raise RepeatedAttributeError(msg)
+            seen.add(norm_name)
+
             yield " "
 
             InvalidAttributeNameError.assert_valid(name)

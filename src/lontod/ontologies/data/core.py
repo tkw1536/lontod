@@ -15,7 +15,7 @@ from lontod.utils.html import (
     SUP,
     NodeLike,
     RawNode,
-    render,
+    render_nodes,
 )
 from lontod.utils.html import (
     Node as HTMLNode,
@@ -32,7 +32,7 @@ class HTMLable(ABC):
     @final
     def html(self, ctx: "RenderContext") -> str:
         """Turn this HTMLable into a single html node."""
-        return render(self.to_html(ctx))
+        return render_nodes(self.to_html(ctx))
 
     @abstractmethod
     def to_html(self, ctx: "RenderContext") -> NodeLike:
