@@ -12,7 +12,6 @@ from ._common import (
     add_logging_arg,
     legal_info,
     list_or_environment,
-    parse_languages,
     setup_logging,
 )
 
@@ -53,20 +52,11 @@ def main(args: Sequence[str] | None = None) -> None:
         action=argparse.BooleanOptionalAction,
         help="Instead of adding new entries, remove ontologies with slugs or URIs given in input. If no slugs are provided, remove all ontologies. ",
     )
-    parser.add_argument(
-        "-L",
-        "--languages",
-        nargs="*",
-        help="Specify language preferences for the given ontology",
-    )
 
     result = parser.parse_args(args)
     run(
         [Path(p) for p in list_or_environment(result.input, "LONTOD_PATHS")],
         result.clean,
-        parse_languages(
-            list_or_environment(result.languages, "LONTOD_LANGUAGES", ";en")
-        ),
         result.simulate,
         result.database,
         result.remove,
@@ -77,7 +67,6 @@ def main(args: Sequence[str] | None = None) -> None:
 def run(  # noqa: PLR0913
     paths: Sequence[Path],
     clean: bool,
-    html_languages: Sequence[str | None],
     simulate: bool,
     db: str,
     remove: bool,
@@ -93,7 +82,7 @@ def run(  # noqa: PLR0913
     conn = connector.connect()
 
     indexer = Indexer(conn, logger)
-    ingester = Ingester(indexer, html_languages, logger)
+    ingester = Ingester(indexer, logger)
 
     try:
         # create a transaction

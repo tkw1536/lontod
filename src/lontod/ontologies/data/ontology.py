@@ -8,8 +8,7 @@ from functools import cached_property
 from importlib import resources
 from typing import final, override
 
-from rdflib.namespace import XSD
-from rdflib.term import Literal, URIRef
+from rdflib.term import URIRef
 
 from lontod.utils.html import (
     BODY,
@@ -63,22 +62,7 @@ class PropertyResourcePair:
 @dataclass(frozen=True)
 class _DefiniendumLike(ABC):
     iri: URIRef
-    titles: Sequence[Literal]
-
     properties: Sequence[PropertyResourcePair]
-
-    def title(self, ctx: RenderContext) -> Literal:
-        """Primary titles of this definiendum used for the given context."""
-        # no title available
-        if len(self.titles) == 0:
-            # TODO: Use the old iri_from_title here?
-            return Literal(str(self.iri), datatype=XSD.anyURI)
-
-        # group by languages, but keep relative order.
-        titles_sorted = sorted(self.titles, key=lambda lit: lit.language or "")
-
-        # find the language with the smallest preference.
-        return min(titles_sorted, key=lambda lit: ctx.language_preference(lit.language))
 
 
 @final
@@ -90,11 +74,9 @@ class Definiendum(_DefiniendumLike, HTMLable):
 
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
-        title = self.title(ctx)
-
         return DIV(
             H3(
-                SPAN(str(title.value), lang=title.language),
+                SPAN(CODE(ctx.format_iri(self.iri))),
                 " ",
                 SUP(
                     self.prop.abbrev,
@@ -112,7 +94,7 @@ class Definiendum(_DefiniendumLike, HTMLable):
                     for pair in self.properties
                 ),
             ),
-            id=ctx.fragment(self.iri, self.title(ctx)),
+            id=ctx.fragment(self.iri),
             _class="property entity",
         )
 
@@ -124,12 +106,9 @@ class OntologyDefinienda(_DefiniendumLike, HTMLable):
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
         metadata_id = ctx.fragment(LONTOD.Metadata, group="section")
-        title = self.title(ctx)
 
         return DIV(
-            H1(
-                SPAN(str(title.value), lang=title.language),
-            ),
+            H1(self.iri),
             H2("Metadata"),
             DL(
                 DIV(
@@ -202,19 +181,18 @@ class Ontology(HTMLable):
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
         return HTML(
-            self.__head(ctx),
+            self.__head(),
             self.__body(ctx),
         )
 
     def __head(
         self,
-        ctx: RenderContext,
     ) -> NodeLike:
         """Make <head>???</head> content."""
         css = resources.files(__package__).joinpath("assets", "style.css").read_text()
 
         return HEAD(
-            TITLE(str(self.metadata.title(ctx).value)),
+            TITLE(str(self.metadata.iri)),
             STYLE(RawNode("\n" + css + "\n\t")),
             META(http_equiv="Content-Type", content="text/html; charset=utf-8"),
             SCRIPT(
@@ -299,9 +277,8 @@ class Ontology(HTMLable):
 
             defs: list[NodeLike] = []
             for definiendum in sec.definienda:
-                title = definiendum.title(ctx)
-                href = "#" + ctx.fragment(definiendum.iri, title)
-                defs.append(LI(A(str(title.value), href=href)))
+                href = "#" + ctx.fragment(definiendum.iri)
+                defs.append(LI(A(ctx.format_iri(definiendum.iri), href=href)))
 
             children.append(
                 LI(

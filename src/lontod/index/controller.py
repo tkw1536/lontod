@@ -26,25 +26,21 @@ class Controller:
     __paths: Sequence[Path]
     __logger: Logger
     __lock: Lock
-    __html_languages: Sequence[str | None]
     __ingester: Ingester
 
     def __init__(
         self,
         conn: Connection,
         paths: Sequence[Path],
-        html_languages: Sequence[str | None],
         logger: Logger,
     ) -> None:
         """Create a new controller."""
         self.__conn = conn
         self.__logger = logger
         self.__paths = paths
-        self.__html_languages = html_languages
         self.__lock = Lock()
         self.__ingester = Ingester(
             Indexer(self.__conn, self.__logger),
-            self.__html_languages,
             self.__logger,
         )
 

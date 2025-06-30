@@ -10,7 +10,20 @@ from typing import Literal as TLiteral
 
 from rdflib.term import BNode, Literal, URIRef
 
-from lontod.utils.html import BR, DIV, EM, LI, PRE, SPAN, SUP, UL, A, NodeLike, RawNode
+from lontod.utils.html import (
+    BR,
+    CODE,
+    DIV,
+    EM,
+    LI,
+    PRE,
+    SPAN,
+    SUP,
+    UL,
+    A,
+    NodeLike,
+    RawNode,
+)
 from lontod.utils.intersperse import intersperse
 from lontod.utils.partition import partition
 
@@ -75,12 +88,9 @@ class ResourceReference(HTMLable):
             )
 
         fragment = ctx.fragment(self.iri)
-        title = definiendum.title(ctx)
-
         return DIV(
             A(
-                str(title.value),
-                lang=title.language,
+                CODE(ctx.format_iri(definiendum.iri)),
                 title=self.iri,
                 href="#" + fragment,
             ),

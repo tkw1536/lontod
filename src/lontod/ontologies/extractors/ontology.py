@@ -18,7 +18,6 @@ from rdflib.namespace import (
     RDFS,
     SDO,
     SKOS,
-    XSD,
 )
 
 from lontod.ontologies.data.ontology import (
@@ -29,7 +28,6 @@ from lontod.ontologies.data.ontology import (
     TypeDefinienda,
 )
 from lontod.ontologies.data.rdf import AGENT_PROPS, ONT_PROPS, ONTDOC, IndexedProperty
-from lontod.ontologies.extractors.core import iri_to_title
 from lontod.ontologies.extractors.resource import ResourceExtractor
 from lontod.utils.graph import sort, used_namespaces
 
@@ -201,9 +199,6 @@ class OntologyExtractor:
 
         return OntologyDefinienda(
             iri=iri,
-            titles=[
-                x for x in this_onts_props[DCTERMS.title] if isinstance(x, Literal)
-            ],
             properties=our_props,
         )
 
@@ -261,11 +256,16 @@ class OntologyExtractor:
 
     def __call__(self) -> Ontology:
         """Extract an ontology."""
+        schema_json = self.schema.serialize(format="json-ld")
+        metadata = self._make_metadata()
+        sections = tuple(self.__make_sections())
+        namespaces = self.__make_namespaces(metadata)
+
         return Ontology(
-            schema_json=self.schema.serialize(format="json-ld"),
-            metadata=self._make_metadata(),
-            sections=tuple(self.__make_sections()),
-            namespaces=self.__make_namespaces(),
+            schema_json=schema_json,
+            metadata=metadata,
+            sections=sections,
+            namespaces=namespaces,
         )
 
     def __make_sections(self) -> Generator[TypeDefinienda]:
@@ -275,10 +275,20 @@ class OntologyExtractor:
 
             yield self.__extract_section(prop)
 
-    def __make_namespaces(self) -> Sequence[tuple[str, URIRef]]:
-        return sorted(used_namespaces(self.__ont), key=lambda prefix_ns: prefix_ns[0])
+    def __make_namespaces(
+        self, metadata: OntologyDefinienda
+    ) -> Sequence[tuple[str, URIRef]]:
+        namespaces = list(used_namespaces(self.__ont))
 
-    def __extract_section(  # noqa: C901
+        # we should add a blank "" namespace pointing to the main ontology IRI.
+        # only do this if there isn't a pre-exiting blank mapping
+        # or some other namespace pointing to it.
+        if not any(short == "" or metadata.iri == long for (short, long) in namespaces):
+            namespaces.append(("", metadata.iri))
+
+        return sorted(namespaces, key=lambda prefix_ns: prefix_ns[0])
+
+    def __extract_section(
         self,
         prop: IndexedProperty,
     ) -> TypeDefinienda:
@@ -330,19 +340,10 @@ class OntologyExtractor:
                     )
                 )
 
-            titles = [x for x in this_props[DCTERMS.title] if isinstance(x, Literal)]
-            if len(titles) == 0:
-                title = iri_to_title(sub)
-                if title is not None:
-                    titles = [Literal(title)]
-                else:
-                    titles = [Literal(prop.iri, datatype=XSD.anyURI)]
-
             definienda.append(
                 Definiendum(
                     iri=sub,
                     prop=prop,
-                    titles=titles,
                     properties=def_props,
                 )
             )

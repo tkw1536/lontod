@@ -1,6 +1,6 @@
 """OWL Ontology Parsing."""
 
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from itertools import chain
 from logging import Logger
 
@@ -18,7 +18,8 @@ from .types import media_types
 
 
 def owl_ontology(
-    logger: Logger, graph: Graph, html_languages: Sequence[str | None]
+    logger: Logger,
+    graph: Graph,
 ) -> Ontology:
     """Return a new OWL Ontology."""
     _ = logger  # TODO: mark argument as used for now
@@ -38,7 +39,7 @@ def owl_ontology(
 
     # create an ontology and a render context to go along with it
     ont = OntologyExtractor(graph)()
-    ctx = RenderContext(ont, html_languages)
+    ctx = RenderContext(ont)
 
     # render it as html
     html = as_utf8(ont.html(ctx))

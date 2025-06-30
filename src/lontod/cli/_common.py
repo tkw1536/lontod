@@ -1,7 +1,7 @@
 """Shared cli functionality."""
 
 from argparse import ArgumentParser
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from logging import CRITICAL, DEBUG, INFO, WARNING, Logger, basicConfig, getLogger
 from os import environ
 from pathlib import Path
@@ -9,11 +9,6 @@ from pathlib import Path
 from piplicenses_lib import FromArg, get_packages
 
 # spellchecker:words fsevents piplicenses
-
-
-def parse_languages(html_languages: Sequence[str]) -> Sequence[str | None]:
-    """Parse a set of languages."""
-    return [None if lang == "" else lang for lang in html_languages]
 
 
 def legal_info(logger: Logger) -> None:

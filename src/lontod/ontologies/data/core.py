@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from enum import Enum, auto
 from hashlib import md5
 from typing import TYPE_CHECKING, Final, final
@@ -96,16 +96,13 @@ class RenderContext:
     def __init__(
         self,
         ontology: "Ontology",
-        language_preferences: Sequence[None | str],
         content_rendering: ContentRendering = ContentRendering.SHOW_SANITIZED_MARKDOWN,
     ) -> None:
         """Create a new RenderContext."""
         self.__ontology = ontology
         self.__fids = defaultdict(dict)
         self.__fid_values = set()
-        self.__language_preferences = {
-            lang: i for (i, lang) in enumerate(language_preferences)
-        }
+        self.__iri_cache = {}
         self.__content_rendering = content_rendering
 
     __content_rendering: ContentRendering
@@ -121,20 +118,40 @@ class RenderContext:
         """Return the ontology that is used in this RenderContext."""
         return self.__ontology
 
-    def language_preference(self, lang: str | None) -> int:
-        """Return an integer representing the preference of a literal of the given language during rendering.
-
-        The smaller the returned integer, the higher the preference.
-        """
-        try:
-            return self.__language_preferences[lang]
-        except KeyError:
-            return len(self.__language_preferences)
-
     def close(self) -> None:
         """Close this context, reserved for future usage."""
 
-    def fragment(self, iri: URIRef, title: Node | None = None, group: str = "") -> str:
+    __iri_cache: dict[URIRef, str]
+
+    def format_iri(self, iri: URIRef) -> str:
+        """Format this IRI as a readable string."""
+        short = self.__iri_cache.get(iri, None)
+        if isinstance(short, str):
+            return short
+
+        short = self.__format_iri(iri)
+        self.__iri_cache[iri] = short
+        return short
+
+    def __format_iri(self, iri: URIRef) -> str:
+        longest_ns: tuple[str, URIRef] | None = None
+        for short, long in self.ontology.namespaces:
+            if not iri.startswith(long):
+                continue
+            if longest_ns is None:
+                longest_ns = (short, long)
+                continue
+            if len(long) > len(longest_ns[1]):
+                longest_ns = (short, long)
+                continue
+
+        if longest_ns is None:
+            return str(iri)
+
+        (short, long) = longest_ns
+        return f"{short}:{iri[len(long) :]}"
+
+    def fragment(self, iri: URIRef, /, group: str = "") -> str:
         """Return a fragment identifier for this title, using the given title node if it exists.
 
         Identifiers for two different identifiers are guaranteed to be
@@ -147,7 +164,7 @@ class RenderContext:
 
         # iterate through the candidates until we find a new one!
         the_fid: str
-        for count, fid in enumerate(self.__fragment(iri, title)):
+        for count, fid in enumerate(self.__fragment(iri)):
             if count == RenderContext.MAX_FID_TRIES:
                 msg = "exceeded maximum tries when generating fragment identifier for {uri!r}"
                 raise OverflowError(msg)
@@ -164,11 +181,11 @@ class RenderContext:
         # return it!
         return the_fid
 
-    def __fragment(self, uri: URIRef, title: Node | None = None) -> Generator[str]:
+    def __fragment(self, uri: URIRef) -> Generator[str]:
         """Yield possible fragment identifiers, repeating with a suffix if needed to allow for uniqueness."""
         pure_identifiers: list[str] = []
 
-        for identifier in self.__fragment_pure(uri, title=title):
+        for identifier in self.__fragment_pure(uri):
             yield identifier
             pure_identifiers.append(identifier)
 

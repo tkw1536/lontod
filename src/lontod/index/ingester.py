@@ -1,6 +1,5 @@
 """ingestion functionality."""
 
-from collections.abc import Sequence
 from logging import Logger
 from pathlib import Path
 from sqlite3 import Connection
@@ -25,13 +24,11 @@ class Ingester:
     def __init__(
         self,
         indexer: Indexer,
-        html_languages: Sequence[str | None],
         logger: Logger,
     ) -> None:
         """Create a new ingester."""
         self.__indexer = indexer
         self.__logger = logger
-        self.html_languages = html_languages
 
     @property
     def conn(self) -> Connection:
@@ -139,7 +136,7 @@ class Ingester:
         self.__logger.debug("reading OWL ontology at %r", path)
         owl = None
         try:
-            owl = owl_ontology(self.__logger, g, self.html_languages)
+            owl = owl_ontology(self.__logger, g)
         except Exception as err:
             self.__logger.exception(
                 "unable to read OWL ontology at %r",

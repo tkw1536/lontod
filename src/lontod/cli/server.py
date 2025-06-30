@@ -17,7 +17,6 @@ from ._common import (
     file_or_none,
     legal_info,
     list_or_environment,
-    parse_languages,
     setup_logging,
 )
 
@@ -94,9 +93,6 @@ def main(args: Sequence[str] | None = None) -> None:
         result.insecure_skip_routes,
         result.log,
         result.watch,
-        parse_languages(
-            list_or_environment(result.language, "LONTOD_LANGUAGES", ";en")
-        ),
     )
 
 
@@ -110,7 +106,6 @@ def run(  # noqa: PLR0913
     insecure_skip_routes: bool,
     log_level: str,
     watch: bool,
-    languages: Sequence[str | None],
 ) -> None:
     """Start the lontod server."""
     # setup logging
@@ -145,7 +140,7 @@ def run(  # noqa: PLR0913
             conn = index_conn.connect()
 
             # create a watcher and use the ingester to ingest!
-            indexing_controller = Controller(conn, paths, languages, logger)
+            indexing_controller = Controller(conn, paths, logger)
             indexing_controller.index_and_commit()
 
             # start the watcher if given
