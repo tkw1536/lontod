@@ -12,7 +12,6 @@ from rdflib.term import Literal, Node, URIRef
 
 from lontod.utils.html import (
     DIV,
-    SUP,
     NodeLike,
     RawNode,
     render_nodes,
@@ -49,31 +48,17 @@ class ContentRendering(Enum):
 
     def __call__(self, lit: Literal) -> HTMLNode:
         """Render the given literal."""
-        lang_sup = (
-            SUP(
-                str(lit.language),
-                _class="sup-lang",
-                lang="en",
-            )
-            if lit.language is not None
-            else None
-        )
-
         # TODO: Maybe do a check based on type here?
         content = str(lit.value)
 
         if self == ContentRendering.SHOW_AS_TEXT:
             return DIV(
-                lang_sup,
                 DIV(
                     content,
+                    _class="lang-content",
                     lang=lit.language,
                 ),
             )
-
-        # HACK: Prepend the lang_sup to the markdown to be rendered.
-        if lang_sup is not None:
-            content = lang_sup.render() + content
 
         # render the markdown
         md = markdown(content)
@@ -82,7 +67,7 @@ class ContentRendering(Enum):
         if self == ContentRendering.SHOW_SANITIZED_MARKDOWN:
             md = sanitize(md)
 
-        return DIV(DIV(RawNode(md), lang=lit.language))
+        return DIV(DIV(RawNode(md), lang=lit.language, _class="lang-content"))
 
 
 class RenderContext:

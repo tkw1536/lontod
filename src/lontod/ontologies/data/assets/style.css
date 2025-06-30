@@ -123,13 +123,25 @@ a:active {
     color: #c00;
     background: transparent;
 }
-.sup-lang {
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    -o-user-select: none;
-    user-select: none;
+
+.lang-content {
+    text-align: justify;
+    --lang-prefix-size: 3ch;
+}
+.lang-content > :first-child {
+    margin-top: 0;
+}
+.lang-content[lang] > :first-child {
+    text-indent: var(--lang-prefix-size);
+}
+.lang-content[lang]::before {
+    width: var(--lang-prefix-size);
+
+    position: absolute;
+    vertical-align: top;
+    font-size: smaller;
+
+    content: attr(lang);
 }
 
 .resource-ref sup {
