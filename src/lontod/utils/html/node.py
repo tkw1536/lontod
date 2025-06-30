@@ -158,6 +158,19 @@ class ElementNode(BaseNode):
         yield EndTagToken(self.tag_name)
 
 
+@dataclass(frozen=True, init=False)
+class VoidElementNode(ElementNode):
+    """Represents an html void element, i.e. a node that cannot have any child nodes."""
+
+    def __init__(self, tag_name: str, **attributes: AttributeLike) -> None:
+        """Create a new ElementNode."""
+        super().__init__(tag_name, **attributes)
+
+    @override
+    def tokens(self) -> Generator[Token]:
+        yield StartTagToken(self.tag_name, self.attributes)
+
+
 __all__ = [
     "AttributeLike",
     "ElementNode",
@@ -166,6 +179,7 @@ __all__ = [
     "NodeLike",
     "RawNode",
     "TextNode",
+    "VoidElementNode",
     "render_nodes",
     "stream_nodes",
 ]

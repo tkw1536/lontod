@@ -2,20 +2,36 @@
 
 from abc import ABC
 
-from .node import AttributeLike, ElementNode, NodeLike
+from .node import AttributeLike, ElementNode, NodeLike, VoidElementNode
 
 
-class _PreDefinedElementNode(ElementNode, ABC):
+class _Element(ElementNode, ABC):
     """A pre-defined element."""
 
     def __init__(self, *children: NodeLike, **attributes: AttributeLike) -> None:
         super().__init__(type(self).__name__, *children, **attributes)
 
 
-def _element(tag_name: str) -> type[_PreDefinedElementNode]:
-    """Create a new _BaseElementNode class for the given tag."""
+def _element(tag_name: str) -> type[_Element]:
+    """Create a new _Element class for the given tag."""
 
-    class FactoryElement(_PreDefinedElementNode):
+    class FactoryElement(_Element):
+        """Factorized Element."""
+
+    FactoryElement.__name__ = tag_name
+
+    return FactoryElement
+
+
+class _VoidElement(VoidElementNode, ABC):
+    def __init__(self, **attributes: AttributeLike) -> None:
+        super().__init__(type(self).__name__, **attributes)
+
+
+def _void_element(tag_name: str) -> type[_VoidElement]:
+    """Create a new _VoidElement class for the given void element."""
+
+    class FactoryElement(_VoidElement):
         """Factorized Element."""
 
     FactoryElement.__name__ = tag_name
@@ -29,10 +45,10 @@ def _element(tag_name: str) -> type[_PreDefinedElementNode]:
 HTML = _element("html")
 
 # Document metadata
-BASE = _element("base")
+BASE = _void_element("base")
 HEAD = _element("head")
-LINK = _element("link")
-META = _element("meta")
+LINK = _void_element("link")
+META = _void_element("meta")
 STYLE = _element("style")
 TITLE = _element("title")
 
@@ -65,7 +81,7 @@ DL = _element("dl")
 DT = _element("dt")
 FIGCAPTION = _element("figcaption")
 FIGURE = _element("figure")
-HR = _element("hr")
+HR = _void_element("hr")
 LI = _element("li")
 MENU = _element("menu")
 OL = _element("ol")
@@ -79,7 +95,7 @@ ABBR = _element("abbr")
 B = _element("b")
 BDI = _element("bdi")
 BDO = _element("bdo")
-BR = _element("br")
+BR = _void_element("br")
 CITE = _element("cite")
 CODE = _element("code")
 DATA = _element("data")
@@ -105,20 +121,20 @@ VAR = _element("var")
 WBR = _element("wbr")
 
 # Image and multimedia
-AREA = _element("area")
+AREA = _void_element("area")
 AUDIO = _element("audio")
-IMG = _element("img")
+IMG = _void_element("img")
 MAP = _element("map")
-TRACK = _element("track")
+TRACK = _void_element("track")
 VIDEO = _element("video")
 
 # Embedded content
-EMBED = _element("embed")
+EMBED = _void_element("embed")
 FENCEDFRAME = _element("fencedframe")
 IFRAME = _element("iframe")
 OBJECT = _element("object")
 PICTURE = _element("picture")
-SOURCE = _element("source")
+SOURCE = _void_element("source")
 
 # SVG and MathML
 SVG = _element("svg")
@@ -135,7 +151,7 @@ INS = _element("ins")
 
 # Table content
 CAPTION = _element("caption")
-COL = _element("col")
+COL = _void_element("col")
 COLGROUP = _element("colgroup")
 TABLE = _element("table")
 TBODY = _element("tbody")
@@ -150,7 +166,7 @@ BUTTON = _element("button")
 DATALIST = _element("datalist")
 FIELDSET = _element("fieldset")
 FORM = _element("form")
-INPUT = _element("input")
+INPUT = _void_element("input")
 LABEL = _element("label")
 LEGEND = _element("legend")
 METER = _element("meter")
@@ -183,7 +199,7 @@ MARQUEE = _element("marquee")
 NOBR = _element("nobr")
 NOEMBED = _element("noembed")
 NOFRAMES = _element("noframes")
-PARAM = _element("param")
+PARAM = _void_element("param")
 PLAINTEXT = _element("plaintext")
 RB = _element("rb")
 RTC = _element("rtc")
