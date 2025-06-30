@@ -4,7 +4,6 @@ import argparse
 from collections.abc import Sequence
 from os import environ
 from pathlib import Path
-
 from threading import Thread
 
 from uvicorn import run as uv_run
@@ -139,6 +138,7 @@ def run(  # noqa: PLR0913
     indexing_thread: Thread | None = None
     indexing_controller: Controller | None = None
     if len(paths) > 0:
+
         def _index() -> None:
             nonlocal indexing_controller
             logger.info("opening database at %r", index_conn.connect_url)
@@ -182,6 +182,7 @@ def run(  # noqa: PLR0913
             indexing_thread.join()
             if indexing_controller is not None:
                 indexing_controller.close()
+
 
 if __name__ == "__main__":
     main()
