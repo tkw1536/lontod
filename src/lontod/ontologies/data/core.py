@@ -56,7 +56,7 @@ class ContentRendering(Enum):
                 DIV(
                     content,
                     _class="lang-content",
-                    lang=lit.language,
+                    lang=lit.language or False,
                 ),
             )
 
@@ -67,7 +67,7 @@ class ContentRendering(Enum):
         if self == ContentRendering.SHOW_SANITIZED_MARKDOWN:
             md = sanitize(md)
 
-        return DIV(DIV(RawNode(md), lang=lit.language, _class="lang-content"))
+        return DIV(DIV(RawNode(md), lang=lit.language or False, _class="lang-content"))
 
 
 class RenderContext:

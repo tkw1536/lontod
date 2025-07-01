@@ -87,7 +87,7 @@ class MetaProperty(HTMLable):
             (
                 SPAN(
                     str(title.value).title(),
-                    lang=title.language,
+                    lang=title.language or False,
                 )
                 for title in self.titles
             ),

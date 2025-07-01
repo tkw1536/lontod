@@ -137,8 +137,9 @@ class RestrictionResource(HTMLable):
         return SPAN(
             (ref.to_html(ctx) for ref in self.properties),
             (card.to_html(ctx) for card in self.cardinalities),
-            # TODO: not sure when we need this br!
-            BR() if len(self.properties) > 0 and len(self.cardinalities) > 0 else None,
+            # TODO: need to rework this
+            # the layout looks bad
+            BR(_class="todo") if len(self.properties) > 0 and len(self.cardinalities) > 0 else None,
         )
 
 
@@ -181,7 +182,7 @@ class AgentResource(HTMLable):
 
         # build the names, grouped by language
         name_spans = (
-            SPAN((str(lit.value) for lit in lits), lang=lang)
+            SPAN((str(lit.value) for lit in lits), lang=lang or False)
             for (lang, lits) in partition(
                 chain(
                     self.prefixes,
@@ -250,7 +251,7 @@ class Affiliation(HTMLable):
                             ),
                             ",",
                         ),
-                        lang=lang,
+                        lang=lang or False,
                     ),
                 )
                 for lang, names in partition(self.names, lambda x: x.language)
