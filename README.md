@@ -8,6 +8,10 @@ It consists of two main executables:
 
 These are described in detail the 'Server' and 'Indexing' sections below.
 
+It additionally contains a utility executable:
+
+- lontod_convert (`python -m lontod.cli.convert`): Converts an ontology into a specified format.
+
 ## Server
 
 The server provides a set of ontologies to users. 

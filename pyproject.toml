@@ -23,6 +23,7 @@ dependencies = [
 [project.scripts]
 lontod_index = 'lontod.cli.index:main'
 lontod_server = 'lontod.cli.server:main'
+lontod_convert = 'lontod.cli.convert:main'
 
 [tool.poe.tasks]
 
