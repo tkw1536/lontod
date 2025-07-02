@@ -43,12 +43,6 @@ def main(args: Sequence[str] | None = None) -> None:
         help="Instead of only indexing once, re-index the files and folder every time they change",
     )
     parser.add_argument(
-        "-L",
-        "--language",
-        nargs="*",
-        help="Specify language preferences for watched ontologies",
-    )
-    parser.add_argument(
         "-H",
         "--host",
         default=environ.get("LONTOD_HOST") or "localhost",
