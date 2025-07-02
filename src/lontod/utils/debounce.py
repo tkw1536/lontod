@@ -5,10 +5,8 @@ from functools import wraps
 from threading import Lock, Timer
 from typing import Any, cast
 
-type Func = Callable[..., None]
 
-
-def debounce(wait: float) -> Callable[[Func], Func]:
+def debounce[T: Callable[..., None]](wait: float) -> Callable[[T], T]:
     """Ensure a function is called only if no new calls are made to it within wait seconds.
 
     The decorated function is safe to be called concurrently by multiple threads.
@@ -16,7 +14,7 @@ def debounce(wait: float) -> Callable[[Func], Func]:
     (positional and keyword) of the latest invocation.
     """
 
-    def decorator(fn: Func) -> Func:
+    def decorator(fn: T) -> T:
         timer: Timer | None = None
         lock: Lock = Lock()
 
@@ -30,6 +28,6 @@ def debounce(wait: float) -> Callable[[Func], Func]:
                 timer = Timer(wait, fn, args=args, kwargs=kwargs)
                 timer.start()
 
-        return cast("Func", debounced)
+        return cast("T", debounced)
 
     return decorator

@@ -139,7 +139,9 @@ class RestrictionResource(HTMLable):
             (card.to_html(ctx) for card in self.cardinalities),
             # TODO: need to rework this
             # the layout looks bad
-            BR(_class="todo") if len(self.properties) > 0 and len(self.cardinalities) > 0 else None,
+            BR(_class="todo")
+            if len(self.properties) > 0 and len(self.cardinalities) > 0
+            else None,
         )
 
 
