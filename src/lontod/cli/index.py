@@ -18,7 +18,7 @@ from ._common import (
 
 def main(args: Sequence[str] | None = None) -> None:
     """Entrypoint for the lontod_index executable."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Add or update an OWL ontology into the sqlite-powered index.")
     parser.add_argument(
         "input",
         nargs="+",
