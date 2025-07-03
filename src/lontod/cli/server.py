@@ -23,7 +23,9 @@ from ._common import (
 
 def main(args: Sequence[str] | None = None) -> None:
     """Entrypoint for the lontod_server command."""
-    parser = argparse.ArgumentParser(description="Expose ontologies via http to users. ")
+    parser = argparse.ArgumentParser(
+        description="Expose ontologies via http to users. "
+    )
 
     parser.add_argument(
         "input",
