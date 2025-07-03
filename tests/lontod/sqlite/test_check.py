@@ -1,8 +1,10 @@
 """tests the check module."""
 
+from sqlite3 import connect
+
 import pytest
 
-from lontod.sqlite.check import DatabaseDiff, diff_database, make_test_database
+from lontod.sqlite.check import DatabaseDiff, diff_database, is_open, make_test_database
 
 _sample_one: str = """
 CREATE TABLE users (
@@ -90,3 +92,14 @@ def test_assert_table_equals(left_src: str, right_src: str, want_equal: bool) ->
     finally:
         left.close()
         right.close()
+
+
+def test_is_open() -> None:
+    """Tests the is_open function."""
+    conn = connect("file:?mode=memory")
+    try:
+        assert is_open(conn)
+    finally:
+        conn.close()
+
+    assert not is_open(conn)

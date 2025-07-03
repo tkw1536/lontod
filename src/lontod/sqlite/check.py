@@ -1,6 +1,6 @@
 """test utilities for sqlite."""
 
-from sqlite3 import Connection, connect
+from sqlite3 import Connection, Error, connect
 from typing import Any, TypedDict
 
 
@@ -78,3 +78,13 @@ def diff_database(left: Connection, right: Connection) -> DatabaseDiff:
         "right": right_only_tables,
         "diff": diff,
     }
+
+
+def is_open(conn: Connection) -> bool:
+    """Check if the given sqlite connection is open."""
+    try:
+        conn.cursor()
+    except Error:
+        return False
+
+    return True

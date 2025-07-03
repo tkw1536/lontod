@@ -60,6 +60,13 @@ class LoggingCursor(Cursor):
         self._logger = logger
         self._level = level
 
+    @override
+    def close(self) -> None:
+        """Close this cursor."""
+        if self._should_log:
+            self._logger.log(self._level, "close()")
+        super().close()
+
     @property
     def _should_log(self) -> bool:
         return self._logger.isEnabledFor(self._level)
@@ -95,13 +102,29 @@ class LoggingCursor(Cursor):
                 for _ in seq_of_parameters:
                     count += 1
 
-            self._logger.log(
-                self._level,
-                "executemany(%r, (%s, ... %d element(s) omitted ...))",
-                sql,
-                first_param,
-                count - 1,
-            )
+            if count - 1 == 0:
+                self._logger.log(
+                    self._level,
+                    "executemany(%r, (%s,))",
+                    sql,
+                    first_param,
+                )
+            elif count - 1 == 1:
+                self._logger.log(
+                    self._level,
+                    "executemany(%r, (%s, ... %d element omitted ...))",
+                    sql,
+                    first_param,
+                    count - 1,
+                )
+            else:
+                self._logger.log(
+                    self._level,
+                    "executemany(%r, (%s, ... %d element(s) omitted ...))",
+                    sql,
+                    first_param,
+                    count - 1,
+                )
         super().executemany(sql, seq_of_parameters)
         return self
 
