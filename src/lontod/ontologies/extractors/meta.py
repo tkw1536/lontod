@@ -22,6 +22,7 @@ from rdflib.term import Literal, URIRef
 from lontod.ontologies.data.meta import MetaOntologies, MetaOntology, MetaProperty
 from lontod.ontologies.data.rdf import PROPS
 from lontod.utils.cached import PickleCachedMeta
+from lontod.utils.frozendict import FrozenDict
 from lontod.utils.graph import SubjectObjectQuery, subject_object_dicts
 
 from .core import iri_to_title
@@ -76,7 +77,9 @@ class MetaExtractor(metaclass=PickleCachedMeta):
     def __call__(self) -> MetaOntologies:
         """Extract information about the meta ontologies."""
         return MetaOntologies(
-            types=self.__types, titles=self.__titles, props=self.__props
+            types=FrozenDict(self.__types),
+            titles=FrozenDict(self.__titles),
+            props=FrozenDict(self.__props),
         )
 
     def __init_g(self) -> Graph:

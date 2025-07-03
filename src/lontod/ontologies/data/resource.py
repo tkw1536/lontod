@@ -1,6 +1,6 @@
 """information about rdf resources."""
 
-# spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing noopener noreferer
+# spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing noopener noreferrer
 
 from dataclasses import dataclass
 from itertools import chain
@@ -196,7 +196,9 @@ class AgentResource(HTMLable):
         # build a name element
         name: NodeLike = intersperse(name_spans, BR())
         if len(self.urls) > 0:
-            name = A(name, href=self.urls[0], target="_blank", rel="noopener noreferer")
+            name = A(
+                name, href=self.urls[0], target="_blank", rel="noopener noreferrer"
+            )
         children.append(name)
 
         if "orcid.org" in self.obj:

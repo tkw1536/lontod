@@ -4,6 +4,7 @@ from collections import defaultdict
 from collections.abc import Generator
 from functools import cached_property
 from itertools import chain
+from typing import TYPE_CHECKING
 
 from rdflib import Graph, Literal, Node, URIRef
 from rdflib.namespace import (
@@ -24,14 +25,18 @@ from lontod.ontologies.data.ontology import (
     Definiendum,
     Ontology,
     OntologyDefinienda,
-    PropertyResourcePair,
     TypeDefinienda,
 )
 from lontod.ontologies.data.rdf import AGENT_PROPS, ONT_PROPS, ONTDOC, IndexedProperty
 from lontod.ontologies.extractors.resource import ResourceExtractor
+from lontod.utils.frozendict import FrozenDict
 from lontod.utils.graph import sort, used_namespaces
 
 from .meta import MetaExtractor
+
+if TYPE_CHECKING:
+    from lontod.ontologies.data.meta import MetaProperty
+    from lontod.ontologies.data.resource import RDFResources
 
 # spellchecker:words FOAF RDFS ONTDOC onts
 
@@ -188,20 +193,20 @@ class OntologyExtractor:
                     raise TypeError(msg)
                 this_onts_props[p_].append(o)
 
-        our_props: list[PropertyResourcePair] = []
+        our_props: list[tuple[MetaProperty, RDFResources]] = []
         for prop_iri in ONT_PROPS:
             if prop_iri not in this_onts_props:
                 continue
             our_props.append(
-                PropertyResourcePair(
-                    prop=self.__meta[prop_iri],
-                    resources=self.__res(*this_onts_props[prop_iri], prop=prop_iri),
+                (
+                    self.__meta[prop_iri],
+                    self.__res(*this_onts_props[prop_iri], prop=prop_iri),
                 )
             )
 
         return OntologyDefinienda(
             iri=iri,
-            properties=tuple(our_props),
+            properties=FrozenDict(our_props),
         )
 
     @cached_property
@@ -279,7 +284,7 @@ class OntologyExtractor:
 
     def __make_namespaces(
         self, metadata: OntologyDefinienda
-    ) -> tuple[tuple[str, URIRef], ...]:
+    ) -> FrozenDict[str, URIRef]:
         namespaces = list(used_namespaces(self.__ont))
 
         # we should add a blank "" namespace pointing to the main ontology IRI.
@@ -288,7 +293,7 @@ class OntologyExtractor:
         if not any(short == "" or metadata.iri == long for (short, long) in namespaces):
             namespaces.append(("", metadata.iri))
 
-        return tuple(sorted(namespaces, key=lambda prefix_ns: prefix_ns[0]))
+        return FrozenDict(sorted(namespaces, key=lambda prefix_ns: prefix_ns[0]))
 
     def __extract_section(
         self,
@@ -327,18 +332,15 @@ class OntologyExtractor:
                     else p
                 ].append(o)
 
-            def_props: list[PropertyResourcePair] = []
+            def_props: list[tuple[MetaProperty, RDFResources]] = []
             for prop_iri in prop.properties:
                 if prop_iri not in this_props:
                     continue
 
-                nodes = this_props[prop_iri]
                 def_props.append(
-                    # TODO: Check if we need to pass prop_iri at all
-                    # or we can remove it completely!
-                    PropertyResourcePair(
-                        prop=self.__meta[prop_iri],
-                        resources=self.__res(*nodes, prop=prop_iri),
+                    (
+                        self.__meta[prop_iri],
+                        self.__res(*this_props[prop_iri], prop=prop_iri),
                     )
                 )
 
@@ -346,7 +348,7 @@ class OntologyExtractor:
                 Definiendum(
                     iri=sub,
                     prop=prop,
-                    properties=tuple(def_props),
+                    properties=FrozenDict(def_props),
                 )
             )
         return TypeDefinienda(prop=prop, definienda=tuple(definienda))

@@ -5,6 +5,8 @@ from enum import Enum
 from sqlite3 import Connection, connect
 from typing import Any, cast, final
 
+from lontod.utils.frozendict import FrozenDict
+
 
 @final
 class Mode(Enum):
@@ -25,7 +27,7 @@ class Connector:
     filename: str
     mode: Mode = Mode.READ_WRITE_CREATE
     check_same_thread: bool = False
-    kwargs: dict[str, Any] = field(default_factory=dict)
+    kwargs: FrozenDict[str, Any] = field(default_factory=FrozenDict)
 
     @property
     def connect_url(self) -> str:
@@ -35,7 +37,7 @@ class Connector:
     @property
     def connect_kwargs(self) -> dict[str, Any]:
         """Kwargs used for connect call."""
-        kwargs = self.kwargs.copy()
+        kwargs = dict(self.kwargs)
         kwargs["check_same_thread"] = self.check_same_thread
         return kwargs
 

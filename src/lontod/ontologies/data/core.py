@@ -120,7 +120,7 @@ class RenderContext:
 
     def __format_iri(self, iri: URIRef) -> str:
         longest_ns: tuple[str, URIRef] | None = None
-        for short, long in self.ontology.namespaces:
+        for short, long in self.ontology.namespaces.items():
             if not iri.startswith(long):
                 continue
             if longest_ns is None:

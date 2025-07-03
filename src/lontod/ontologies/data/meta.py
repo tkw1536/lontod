@@ -8,6 +8,7 @@ from typing import final, override
 from rdflib.term import Literal, URIRef
 
 from lontod.html import SPAN, A, NodeLike
+from lontod.utils.frozendict import FrozenDict
 
 from .core import HTMLable, RenderContext
 
@@ -17,9 +18,9 @@ from .core import HTMLable, RenderContext
 class MetaOntologies:
     """Information about all meta ontologies."""
 
-    types: dict[URIRef, tuple[URIRef, ...]]
-    titles: dict[URIRef, tuple[Literal, ...]]
-    props: dict[str, "MetaProperty"]
+    types: FrozenDict[URIRef, tuple[URIRef, ...]]
+    titles: FrozenDict[URIRef, tuple[Literal, ...]]
+    props: FrozenDict[str, "MetaProperty"]
 
     def __getitem__(self, iri: URIRef) -> "MetaProperty":
         """Get information about a specific property."""

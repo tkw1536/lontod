@@ -41,6 +41,7 @@ from lontod.html import (
     NodeLike,
     RawNode,
 )
+from lontod.utils.frozendict import FrozenDict
 
 from .core import HTMLable, RenderContext
 from .meta import MetaProperty
@@ -50,19 +51,10 @@ from .resource import RDFResources
 # TODO: ensure it's a sequence everywhere
 
 
-@final
-@dataclass(frozen=True)
-class PropertyResourcePair:
-    """a pair of information about a property and its' values."""
-
-    prop: MetaProperty
-    resources: RDFResources
-
-
 @dataclass(frozen=True)
 class _DefiniendumLike(ABC):
     iri: URIRef
-    properties: tuple[PropertyResourcePair, ...]
+    properties: FrozenDict[MetaProperty, RDFResources]
 
 
 @final
@@ -90,8 +82,8 @@ class Definiendum(_DefiniendumLike, HTMLable):
                     TD(CODE(str(self.iri))),
                 ),
                 (
-                    TR(TH(pair.prop.to_html(ctx)), TD(pair.resources.to_html(ctx)))
-                    for pair in self.properties
+                    TR(TH(prop.to_html(ctx)), TD(resources.to_html(ctx)))
+                    for (prop, resources) in self.properties.items()
                 ),
             ),
             id=ctx.fragment(self.iri),
@@ -117,10 +109,10 @@ class OntologyDefinienda(_DefiniendumLike, HTMLable):
                 ),
                 (
                     DIV(
-                        DT(pair.prop.to_html(ctx)),
-                        DD(pair.resources.to_html(ctx)),
+                        DT(prop.to_html(ctx)),
+                        DD(resources.to_html(ctx)),
                     )
-                    for pair in self.properties
+                    for (prop, resources) in self.properties.items()
                 ),
             ),
             id=metadata_id,
@@ -152,7 +144,7 @@ class Ontology(HTMLable):
     schema_json: str  # TODO: re-consider this
     metadata: OntologyDefinienda
     sections: tuple[TypeDefinienda, ...]
-    namespaces: tuple[tuple[str, URIRef], ...]
+    namespaces: FrozenDict[str, URIRef]
 
     @cached_property
     def __definienda(self) -> dict[URIRef, list[Definiendum]]:
@@ -252,7 +244,7 @@ class Ontology(HTMLable):
             H2("Namespaces"),
             DL(
                 (DT(prefix if prefix != "" else ":"), DD(CODE(ns)))
-                for prefix, ns in self.namespaces
+                for prefix, ns in self.namespaces.items()
             ),
             id=namespace_id,
         )

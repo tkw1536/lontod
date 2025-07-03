@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import final
 
+from lontod.utils.frozendict import FrozenDict
+
 
 @final
 @dataclass(frozen=True)
@@ -13,7 +15,7 @@ class Ontology:
 
     # URI Identifier of this ontology
     uri: str
-    alternate_uris: list[str]
+    alternate_uris: tuple[str, ...]
 
     @property
     def uris(self) -> Generator[tuple[str, bool]]:
@@ -23,15 +25,15 @@ class Ontology:
             yield uri, False
 
     # map from media type to content of ontology
-    encodings: dict[str, bytes]
+    encodings: FrozenDict[str, bytes]
 
     # list of (definiendum, fragment)
-    definienda: list[tuple[str, str]]
+    definienda: FrozenDict[str, str]
 
     @property
     def all_definienda(self) -> Generator[tuple[str, str, bool]]:
         """Like definienda but with alternate uri replacements."""
-        for uri, fragment in self.definienda:
+        for uri, fragment in self.definienda.items():
             yield uri, fragment, True
 
             # find only relative concept uris

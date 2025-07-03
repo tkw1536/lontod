@@ -20,8 +20,8 @@ class Ontology:
     identifier: str
     uri: str
 
-    alternate_uris: list[str]
-    mime_types: list[str]
+    alternate_uris: tuple[str, ...]
+    mime_types: tuple[str, ...]
     definienda_count: int
 
 
@@ -94,8 +94,8 @@ FROM
                 yield Ontology(
                     identifier=row[0],
                     uri=row[1],
-                    alternate_uris=alternate_uris,
-                    mime_types=mime_types,
+                    alternate_uris=tuple(alternate_uris),
+                    mime_types=tuple(mime_types),
                     definienda_count=row[3],
                 )
 

@@ -7,6 +7,7 @@ from logging import Logger
 from rdflib import Graph
 from rdflib.namespace import OWL, PROF, RDF, SKOS
 
+from lontod.utils.frozendict import FrozenDict
 from lontod.utils.strings import as_utf8
 
 from .data import RenderContext
@@ -46,12 +47,12 @@ def owl_ontology(
     types.append(("text/html", html))
 
     # extract the definienda
-    definienda = [(str(defi.iri), ctx.fragment(defi.iri)) for defi in ont]
+    definienda = FrozenDict((str(defi.iri), ctx.fragment(defi.iri)) for defi in ont)
 
     return Ontology(
         uri=uri,
-        alternate_uris=list(get_alternate_uris(graph)),
-        encodings=dict(types),
+        alternate_uris=tuple(get_alternate_uris(graph)),
+        encodings=FrozenDict(types),
         definienda=definienda,
     )
 
