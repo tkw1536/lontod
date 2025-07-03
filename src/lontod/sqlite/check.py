@@ -22,7 +22,7 @@ def _table_schema(conn: Connection, table: str) -> list[Any]:
 
 
 def _table_data(conn: Connection, table: str) -> list[Any]:
-    cursor = conn.cursor().execute(f"SELECT * FROM {table}")  # noqa: S608
+    cursor = conn.cursor().execute(f"SELECT * FROM {table} ORDER BY rowid")  # noqa: S608
     return cursor.fetchall()
 
 
