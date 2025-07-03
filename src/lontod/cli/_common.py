@@ -46,16 +46,16 @@ def file_or_none(env: str) -> str | None:
     return Path(environ.get(env, "")).read_text(encoding="utf-8")
 
 
-def list_or_environment(
+def tuple_or_environment(
     values: list[str] | None, env: str, default: str = ""
-) -> list[str]:
+) -> tuple[str, ...]:
     """Return the values set, or the default one from the environment if unset."""
     if values:
-        return values
+        return tuple(values)
     arg = environ.get(env, default)
     if arg == "":
-        return []
-    return arg.split(";")
+        return ()
+    return tuple(arg.split(";"))
 
 
 def add_logging_arg(parser: ArgumentParser) -> None:

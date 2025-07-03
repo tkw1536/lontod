@@ -1,6 +1,6 @@
 """implements high level functionality for ingestion."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from logging import Logger
 from pathlib import Path
 from sqlite3 import Connection
@@ -23,7 +23,7 @@ class Controller:
 
     __conn: Connection
     __observer: BaseObserver | None = None
-    __paths: Sequence[Path]
+    __paths: tuple[Path, ...]
     __logger: Logger
     __lock: Lock
     __ingester: Ingester
@@ -31,7 +31,7 @@ class Controller:
     def __init__(
         self,
         conn: Connection,
-        paths: Sequence[Path],
+        paths: tuple[Path, ...],
         logger: Logger,
     ) -> None:
         """Create a new controller."""
@@ -91,14 +91,14 @@ class ReIndexingHandler(FileSystemEventHandler):
     __logger: Logger
     __lock: Lock
     __ingester: Ingester
-    __paths: Sequence[Path]
+    __paths: tuple[Path, ...]
     __reindex: Callable[[], None]
 
     def __init__(
         self,
         ingester: Ingester,
         lock: Lock,
-        paths: Sequence[Path],
+        paths: tuple[Path, ...],
         logger: Logger,
         debounce_seconds: float = 1.0,
     ) -> None:

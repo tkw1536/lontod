@@ -1,6 +1,6 @@
 """Dataclasses describing the meta ontology."""
 
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import final, override
@@ -17,8 +17,8 @@ from .core import HTMLable, RenderContext
 class MetaOntologies:
     """Information about all meta ontologies."""
 
-    types: dict[URIRef, Sequence[URIRef]]
-    titles: dict[URIRef, Sequence[Literal]]
+    types: dict[URIRef, tuple[URIRef, ...]]
+    titles: dict[URIRef, tuple[Literal, ...]]
     props: dict[str, "MetaProperty"]
 
     def __getitem__(self, iri: URIRef) -> "MetaProperty":
@@ -46,11 +46,11 @@ class MetaOntology:
     """Information about a single ontology."""
 
     iri: URIRef
-    titles: Sequence[Literal]
+    titles: tuple[Literal, ...]
 
     def __contains__(self, iri: URIRef) -> bool:
         """Check if the given iri is contained in this ontology."""
-        # TODO: Check where this is used and maybe go to something else insyead.
+        # TODO: Check where this is used and maybe go to something else instead.
         return iri.startswith(self.iri)
 
 
@@ -59,17 +59,18 @@ class MetaOntology:
 class MetaProperty(HTMLable):
     """Human-readable information about a specific property."""
 
-    # iri of this property
     iri: URIRef
+    """IRI of the property"""
 
     # title of the property
-    titles: Sequence[Literal]
+    titles: tuple[Literal, ...]
+    """title of the property"""
 
-    # description of the property
-    descriptions: Sequence[Literal]
+    descriptions: tuple[Literal, ...]
+    """description of the property"""
 
-    # ontologies this property is defined in
-    ontologies: Sequence[MetaOntology]
+    ontologies: tuple[MetaOntology, ...]
+    """ontologies this property is defined in."""
 
     @override
     def to_html(self, ctx: RenderContext | None = None) -> NodeLike:

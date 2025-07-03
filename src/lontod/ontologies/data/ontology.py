@@ -2,7 +2,7 @@
 
 from abc import ABC
 from collections import defaultdict
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from dataclasses import dataclass
 from functools import cached_property
 from importlib import resources
@@ -62,7 +62,7 @@ class PropertyResourcePair:
 @dataclass(frozen=True)
 class _DefiniendumLike(ABC):
     iri: URIRef
-    properties: Sequence[PropertyResourcePair]
+    properties: tuple[PropertyResourcePair, ...]
 
 
 @final
@@ -133,7 +133,7 @@ class TypeDefinienda(HTMLable):
     """Definienda of a specific type."""
 
     prop: IndexedProperty
-    definienda: Sequence[Definiendum]
+    definienda: tuple[Definiendum, ...]
 
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
@@ -151,8 +151,8 @@ class Ontology(HTMLable):
 
     schema_json: str  # TODO: re-consider this
     metadata: OntologyDefinienda
-    sections: Sequence[TypeDefinienda]
-    namespaces: Sequence[tuple[str, URIRef]]
+    sections: tuple[TypeDefinienda, ...]
+    namespaces: tuple[tuple[str, URIRef], ...]
 
     @cached_property
     def __definienda(self) -> dict[URIRef, list[Definiendum]]:

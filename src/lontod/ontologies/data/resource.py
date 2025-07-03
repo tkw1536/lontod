@@ -2,7 +2,6 @@
 
 # spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing noopener noreferer
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import chain
 from typing import Final, final, override
@@ -38,7 +37,7 @@ class SetClassResource(HTMLable):
     """representation of a restriction."""
 
     cardinality: TLiteral["union", "intersection"] | None
-    resources: Sequence[HTMLable]
+    resources: tuple[HTMLable, ...]
 
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
@@ -108,7 +107,7 @@ class ResourceReference(HTMLable):
 class RDFResources(HTMLable):
     """Information about a single RDF Resource."""
 
-    resources: Sequence[_RDFResource]
+    resources: tuple[_RDFResource, ...]
 
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
@@ -126,8 +125,8 @@ class RestrictionResource(HTMLable):
     """OWL Restriction."""
 
     # list of properties this restriction is on
-    properties: Sequence["ResourceReference|AgentResource"]
-    cardinalities: Sequence["_Cardinality"]
+    properties: tuple["ResourceReference|AgentResource", ...]
+    cardinalities: tuple["_Cardinality", ...]
 
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
@@ -167,12 +166,12 @@ class AgentResource(HTMLable):
     """represents an agent."""
 
     obj: URIRef | BNode
-    names: Sequence[Literal]
-    prefixes: Sequence[Literal]
-    identifiers: Sequence[str]
-    urls: Sequence[str]
-    emails: Sequence[str]
-    affiliations: Sequence["Affiliation"]
+    names: tuple[Literal, ...]
+    prefixes: tuple[Literal, ...]
+    identifiers: tuple[str, ...]
+    urls: tuple[str, ...]
+    emails: tuple[str, ...]
+    affiliations: tuple["Affiliation", ...]
 
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
@@ -231,8 +230,8 @@ class AgentResource(HTMLable):
 class Affiliation(HTMLable):
     """Affiliation of an agent."""
 
-    names: Sequence[Literal]
-    urls: Sequence[str]
+    names: tuple[Literal, ...]
+    urls: tuple[str, ...]
 
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:

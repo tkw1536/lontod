@@ -1,7 +1,6 @@
 """Entrypoint for lontod_server."""
 
 import argparse
-from collections.abc import Sequence
 from os import environ
 from pathlib import Path
 from threading import Thread
@@ -16,12 +15,12 @@ from ._common import (
     add_logging_arg,
     file_or_none,
     legal_info,
-    list_or_environment,
     setup_logging,
+    tuple_or_environment,
 )
 
 
-def main(args: Sequence[str] | None = None) -> None:
+def main(args: tuple[str, ...] | None = None) -> None:
     """Entrypoint for the lontod_server command."""
     parser = argparse.ArgumentParser(
         description="Expose ontologies via http to users. "
@@ -81,7 +80,7 @@ def main(args: Sequence[str] | None = None) -> None:
     result = parser.parse_args(args)
     run(
         result.database,
-        [Path(p) for p in list_or_environment(result.input, "LONTOD_PATHS")],
+        tuple(Path(p) for p in tuple_or_environment(result.input, "LONTOD_PATHS")),
         result.port,
         result.host,
         result.public_domain,
@@ -94,7 +93,7 @@ def main(args: Sequence[str] | None = None) -> None:
 
 def run(  # noqa: PLR0913
     db: str | None,
-    paths: Sequence[Path],
+    paths: tuple[Path, ...],
     port: int,
     host: str,
     public_domain: str | None,

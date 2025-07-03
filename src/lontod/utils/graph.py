@@ -1,7 +1,7 @@
 """Implements graph mutation functions."""
 
 from collections import defaultdict
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from dataclasses import dataclass
 from itertools import chain
 from typing import (
@@ -19,13 +19,13 @@ class SubjectObjectQuery:
     """Query for the subject_object_dicts function."""
 
     typ: type[_ObjectType]
-    predicates: Sequence[URIRef]
+    predicates: tuple[URIRef, ...]
 
 
 def subject_object_dicts(
     graph: Graph,
     *queries: SubjectObjectQuery,
-) -> Generator[dict[URIRef, Sequence[_ObjectType]]]:
+) -> Generator[dict[URIRef, tuple[_ObjectType, ...]]]:
     """For each query, yield a dictionary { subject: list[objects] } matching the given predicates and being of the given typ."""
     all_predicates = {item for query in queries for item in query.predicates}
 
@@ -44,7 +44,7 @@ def subject_object_dicts(
                 result_dict[sub].extend(
                     value for value in values if isinstance(value, query.typ)
                 )
-        yield dict(result_dict)
+        yield {k: tuple(v) for (k, v) in result_dict.items()}
 
 
 def sort(graph: Graph) -> Graph:

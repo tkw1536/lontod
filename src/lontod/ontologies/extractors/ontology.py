@@ -1,7 +1,7 @@
 """extracting information about an ontology as a whole."""
 
 from collections import defaultdict
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from functools import cached_property
 from itertools import chain
 
@@ -32,6 +32,8 @@ from lontod.ontologies.extractors.resource import ResourceExtractor
 from lontod.utils.graph import sort, used_namespaces
 
 from .meta import MetaExtractor
+
+# spellchecker:words FOAF RDFS ONTDOC onts
 
 
 class OntologyExtractor:
@@ -199,7 +201,7 @@ class OntologyExtractor:
 
         return OntologyDefinienda(
             iri=iri,
-            properties=our_props,
+            properties=tuple(our_props),
         )
 
     @cached_property
@@ -277,7 +279,7 @@ class OntologyExtractor:
 
     def __make_namespaces(
         self, metadata: OntologyDefinienda
-    ) -> Sequence[tuple[str, URIRef]]:
+    ) -> tuple[tuple[str, URIRef], ...]:
         namespaces = list(used_namespaces(self.__ont))
 
         # we should add a blank "" namespace pointing to the main ontology IRI.
@@ -286,7 +288,7 @@ class OntologyExtractor:
         if not any(short == "" or metadata.iri == long for (short, long) in namespaces):
             namespaces.append(("", metadata.iri))
 
-        return sorted(namespaces, key=lambda prefix_ns: prefix_ns[0])
+        return tuple(sorted(namespaces, key=lambda prefix_ns: prefix_ns[0]))
 
     def __extract_section(
         self,
@@ -344,7 +346,7 @@ class OntologyExtractor:
                 Definiendum(
                     iri=sub,
                     prop=prop,
-                    properties=def_props,
+                    properties=tuple(def_props),
                 )
             )
-        return TypeDefinienda(prop=prop, definienda=definienda)
+        return TypeDefinienda(prop=prop, definienda=tuple(definienda))

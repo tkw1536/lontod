@@ -1,6 +1,5 @@
 """various rdf namespaces."""
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from typing import final
@@ -137,8 +136,8 @@ class _IndexedProperty:
 
     abbrev: str
 
-    specializations: Sequence[URIRef]
-    properties: Sequence[URIRef]
+    specializations: tuple[URIRef, ...]
+    properties: tuple[URIRef, ...]
 
 
 @final

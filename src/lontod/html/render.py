@@ -2,7 +2,7 @@
 
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from dataclasses import dataclass
 from html import escape
 from typing import ClassVar, final, override
@@ -55,7 +55,7 @@ class StartTagToken(_BaseToken):
     """Represents a start tag."""
 
     tag_name: str
-    attributes: Sequence[tuple[str, str | None]]
+    attributes: tuple[tuple[str, str | None], ...]
 
     @override
     def render(self) -> Generator[str]:

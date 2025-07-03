@@ -43,7 +43,9 @@ class ResourceExtractor:
 
     def __call__(self, *objects: Node, prop: URIRef | None) -> RDFResources:
         """Extract information about a given set of objects."""
-        return RDFResources(resources=[self.__extract(obj, prop) for obj in objects])
+        return RDFResources(
+            resources=tuple(self.__extract(obj, prop) for obj in objects)
+        )
 
     def __extract(
         self,
@@ -122,7 +124,7 @@ class ResourceExtractor:
                 self.__extract(o2)
                 for o2 in self.ont.objects(o, RDF.rest * ZeroOrMore / RDF.first)  # type:ignore[operator]
             )
-        return SetClassResource(cardinality=cardinality, resources=resources)
+        return SetClassResource(cardinality=cardinality, resources=tuple(resources))
 
     def __extract_b_node_restriction(
         self,
@@ -163,7 +165,7 @@ class ResourceExtractor:
                 if card is not None:
                     cards.append(card)
 
-        return RestrictionResource(properties=props, cardinalities=cards)
+        return RestrictionResource(properties=tuple(props), cardinalities=tuple(cards))
 
     def __extract_cardinality_numeric(
         self, px: Node, o: Node
@@ -262,12 +264,12 @@ class ResourceExtractor:
 
         return AgentResource(
             obj=obj,
-            names=names,
-            prefixes=prefixes,
-            identifiers=identifiers,
-            urls=urls,
-            emails=emails,
-            affiliations=affiliations,
+            names=tuple(names),
+            prefixes=tuple(prefixes),
+            identifiers=tuple(identifiers),
+            urls=tuple(urls),
+            emails=tuple(emails),
+            affiliations=tuple(affiliations),
         )
 
     def _extract_affiliation(self, obj: URIRef | BNode | Literal) -> Affiliation:
@@ -281,4 +283,4 @@ class ResourceExtractor:
                 names.append(o)
             elif pa == SDO.URL:
                 urls.append(str(o))
-        return Affiliation(names=names, urls=urls)
+        return Affiliation(names=tuple(names), urls=tuple(urls))

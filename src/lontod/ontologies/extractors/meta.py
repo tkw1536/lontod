@@ -2,7 +2,7 @@
 
 # spellchecker:words RDFS onts
 
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from importlib import resources
 from logging import getLogger
 from typing import TextIO, cast, final
@@ -66,9 +66,9 @@ class MetaExtractor(metaclass=PickleCachedMeta):
                 ),
             ),
         )
-        self.__types = cast("dict[URIRef,Sequence[URIRef]]", next(q))
-        self.__descriptions = cast("dict[URIRef,Sequence[Literal]]", next(q))
-        self.__titles = cast("dict[URIRef,Sequence[Literal]]", next(q))
+        self.__types = cast("dict[URIRef,tuple[URIRef,...]]", next(q))
+        self.__descriptions = cast("dict[URIRef,tuple[Literal,...]]", next(q))
+        self.__titles = cast("dict[URIRef,tuple[Literal,...]]", next(q))
 
         self.__ontologies = list(self.__init_ontologies())
         self.__props = self.__init_props()
@@ -113,11 +113,13 @@ class MetaExtractor(metaclass=PickleCachedMeta):
                 raise AssertionError(
                     msg,
                 )
-            titles = [Literal(auto_title)]
+            titles = (Literal(auto_title),)
 
         return MetaProperty(
             iri=prop,
             titles=titles,
             descriptions=self.__descriptions.get(prop) or (),
-            ontologies=[ontology for ontology in self.__ontologies if prop in ontology],
+            ontologies=tuple(
+                ontology for ontology in self.__ontologies if prop in ontology
+            ),
         )

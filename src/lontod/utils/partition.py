@@ -1,11 +1,11 @@
 """Implements a partition function."""
 
-from collections.abc import Callable, Generator, Iterable, Sequence
+from collections.abc import Callable, Generator, Iterable
 
 
 def partition[T, P](
     sequence: Iterable[T], predicate: Callable[[T], P]
-) -> Generator[tuple[P, Sequence[T]]]:
+) -> Generator[tuple[P, tuple[T, ...]]]:
     """Partitions the given iterable into distinct sequences based on predicate.
 
     The entire sequence must be held in memory.
@@ -31,4 +31,4 @@ def partition[T, P](
         parts[index].append(elem)
 
     for key, part in zip(keys, parts, strict=True):
-        yield (key, part)
+        yield (key, tuple(part))

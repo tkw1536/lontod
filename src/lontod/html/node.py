@@ -1,7 +1,7 @@
 """HTML Nodes."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable, Sequence
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from typing import final, override
 
@@ -92,7 +92,7 @@ class RawNode(BaseNode):
 class FragmentNode(BaseNode):
     """A set of children grouped together."""
 
-    children: Sequence[Node]
+    children: tuple[Node, ...]
 
     def __init__(self, *children: NodeLike) -> None:
         """Create a new FragmentNode."""
@@ -139,8 +139,8 @@ class ElementNode(BaseNode):
     """Represents an html node."""
 
     tag_name: str
-    attributes: Sequence[tuple[str, str | None]]
-    children: Sequence[Node]
+    attributes: tuple[tuple[str, str | None], ...]
+    children: tuple[Node, ...]
 
     def __init__(
         self, tag_name: str, *children: NodeLike, **attributes: AttributeLike

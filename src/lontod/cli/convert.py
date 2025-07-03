@@ -1,7 +1,6 @@
 """Entrypoint for lontod_server."""
 
 import argparse
-from collections.abc import Sequence
 from pathlib import Path
 from sys import stdout
 
@@ -18,7 +17,7 @@ from ._common import (
 MEDIA_DICT = dict((*media_types(), ("html", "text/html")))
 
 
-def main(args: Sequence[str] | None = None) -> None:
+def main(args: tuple[str, ...] | None = None) -> None:
     """Entrypoint for the lontod_convert command."""
     parser = argparse.ArgumentParser(
         description="Convert an ontology into a specific format."
@@ -71,7 +70,7 @@ def run(
 
     try:
         # create a controller and index the file
-        controller = Controller(conn, [path], logger)
+        controller = Controller(conn, (path,), logger)
         controller.index_and_commit()
 
         # build a query
