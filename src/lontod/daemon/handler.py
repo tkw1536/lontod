@@ -14,9 +14,7 @@ from starlette.requests import Request
 from starlette.responses import Response, StreamingResponse
 from starlette.routing import BaseRoute, Route
 
-from lontod.index import Query
-from lontod.ontologies.types import extension_from_type
-from lontod.utils.html import (
+from lontod.html import (
     BR,
     CODE,
     FIELDSET,
@@ -28,6 +26,8 @@ from lontod.utils.html import (
     RawNode,
     stream_nodes,
 )
+from lontod.index import Query
+from lontod.ontologies.types import extension_from_type
 from lontod.utils.pool import Pool
 
 from .http import LoggingMiddleware, negotiate

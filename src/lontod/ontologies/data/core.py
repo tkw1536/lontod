@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING, Final, final
 from markdown import markdown
 from rdflib.term import Literal, Node, URIRef
 
-from lontod.utils.html import (
+from lontod.html import (
     DIV,
     NodeLike,
     RawNode,
     render_nodes,
 )
-from lontod.utils.html import (
+from lontod.html import (
     Node as HTMLNode,
 )
 from lontod.utils.sanitize import sanitize

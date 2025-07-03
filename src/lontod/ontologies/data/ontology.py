@@ -10,7 +10,7 @@ from typing import final, override
 
 from rdflib.term import URIRef
 
-from lontod.utils.html import (
+from lontod.html import (
     BODY,
     CODE,
     DD,

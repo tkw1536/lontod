@@ -2,7 +2,7 @@
 
 import pytest
 
-from lontod.utils.html import elements
+from lontod.html import elements
 
 
 @pytest.mark.parametrize(

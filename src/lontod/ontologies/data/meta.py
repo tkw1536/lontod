@@ -7,7 +7,7 @@ from typing import final, override
 
 from rdflib.term import Literal, URIRef
 
-from lontod.utils.html import SPAN, A, NodeLike
+from lontod.html import SPAN, A, NodeLike
 
 from .core import HTMLable, RenderContext
 

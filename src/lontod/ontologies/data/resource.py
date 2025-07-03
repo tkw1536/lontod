@@ -10,7 +10,7 @@ from typing import Literal as TLiteral
 
 from rdflib.term import BNode, Literal, URIRef
 
-from lontod.utils.html import (
+from lontod.html import (
     BR,
     CODE,
     DIV,
