@@ -210,7 +210,7 @@ These are stored in the `DEFINIENDA` table.
 Dependencies are managed via [poetry](https://python-poetry.org). 
 We use [Poe the Poet](https://poethepoet.natn.io) as a task runner. 
 
-Source code be linted using `pylint` and `mypy`.
+Source code be linted using `ruff` and `mypy`.
 It should be formated using `black` and `isort`. 
 Tests are run using `pytest`. 
 

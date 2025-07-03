@@ -13,7 +13,6 @@ Ontopub
 ontpub
 postprocessors
 preprocessors
-pylint
 pylode
 rdflib
 reindexing

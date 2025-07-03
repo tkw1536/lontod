@@ -36,11 +36,9 @@ _ruff_fix = "ruff check --fix --unsafe-fixes"
 
 lint = [
     "_lint_ruff",
-    "_lint_pylint",
     "_lint_mypy"
 ]
 _lint_ruff = "ruff check"
-_lint_pylint = "pylint src/ tests/"
 _lint_mypy = "mypy src/ tests/"
 
 test = [
@@ -51,13 +49,6 @@ _test_pytest = "pytest"
 ci = [
     "lint",
     "test"
-]
-
-[tool.pylint]
-disable = [
-    "C0301", "E1121", "R0801", "R0902", "R0903", "R0911", "R0912", "R0913", "R0914", "R0915", "R0917", "R1702", "W0511", "W0718",
-    "W0611", # ignore unused imports -these should be fixed by 
-    "W0212" # should be fixed by ruff
 ]
 
 [tool.ruff]
@@ -148,7 +139,6 @@ packages = [{include = "lontod", from = "src"}]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.15.0"
-pylint = "^3.3.5"
 pytest = "^8.3.5"
 poethepoet = "^0.33.1"
 ruff = "^0.12.0"
