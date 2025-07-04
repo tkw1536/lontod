@@ -133,6 +133,8 @@ ignore = [
     "PLR2004",
 ]
 
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["lontod.utils.frozendict.FrozenDict"]
 
 [tool.poetry]
 packages = [{include = "lontod", from = "src"}]

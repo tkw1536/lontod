@@ -9,7 +9,15 @@ VT_co = TypeVar("VT_co", covariant=True)
 
 
 class FrozenDict(Mapping[KT, VT_co]):
-    """Like dict,but cannot be modified."""
+    """An immutable dict subtype that cannot be modified."""
+
+    # NOTE: This class might need to be considered immutable by ruff and friends.
+    # This can be achieved with a section like the following in pyproject.toml:
+    #
+    # [tool.ruff.lint.flake8-bugbear]
+    # extend-immutable-calls = ["lontod.utils.frozendict.FrozenDict"]
+    #
+    # This might need to be kept in sync with the name of this class.
 
     __dict: dict[KT, VT_co]
 

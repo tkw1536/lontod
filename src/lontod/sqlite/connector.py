@@ -1,6 +1,6 @@
 """implements connections to an sqlite database."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from sqlite3 import Connection, connect
 from typing import Any, cast, final
@@ -27,7 +27,7 @@ class Connector:
     filename: str
     mode: Mode = Mode.READ_WRITE_CREATE
     check_same_thread: bool = False
-    kwargs: FrozenDict[str, Any] = field(default_factory=FrozenDict)
+    kwargs: FrozenDict[str, Any] = FrozenDict()
 
     @property
     def connect_url(self) -> str:
