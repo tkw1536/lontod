@@ -1,6 +1,6 @@
 """Implements frozendict."""
 
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Hashable, Iterable, Iterator, Mapping
 from threading import Lock
 from typing import TypeVar, overload
 
@@ -78,5 +78,11 @@ class FrozenDict(Mapping[KT, VT_co]):
         """Compute the hash of the underlying items."""
         with self._l:
             if self._hash is None:
+                if any(
+                    not isinstance(self.__dict.items(), Hashable)
+                    for item in self.__dict.items()
+                ):
+                    msg = "not hashable"
+                    raise TypeError(msg)
                 self._hash = hash(tuple(sorted(self.__dict.items())))
             return self._hash
