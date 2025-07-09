@@ -30,7 +30,7 @@ from lontod.ontologies.data.ontology import (
 from lontod.ontologies.data.rdf import AGENT_PROPS, ONT_PROPS, ONTDOC, IndexedProperty
 from lontod.ontologies.extractors.resource import ResourceExtractor
 from lontod.utils.frozendict import FrozenDict
-from lontod.utils.graph import sort, used_namespaces
+from lontod.utils.graph import used_namespaces
 
 from .meta import MetaExtractor
 
@@ -46,7 +46,7 @@ class OntologyExtractor:
 
     def __init__(self, ontology: Graph) -> None:
         """Create a new Ontology."""
-        self.__ont = sort(ontology)
+        self.__ont = ontology
         OntologyExtractor.__ontdoc_inference(self.__ont)
 
         self.__meta = MetaExtractor()()
@@ -285,7 +285,7 @@ class OntologyExtractor:
     def __make_namespaces(
         self, metadata: OntologyDefinienda
     ) -> FrozenDict[str, URIRef]:
-        namespaces = list(used_namespaces(self.__ont))
+        namespaces = list(used_namespaces(self.__ont, always={metadata.iri}))
 
         # we should add a blank "" namespace pointing to the main ontology IRI.
         # only do this if there isn't a pre-exiting blank mapping

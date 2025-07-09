@@ -68,6 +68,14 @@ class FrozenDict(Mapping[KT, VT_co]):
         """Total number of items in this dictionary."""
         return len(self.__dict)
 
+    def __str__(self) -> str:
+        """Return a string representing this FrozenDict."""
+        return f"FrozenDict({self.__dict})"
+
+    def __repr__(self) -> str:
+        """Return a code representation of this FrozenDict."""
+        return f"FrozenDict({self.__dict!r})"
+
     _l: Lock
     """protect _hash"""
 

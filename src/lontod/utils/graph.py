@@ -4,9 +4,7 @@ from collections import defaultdict
 from collections.abc import Generator
 from dataclasses import dataclass
 from itertools import chain
-from typing import (
-    final,
-)
+from typing import Protocol, final
 
 from rdflib import Graph
 from rdflib.graph import _ObjectType
@@ -47,18 +45,13 @@ def subject_object_dicts(
         yield {k: tuple(v) for (k, v) in result_dict.items()}
 
 
-def sort(graph: Graph) -> Graph:
-    """Sorted copy of a graph."""
-    sorted_graph = Graph(
-        bind_namespaces="core",
-        namespace_manager=graph.namespace_manager,
-    )
-    for triple in sorted(graph.triples((None, None, None))):
-        sorted_graph.add(triple)
-    return sorted_graph
+class _SupportContainsURIRef(Protocol):
+    def __contains__(self, item: URIRef) -> bool: ...
 
 
-def used_namespaces(graph: Graph) -> Generator[tuple[str, URIRef]]:
+def used_namespaces(
+    graph: Graph, always: _SupportContainsURIRef | None = None
+) -> Generator[tuple[str, URIRef]]:
     """Yield all namespaces that are used in a graph."""
     iris = {
         iri
@@ -70,8 +63,10 @@ def used_namespaces(graph: Graph) -> Generator[tuple[str, URIRef]]:
         if isinstance(iri, URIRef)
     }
 
+    always_include: _SupportContainsURIRef = set() if always is None else always
+
     return (
         (prefix, ns)
         for prefix, ns in graph.namespaces()
-        if any(iri.startswith(ns) for iri in iris)
+        if (ns in always_include) or any(iri.startswith(ns) for iri in iris)
     )
