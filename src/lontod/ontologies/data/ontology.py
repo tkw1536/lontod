@@ -66,7 +66,6 @@ class Definiendum(_DefiniendumLike, HTMLable):
 
     @override
     def to_html(self, ctx: RenderContext) -> NodeLike:
-        fragment = ctx.fragment(self.iri)
         return DIV(
             H3(
                 SPAN(CODE(ctx.format_iri(self.iri))),
@@ -75,12 +74,6 @@ class Definiendum(_DefiniendumLike, HTMLable):
                     self.prop.abbrev,
                     _class=f"sup-{self.prop.abbrev}",
                     title=self.prop.inline_title,
-                ),
-                A(
-                    href="#" + fragment,
-                    aria_current="location",
-                    rel="noreferrer noopener",
-                    _class="permalink",
                 ),
             ),
             TABLE(
@@ -93,7 +86,7 @@ class Definiendum(_DefiniendumLike, HTMLable):
                     for (prop, resources) in self.properties.items()
                 ),
             ),
-            id=fragment,
+            id=ctx.fragment(self.iri),
             _class="property entity",
         )
 
