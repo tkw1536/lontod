@@ -1,6 +1,6 @@
 .cardinality {
-    font-style: italic;
-    color: #aa00aa;
+  font-style: italic;
+  color: #aa00aa;
 }
 /*
 dl {
@@ -8,54 +8,54 @@ dl {
     padding:5px;
 }*/
 dt {
-    font-weight: bold;
-    padding: 0;
+  font-weight: bold;
+  padding: 0;
 }
 dd {
-    margin-bottom: 10px;
-    padding-top: 7px;
+  margin-bottom: 10px;
+  padding-top: 7px;
 }
 .metadata ul,
 .classes ul {
-    list-style-type: none;
+  list-style-type: none;
 }
 .metadata ul li,
 .classes ul li {
-    margin-left: -40px;
+  margin-left: -40px;
 }
 ul.hlist {
-    list-style-type: none;
-    border: 1px solid navy;
-    padding: 5px;
-    background-color: #f4ffff;
+  list-style-type: none;
+  border: 1px solid navy;
+  padding: 5px;
+  background-color: #f4ffff;
 }
 ul.hierarchy {
-    border: 1px solid navy;
-    padding: 5px 25px 5px 25px;
-    background-color: #f4ffff;
+  border: 1px solid navy;
+  padding: 5px 25px 5px 25px;
+  background-color: #f4ffff;
 }
 ul.hlist li {
-    display: inline;
-    margin-right: 10px;
+  display: inline;
+  margin-right: 10px;
 }
 .entity {
-    border: 1px solid navy;
-    margin: 5px 0 5px 0;
-    padding: 5px;
+  border: 1px solid navy;
+  margin: 5px 0 5px 0;
+  padding: 5px;
 }
 .entity th {
-    width: 150px;
-    vertical-align: top;
+  width: 150px;
+  vertical-align: top;
 }
 .entity th,
 .entity td {
-    padding-bottom: 20px;
+  padding-bottom: 20px;
 }
 .entity table th {
-    text-align: left;
+  text-align: left;
 }
 section#overview img {
-    max-width: 1000px;
+  max-width: 1000px;
 }
 h1,
 h2,
@@ -63,179 +63,198 @@ h3,
 h4,
 h5,
 h6 {
-    text-align: left;
+  text-align: left;
 }
 h1,
 h2,
 h3 {
-    color: #005a9c;
-    background: white;
+  color: #005a9c;
+  background: white;
 }
 h1 {
-    font: 170% sans-serif;
-    line-height: 110%;
+  font: 170% sans-serif;
+  line-height: 110%;
 }
 h2 {
-    font: 140% sans-serif;
-    margin-top: 40px;
+  font: 140% sans-serif;
+  margin-top: 40px;
 }
 h3 {
-    font: 120% sans-serif;
-    margin-top: 20px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid navy;
+  font: 120% sans-serif;
+  margin-top: 20px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid navy;
 }
 h4 {
-    font: bold 100% sans-serif;
+  font: bold 100% sans-serif;
 }
 h5 {
-    font: italic 100% sans-serif;
+  font: italic 100% sans-serif;
 }
 h6 {
-    font: small-caps 100% sans-serif;
+  font: small-caps 100% sans-serif;
 }
 body {
-    padding: 2em 70px 2em 70px;
-    margin: 0;
-    font-family: sans-serif;
-    color: black;
-    background: white;
-    background-position: top left;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
-    text-align: left;
+  padding: 2em 70px 2em 70px;
+  margin: 0;
+  font-family: sans-serif;
+  color: black;
+  background: white;
+  background-position: top left;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  text-align: left;
 }
 section {
-    max-width: 1500px;
+  max-width: 1500px;
 }
 .figure {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 :link {
-    color: #00c;
-    background: transparent;
+  color: #00c;
+  background: transparent;
 }
 :visited {
-    color: #609;
-    background: transparent;
+  color: #609;
+  background: transparent;
 }
 a:active {
-    color: #c00;
-    background: transparent;
+  color: #c00;
+  background: transparent;
 }
 
 .lang-content {
-    text-align: justify;
-    --lang-prefix-size: 3ch;
+  text-align: justify;
+  --lang-prefix-size: 3ch;
 }
 .lang-content > :first-child {
-    margin-top: 0;
+  margin-top: 0;
 }
 .lang-content[lang] > :first-child {
-    text-indent: var(--lang-prefix-size);
+  text-indent: var(--lang-prefix-size);
 }
 .lang-content[lang]::before {
-    width: var(--lang-prefix-size);
+  width: var(--lang-prefix-size);
 
-    position: absolute;
-    vertical-align: top;
-    font-size: smaller;
+  position: absolute;
+  vertical-align: top;
+  font-size: smaller;
 
-    content: attr(lang);
+  content: attr(lang);
 }
 
 .resource-ref sup {
-    cursor: help;
-    margin-left: 0.2em;
+  cursor: help;
+  margin-left: 0.2em;
 }
 
 .sup-c {
-    color: orange;
+  color: orange;
 }
 .sup-op {
-    color: navy;
+  color: navy;
 }
 .sup-fp {
-    color: lightskyblue;
+  color: lightskyblue;
 }
 .sup-dp {
-    color: green;
+  color: green;
 }
 .sup-ap {
-    color: darkred;
+  color: darkred;
 }
 .sup-p {
-    color: black;
+  color: black;
 }
 .sup-ni {
-    color: brown;
+  color: brown;
 }
 .sup-con {
-    color: orange;
+  color: orange;
 }
 .sup-col {
-    color: darkred;
+  color: darkred;
 }
 sup {
-    margin-left: -3px;
+  margin-left: -3px;
 }
 code {
-    font-size: large;
-    color: darkred;
+  font-size: large;
+  color: darkred;
 }
 /* less prominent links for properties */
 .proplink {
-    color: #336;
-    text-decoration: none;
+  color: #336;
+  text-decoration: none;
 }
 .toc {
-    position: fixed;
-    top: 0;
-    right: 0;
-    z-index: 2;
-    height: 100%;
-    overflow-y: auto;
-    padding: 10px;
-    border: solid 1px navy;
-    font-size: small;
-    width: 180px;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  height: 100%;
+  overflow-y: auto;
+  padding: 10px;
+  border: solid 1px navy;
+  font-size: small;
+  width: 180px;
 }
 .toc h3 {
-    margin-top: 5px;
+  margin-top: 5px;
 }
 .toc ul {
-    list-style: none;
-    padding-left: 0;
+  list-style: none;
+  padding-left: 0;
 }
 .toc .first > li {
-    margin-top: 5px;
+  margin-top: 5px;
 }
 .toc .second,
 .toc .third {
-    padding-left: 10px;
+  padding-left: 10px;
 }
 #content {
-    width: calc(100% - 150px);
+  width: calc(100% - 150px);
 }
 .hover_property {
-    cursor: help;
-    text-decoration: none;
-    border-bottom: dashed 1px;
+  cursor: help;
+  text-decoration: none;
+  border-bottom: dashed 1px;
 }
 .setclass {
-    list-style-type: none;
+  list-style-type: none;
 }
 code {
-    word-wrap: break-word;
+  word-wrap: break-word;
 }
 table {
-    table-layout: fixed;
-    width: 100%;
+  table-layout: fixed;
+  width: 100%;
 }
 td {
-    word-wrap: break-word;
+  word-wrap: break-word;
 }
 .legend table.entity {
-    width: 25%;
+  width: 25%;
 }
 
+h3:hover a.permalink {
+  visibility: visible;
+}
+h3 a.permalink {
+  visibility: hidden;
+}
+
+a.permalink {
+  margin-left: 0.5em;
+  font-size: 75%;
+  color: black;
+  text-decoration: none;
+}
+a.permalink:hover {
+  text-decoration: underline;
+}
+a.permalink::before {
+  content: "[link]";
+}
