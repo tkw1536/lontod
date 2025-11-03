@@ -2,6 +2,7 @@
 
 # spellchecker:words uriref onts ASGS orcid xlink evenodd setclass inferencing noopener noreferrer
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from itertools import chain
 from typing import Final, final, override
@@ -23,6 +24,7 @@ from lontod.html import (
     NodeLike,
     RawNode,
 )
+from lontod.ontologies.data.meta import MetaProperty
 from lontod.utils.intersperse import intersperse
 from lontod.utils.partition import partition
 
@@ -30,17 +32,23 @@ from .core import HTMLable, RenderContext
 
 type _RDFResource = "BlankNodeResource|SetClassResource|ResourceReference|RestrictionResource|LiteralResource|AgentResource"
 
+class _ResourceHTMLAble(HTMLable, ABC):
+    """Resource which can be rendered to html."""
+
+    @abstractmethod
+    def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
+        """Turn this resource into html for the given property."""
 
 @final
 @dataclass(frozen=True)
-class SetClassResource(HTMLable):
+class SetClassResource(_ResourceHTMLAble):
     """representation of a restriction."""
 
     cardinality: TLiteral["union", "intersection"] | None
     resources: tuple[HTMLable, ...]
 
     @override
-    def to_html(self, ctx: RenderContext) -> NodeLike:
+    def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
         joining_word: str
         if self.cardinality == "union":
             joining_word = "or"
@@ -57,26 +65,31 @@ class SetClassResource(HTMLable):
 
 @final
 @dataclass(frozen=True)
-class BlankNodeResource(HTMLable):
+class BlankNodeResource(_ResourceHTMLAble):
     """A BlankNode that isn't of a specific subtype."""
 
     node: BNode
 
     @override
-    def to_html(self, ctx: RenderContext) -> NodeLike:
-        return PRE(str(self.node))
+    def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
+        return PRE(
+            str(self.node),
+
+            property=prop.iri if prop is not None else False,
+            resource=str(self.node) if prop is not None else False
+        )
 
 
 @final
 @dataclass(frozen=True)
-class ResourceReference(HTMLable):
+class ResourceReference(_ResourceHTMLAble):
     """Reference to a resource by IRI."""
 
     iri: URIRef
     possible_title: Literal
 
     @override
-    def to_html(self, ctx: RenderContext) -> NodeLike:
+    def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
         definiendum = ctx.ontology[self.iri]
         if definiendum is None:
             return A(
@@ -84,6 +97,9 @@ class ResourceReference(HTMLable):
                 href=str(self.iri),
                 target="_blank",
                 rel="noreferrer noopener",
+
+                property=prop.iri if prop is not None else False,
+                resource=str(self.iri) if prop is not None else False,
             )
 
         fragment = ctx.fragment(self.iri)
@@ -92,6 +108,9 @@ class ResourceReference(HTMLable):
                 CODE(ctx.format_iri(definiendum.iri)),
                 title=self.iri,
                 href="#" + fragment,
+
+                property=prop.iri if prop is not None else False,
+                resource=str(self.iri) if prop is not None else False,
             ),
             SUP(
                 definiendum.prop.abbrev,
@@ -110,18 +129,18 @@ class RDFResources(HTMLable):
     resources: tuple[_RDFResource, ...]
 
     @override
-    def to_html(self, ctx: RenderContext) -> NodeLike:
+    def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
         if len(self.resources) == 0:
             return None
         if len(self.resources) == 1:
-            return self.resources[0].to_html(ctx)
+            return self.resources[0].to_html(ctx, prop)
 
-        return UL(LI(resource.to_html(ctx) for resource in self.resources))
+        return UL(LI(resource.to_html(ctx, prop) for resource in self.resources))
 
 
 @final
 @dataclass(frozen=True)
-class RestrictionResource(HTMLable):
+class RestrictionResource(_ResourceHTMLAble):
     """OWL Restriction."""
 
     # list of properties this restriction is on
@@ -129,7 +148,7 @@ class RestrictionResource(HTMLable):
     cardinalities: tuple["_Cardinality", ...]
 
     @override
-    def to_html(self, ctx: RenderContext) -> NodeLike:
+    def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
         if len(self.properties) == 0 and len(self.cardinalities) == 0:
             return "None"
 
@@ -146,23 +165,33 @@ class RestrictionResource(HTMLable):
 
 @final
 @dataclass(frozen=True)
-class LiteralResource(HTMLable):
+class LiteralResource(_ResourceHTMLAble):
     """references a literal object node in the local different."""
 
     is_example: bool
     lit: Literal
 
     @override
-    def to_html(self, ctx: RenderContext) -> NodeLike:
+    def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
         if self.is_example:
-            return PRE(str(self.lit))
+            return PRE(
+                str(self.lit),
+                property=prop.iri if prop is not None else False,
+                datatype=str(self.lit.datatype) if prop is not None else False,
+            )
 
-        return ctx.render_content(self.lit)
+        return DIV(
+            ctx.render_content(self.lit),
+
+            property=prop.iri if prop is not None else False,
+            datatype=str(self.lit.datatype) if prop is not None else False,
+            content=str(self.lit) if prop is not None else False,
+        )
 
 
 @final
 @dataclass(frozen=True)
-class AgentResource(HTMLable):
+class AgentResource(_ResourceHTMLAble):
     """represents an agent."""
 
     obj: URIRef | BNode
@@ -174,7 +203,7 @@ class AgentResource(HTMLable):
     affiliations: tuple["Affiliation", ...]
 
     @override
-    def to_html(self, ctx: RenderContext) -> NodeLike:
+    def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
         # no names, just render the raw object!
         if len(self.names) == 0:
             return SPAN(str(self.obj))

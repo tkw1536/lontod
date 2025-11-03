@@ -150,6 +150,16 @@ class ElementNode(BaseNode):
         object.__setattr__(self, "children", tuple(to_nodes(*children)))
         object.__setattr__(self, "attributes", tuple(to_attributes(**attributes)))
 
+    def copy(self, *extra_children: NodeLike, **extra_attributes: AttributeLike) -> "ElementNode":
+        """Return a copy of this element with the provided children and attributes appended."""
+        return ElementNode(
+            self.tag_name,
+            *self.children,
+            *extra_children,
+            **dict(self.attributes),
+            **extra_attributes,
+        )
+
     @override
     def tokens(self) -> Generator[Token]:
         yield StartTagToken(self.tag_name, self.attributes)
@@ -165,6 +175,22 @@ class VoidElementNode(ElementNode):
     def __init__(self, tag_name: str, **attributes: AttributeLike) -> None:
         """Create a new ElementNode."""
         super().__init__(tag_name, **attributes)
+
+    @override
+    def copy(self, *extra_children: NodeLike, **extra_attributes: AttributeLike) -> "VoidElementNode":
+        """Return a copy of this element with the provided children and attributes appended.
+
+        VoidElementNode does not support any children.
+        """
+        if len(extra_children) > 0:
+            msg = "VoidElementNode cannot have children"
+            raise ValueError(msg)
+
+        return VoidElementNode(
+            self.tag_name,
+            **dict(self.attributes),
+            **extra_attributes,
+        )
 
     @override
     def tokens(self) -> Generator[Token]:

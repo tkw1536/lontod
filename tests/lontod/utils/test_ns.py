@@ -27,7 +27,9 @@ class TestBrokenSplitNamespaceManager:
         manager = BrokenSplitNamespaceManager(graph)
 
         # Test URI with trailing slash - should strip it and work
-        prefix, namespace, local_name = manager.compute_qname("http://example.org/test/")
+        prefix, namespace, local_name = manager.compute_qname(
+            "http://example.org/test/"
+        )
         assert prefix == "ex"
         assert namespace == URIRef("http://example.org/")
         assert local_name == "test"

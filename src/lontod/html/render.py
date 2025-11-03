@@ -5,7 +5,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator
 from dataclasses import dataclass
 from html import escape
-from typing import ClassVar, final, override
+from typing import ClassVar, Final, final, override
+
+HTML_DOCTYPE: Final[str] = """<!DOCTYPE html>"""
 
 
 class _InvalidError(ValueError, ABC):

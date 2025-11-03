@@ -7,6 +7,7 @@ from logging import Logger
 from rdflib import Graph
 from rdflib.namespace import OWL, PROF, RDF, SKOS
 
+from lontod.html.render import HTML_DOCTYPE
 from lontod.utils.frozendict import FrozenDict
 from lontod.utils.strings import as_utf8
 
@@ -43,7 +44,7 @@ def owl_ontology(
     ctx = RenderContext(ont)
 
     # render it as html
-    html = as_utf8(ont.html(ctx))
+    html = as_utf8(HTML_DOCTYPE + "\n" + ont.html(ctx))
     types.append(("text/html", html))
 
     # extract the definienda

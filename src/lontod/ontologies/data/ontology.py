@@ -41,6 +41,7 @@ from lontod.html import (
     NodeLike,
     RawNode,
 )
+from lontod.html.node import ElementNode
 from lontod.utils.frozendict import FrozenDict
 
 from .core import HTMLable, RenderContext
@@ -65,7 +66,7 @@ class Definiendum(_DefiniendumLike, HTMLable):
     prop: IndexedProperty
 
     @override
-    def to_html(self, ctx: RenderContext) -> NodeLike:
+    def to_html(self, ctx: RenderContext) -> ElementNode:
         return DIV(
             H3(
                 SPAN(CODE(ctx.format_iri(self.iri))),
@@ -82,10 +83,14 @@ class Definiendum(_DefiniendumLike, HTMLable):
                     TD(CODE(str(self.iri))),
                 ),
                 (
-                    TR(TH(prop.to_html(ctx)), TD(resources.to_html(ctx)))
+                    TR(
+                        TH(prop.to_html(ctx)),
+                        TD(resources.to_html(ctx, prop)),
+                    )
                     for (prop, resources) in self.properties.items()
                 ),
             ),
+            about=str(self.iri),
             id=ctx.fragment(self.iri),
             _class="property entity",
         )
@@ -110,7 +115,7 @@ class OntologyDefinienda(_DefiniendumLike, HTMLable):
                 (
                     DIV(
                         DT(prop.to_html(ctx)),
-                        DD(resources.to_html(ctx)),
+                        DD(resources.to_html(ctx, prop=prop)),
                     )
                     for (prop, resources) in self.properties.items()
                 ),
@@ -131,7 +136,10 @@ class TypeDefinienda(HTMLable):
     def to_html(self, ctx: RenderContext) -> NodeLike:
         return SECTION(
             H2(self.prop.plural_title),
-            (definiendum.to_html(ctx) for definiendum in self.definienda),
+            (
+                definiendum.to_html(ctx).copy(typeof=self.prop.iri)
+                for definiendum in self.definienda
+            ),
             id=ctx.fragment(self.prop.iri, group="section"),
             _class="section classes",
         )
@@ -175,6 +183,7 @@ class Ontology(HTMLable):
         return HTML(
             self.__head(),
             self.__body(ctx),
+            about=str(self.metadata.iri),
         )
 
     def __head(
@@ -195,6 +204,7 @@ class Ontology(HTMLable):
         )
 
     def __body(self, ctx: RenderContext) -> NodeLike:
+        js = resources.files(__package__).joinpath("assets", "index.js").read_text()
         return BODY(
             DIV(
                 self.metadata.to_html(ctx),
@@ -203,7 +213,8 @@ class Ontology(HTMLable):
                 self._make_legend(ctx),
                 self._make_toc(ctx),
                 id="content",
-            )
+            ),
+            SCRIPT(RawNode("\n" + js + "\n\t")),
         )
 
     def _make_legend(self, ctx: RenderContext) -> NodeLike:
