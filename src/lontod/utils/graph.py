@@ -28,7 +28,7 @@ def subject_object_dicts(
     all_predicates = {item for query in queries for item in query.predicates}
 
     pso = {p: defaultdict[URIRef, list[_ObjectType]](list) for p in all_predicates}
-    for sub, pred, obj in graph:
+    for sub, pred, obj in sorted(graph):
         if not isinstance(sub, URIRef):
             continue
         if pred not in all_predicates or not isinstance(pred, URIRef):

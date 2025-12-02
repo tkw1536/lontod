@@ -1,0 +1,20 @@
+# serializer version: 1
+# name: test_namespaces[g0-None]
+  list([
+  ])
+# ---
+# name: test_namespaces[g1-None]
+  list([
+    'ex',
+    'foaf',
+    'rdf',
+  ])
+# ---
+# name: test_namespaces[g2-always2]
+  list([
+    'ex',
+    'foaf',
+    'rdf',
+    'xsd',
+  ])
+# ---

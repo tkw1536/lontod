@@ -212,7 +212,7 @@ We use [Poe the Poet](https://poethepoet.natn.io) as a task runner.
 
 Source code be linted using `ruff` and `mypy`.
 It should be formated using `black` and `isort`. 
-Tests are run using `pytest`. 
+Tests are run using [`pytest`](https://docs.pytest.org/en/stable/), making use of the [`syrupy`](https://github.com/syrupy-project/syrupy) project.
 
 To run all of these, the following tasks are defined.
 Assuming development dependencies are installed, simply run:
@@ -245,4 +245,5 @@ docker run --tty --interactive --read-only --publish 8080:8080 --volume /path/to
 
 ## LICENSE
 
-None, the code is provided only so that you may inspect it.
+There is no LICENSE. 
+This code is provided only so that you may inspect it.

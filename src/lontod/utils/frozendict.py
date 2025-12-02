@@ -74,7 +74,15 @@ class FrozenDict(Mapping[KT, VT_co]):
 
     def __repr__(self) -> str:
         """Return a code representation of this FrozenDict."""
-        return f"FrozenDict({self.__dict!r})"
+        try:
+            items = dict(sorted(self.__dict.items()))
+        except TypeError:
+            items = self.__dict
+        return f"FrozenDict({items!r})"
+
+    def __eq__(self, other: object) -> bool:
+        """Check if this FrozenDict is equal to another object."""
+        return isinstance(other, FrozenDict) and dict(self) == dict(other)
 
     _l: Lock
     """protect _hash"""

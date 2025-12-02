@@ -61,3 +61,21 @@ def test_frozen_dict_equality() -> None:
                         inner_group_index == group_index
                         and inner_elem_index == elem_index
                     )
+
+
+@pytest.mark.parametrize(
+    ("fd", "want"),
+    [
+        (FrozenDict(), "FrozenDict({})"),
+        (FrozenDict({"hello": "world"}), "FrozenDict({'hello': 'world'})"),
+        (FrozenDict({"a": 1, "b": 2}), "FrozenDict({'a': 1, 'b': 2})"),
+        (FrozenDict({"b": 2, "a": 1}), "FrozenDict({'a': 1, 'b': 2})"),
+        (FrozenDict({"z": 3, "a": 1, "m": 2}), "FrozenDict({'a': 1, 'm': 2, 'z': 3})"),
+        (FrozenDict({"key": None}), "FrozenDict({'key': None})"),
+        (FrozenDict({"x": True, "y": False}), "FrozenDict({'x': True, 'y': False})"),
+        (FrozenDict({1: "a", 2: "b"}), "FrozenDict({1: 'a', 2: 'b'})"),
+    ],
+)
+def test_frozen_dict_repr(fd: FrozenDict[Any, Any], want: str) -> None:
+    """Test the repr of a FrozenDict."""
+    assert repr(fd) == want

@@ -3,9 +3,9 @@
 import pytest
 from rdflib import Graph
 from rdflib.term import URIRef
+from syrupy.assertion import SnapshotAssertion
 
 from lontod.utils import graph
-from lontod.utils.frozendict import FrozenDict
 
 EXAMPLE_GRAPH = """
 @prefix ex: <http://example.org/> .
@@ -37,38 +37,22 @@ def _example_graph() -> Graph:
 
 
 @pytest.mark.parametrize(
-    ("g", "always", "want"),
+    ("g", "always"),
     [
-        (Graph(), None, FrozenDict()),
+        (Graph(), None),
         (
             _example_graph(),
             None,
-            FrozenDict(
-                {
-                    "foaf": URIRef("http://xmlns.com/foaf/0.1/"),
-                    "rdf": URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
-                    "ex": URIRef("http://example.org/"),
-                }
-            ),
         ),
         (
             _example_graph(),
             {URIRef("http://www.w3.org/2001/XMLSchema#")},
-            FrozenDict(
-                {
-                    "foaf": URIRef("http://xmlns.com/foaf/0.1/"),
-                    "rdf": URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
-                    "ex": URIRef("http://example.org/"),
-                    "xsd": URIRef("http://www.w3.org/2001/XMLSchema#"),
-                }
-            ),
         ),
     ],
 )
 def test_namespaces(
-    g: Graph, always: set[URIRef] | None, want: FrozenDict[str, URIRef]
+    g: Graph, always: set[URIRef] | None, snapshot: SnapshotAssertion
 ) -> None:
     """Test the used_namespaces function."""
     got = graph.used_namespaces(g, always=always)
-    got_fd = FrozenDict(got)
-    assert got_fd == want
+    assert sorted(dict(got)) == snapshot
