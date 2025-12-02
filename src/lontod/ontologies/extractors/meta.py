@@ -90,7 +90,7 @@ class MetaExtractor(metaclass=PickleCachedMeta):
             if not file.is_file() or not file.name.endswith(".ttl"):
                 continue
             logger.debug("parsing background ontology from %r", file)
-            g.parse(None, file=cast("TextIO", file.open("r")), format="n3")
+            g.parse(None, file=cast("TextIO", file.open("r")), format="ttl")
 
         return g
 

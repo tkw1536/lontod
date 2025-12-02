@@ -150,7 +150,9 @@ class ElementNode(BaseNode):
         object.__setattr__(self, "children", tuple(to_nodes(*children)))
         object.__setattr__(self, "attributes", tuple(to_attributes(**attributes)))
 
-    def copy(self, *extra_children: NodeLike, **extra_attributes: AttributeLike) -> "ElementNode":
+    def copy(
+        self, *extra_children: NodeLike, **extra_attributes: AttributeLike
+    ) -> "ElementNode":
         """Return a copy of this element with the provided children and attributes appended."""
         return ElementNode(
             self.tag_name,
@@ -177,7 +179,9 @@ class VoidElementNode(ElementNode):
         super().__init__(tag_name, **attributes)
 
     @override
-    def copy(self, *extra_children: NodeLike, **extra_attributes: AttributeLike) -> "VoidElementNode":
+    def copy(
+        self, *extra_children: NodeLike, **extra_attributes: AttributeLike
+    ) -> "VoidElementNode":
         """Return a copy of this element with the provided children and attributes appended.
 
         VoidElementNode does not support any children.

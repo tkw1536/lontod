@@ -32,12 +32,14 @@ from .core import HTMLable, RenderContext
 
 type _RDFResource = "BlankNodeResource|SetClassResource|ResourceReference|RestrictionResource|LiteralResource|AgentResource"
 
+
 class _ResourceHTMLAble(HTMLable, ABC):
     """Resource which can be rendered to html."""
 
     @abstractmethod
     def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
         """Turn this resource into html for the given property."""
+
 
 @final
 @dataclass(frozen=True)
@@ -74,9 +76,8 @@ class BlankNodeResource(_ResourceHTMLAble):
     def to_html(self, ctx: RenderContext, prop: MetaProperty | None = None) -> NodeLike:
         return PRE(
             str(self.node),
-
             property=prop.iri if prop is not None else False,
-            resource=str(self.node) if prop is not None else False
+            resource=str(self.node) if prop is not None else False,
         )
 
 
@@ -97,7 +98,6 @@ class ResourceReference(_ResourceHTMLAble):
                 href=str(self.iri),
                 target="_blank",
                 rel="noreferrer noopener",
-
                 property=prop.iri if prop is not None else False,
                 resource=str(self.iri) if prop is not None else False,
             )
@@ -108,7 +108,6 @@ class ResourceReference(_ResourceHTMLAble):
                 CODE(ctx.format_iri(definiendum.iri)),
                 title=self.iri,
                 href="#" + fragment,
-
                 property=prop.iri if prop is not None else False,
                 resource=str(self.iri) if prop is not None else False,
             ),
@@ -182,7 +181,6 @@ class LiteralResource(_ResourceHTMLAble):
 
         return DIV(
             ctx.render_content(self.lit),
-
             property=prop.iri if prop is not None else False,
             datatype=str(self.lit.datatype) if prop is not None else False,
             content=str(self.lit) if prop is not None else False,
