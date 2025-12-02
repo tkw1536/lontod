@@ -1,0 +1,151 @@
+# serializer version: 1
+# name: test_agent_from_bnode
+  RDFResources(resources=(AgentResource(obj=rdflib.term.BNode('agent_node'), names=(rdflib.term.Literal('John Doe'),), prefixes=(), identifiers=(), urls=(), emails=(), affiliations=()),))
+# ---
+# name: test_agent_from_uri
+  RDFResources(resources=(AgentResource(obj=rdflib.term.URIRef('http://example.org/person/john'), names=(rdflib.term.Literal('John Doe'),), prefixes=(), identifiers=(), urls=('http://example.org/john',), emails=(), affiliations=()),))
+# ---
+# name: test_agent_with_affiliation
+  RDFResources(resources=(AgentResource(obj=rdflib.term.BNode('agent'), names=(rdflib.term.Literal('Jane Doe'),), prefixes=(), identifiers=(), urls=(), emails=(), affiliations=(Affiliation(names=(rdflib.term.Literal('Example University'),), urls=()),)),))
+# ---
+# name: test_all_values_from_restriction
+  RDFResources(resources=(RestrictionResource(properties=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/hasProperty'), possible_title=rdflib.term.Literal('http://example.org/hasProperty', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),), cardinalities=(CardinalityReference(typ='only', value=ResourceReference(iri=rdflib.term.URIRef('http://example.org/SomeClass'), possible_title=rdflib.term.Literal('http://example.org/SomeClass', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI')))),)),))
+# ---
+# name: test_cardinality_restriction
+  RDFResources(resources=(RestrictionResource(properties=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/hasProperty'), possible_title=rdflib.term.Literal('http://example.org/hasProperty', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),), cardinalities=(CardinalityNumeric(typ='exactly', value='1'),)),))
+# ---
+# name: test_example_literal
+  RDFResources(resources=(LiteralResource(is_example=True, lit=rdflib.term.Literal('Example code')),))
+# ---
+# name: test_intersection_class
+  RDFResources(resources=(SetClassResource(cardinality='intersection', resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/ClassA'), possible_title=rdflib.term.Literal('http://example.org/ClassA', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))), ResourceReference(iri=rdflib.term.URIRef('http://example.org/ClassB'), possible_title=rdflib.term.Literal('http://example.org/ClassB', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))))),))
+# ---
+# name: test_literal_with_uri_value
+  RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/SomeResource'), possible_title=rdflib.term.Literal('http://example.org/SomeResource', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),))
+# ---
+# name: test_max_cardinality_restriction
+  RDFResources(resources=(RestrictionResource(properties=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/hasProperty'), possible_title=rdflib.term.Literal('http://example.org/hasProperty', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),), cardinalities=(CardinalityNumeric(typ='max', value='5'),)),))
+# ---
+# name: test_min_cardinality_restriction
+  RDFResources(resources=(RestrictionResource(properties=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/hasProperty'), possible_title=rdflib.term.Literal('http://example.org/hasProperty', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),), cardinalities=(CardinalityNumeric(typ='min', value='0'),)),))
+# ---
+# name: test_multiple_objects
+  RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/Class1'), possible_title=rdflib.term.Literal('http://example.org/Class1', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))), ResourceReference(iri=rdflib.term.URIRef('http://example.org/Class2'), possible_title=rdflib.term.Literal('http://example.org/Class2', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))), LiteralResource(is_example=False, lit=rdflib.term.Literal('Some value'))))
+# ---
+# name: test_resource_extractor_on_real_data[gnd_20240806.rdf]
+  list([
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://www.w3.org/2000/01/rdf-schema#Literal'), possible_title=rdflib.term.Literal('Literal')),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#date'), possible_title=rdflib.term.Literal('http://www.w3.org/2001/XMLSchema#date', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#dateTime'), possible_title=rdflib.term.Literal('http://www.w3.org/2001/XMLSchema#dateTime', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#gYear'), possible_title=rdflib.term.Literal('http://www.w3.org/2001/XMLSchema#gYear', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#gYearMonth'), possible_title=rdflib.term.Literal('http://www.w3.org/2001/XMLSchema#gYearMonth', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AdministrativeUnit', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AuthorityResource'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AuthorityResource', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AuthorityResource'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AuthorityResource', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AuthorityResource'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AuthorityResource', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AuthorityResource'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AuthorityResource', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#AuthorityResource'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#AuthorityResource', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#BuildingOrMemorial'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#BuildingOrMemorial', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#BuildingOrMemorial'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#BuildingOrMemorial', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('https://d-nb.info/standards/elementset/gnd#BuildingOrMemorial'), possible_title=rdflib.term.Literal('https://d-nb.info/standards/elementset/gnd#BuildingOrMemorial', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+  ])
+# ---
+# name: test_resource_extractor_on_real_data[met-annot.rdf]
+  list([
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/CatalogueEntry'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/CatalogueEntry', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/CatalogueEntry'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/CatalogueEntry', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/CatalogueEntry'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/CatalogueEntry', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ExhibitionRecord'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ExhibitionRecord', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ExhibitionRecord'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ExhibitionRecord', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ExhibitionRecord'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ExhibitionRecord', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/InscriptionRecord'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/InscriptionRecord', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/InscriptionRecord'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/InscriptionRecord', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/InscriptionRecord'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/InscriptionRecord', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ProvenanceStatement'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ProvenanceStatement', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ProvenanceStatement'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ProvenanceStatement', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ProvenanceStatement'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ProvenanceStatement', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ReferenceEntry'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ReferenceEntry', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ReferenceEntry'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ReferenceEntry', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/ReferenceEntry'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/ReferenceEntry', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/Scholar'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/Scholar', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/annot/Scholar'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/annot/Scholar', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+  ])
+# ---
+# name: test_resource_extractor_on_real_data[met-core.rdf]
+  list([
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Artist'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Artist', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Artist'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Artist', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Artist'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Artist', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Artist'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Artist', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Artwork'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Artwork', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Artwork'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Artwork', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Artwork'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Artwork', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/CuratorialDepartment'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/CuratorialDepartment', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/CuratorialDepartment'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/CuratorialDepartment', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/CuratorialDepartment'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/CuratorialDepartment', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Person'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Person', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Person'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Person', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/Person'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/Person', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/classification'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/classification', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/classification'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/classification', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/classification'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/classification', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/classification'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/classification', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.wiss-ki.eu/ontology/met/core/classification'), possible_title=rdflib.term.Literal('http://example.wiss-ki.eu/ontology/met/core/classification', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+  ])
+# ---
+# name: test_resource_extractor_on_real_data[n4c.rdf]
+  list([
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/created_in'), possible_title=rdflib.term.Literal('http://edamontology.org/created_in', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/created_in'), possible_title=rdflib.term.Literal('http://edamontology.org/created_in', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/created_in'), possible_title=rdflib.term.Literal('http://edamontology.org/created_in', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/created_in'), possible_title=rdflib.term.Literal('http://edamontology.org/created_in', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/created_in'), possible_title=rdflib.term.Literal('http://edamontology.org/created_in', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/documentation'), possible_title=rdflib.term.Literal('http://edamontology.org/documentation', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/documentation'), possible_title=rdflib.term.Literal('http://edamontology.org/documentation', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/documentation'), possible_title=rdflib.term.Literal('http://edamontology.org/documentation', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/documentation'), possible_title=rdflib.term.Literal('http://edamontology.org/documentation', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/documentation'), possible_title=rdflib.term.Literal('http://edamontology.org/documentation', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/documentation'), possible_title=rdflib.term.Literal('http://edamontology.org/documentation', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/file_extension'), possible_title=rdflib.term.Literal('http://edamontology.org/file_extension', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/file_extension'), possible_title=rdflib.term.Literal('http://edamontology.org/file_extension', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/file_extension'), possible_title=rdflib.term.Literal('http://edamontology.org/file_extension', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/file_extension'), possible_title=rdflib.term.Literal('http://edamontology.org/file_extension', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/file_extension'), possible_title=rdflib.term.Literal('http://edamontology.org/file_extension', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/file_extension'), possible_title=rdflib.term.Literal('http://edamontology.org/file_extension', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/file_extension'), possible_title=rdflib.term.Literal('http://edamontology.org/file_extension', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/format_2197'), possible_title=rdflib.term.Literal('http://edamontology.org/format_2197', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+    RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://edamontology.org/format_2197'), possible_title=rdflib.term.Literal('http://edamontology.org/format_2197', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),)),
+  ])
+# ---
+# name: test_simple_blank_node
+  RDFResources(resources=(BlankNodeResource(node=rdflib.term.BNode('fixed_id')),))
+# ---
+# name: test_simple_literal
+  RDFResources(resources=(LiteralResource(is_example=False, lit=rdflib.term.Literal('Some text value')),))
+# ---
+# name: test_simple_uri
+  RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/SomeClass'), possible_title=rdflib.term.Literal('http://example.org/SomeClass', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),))
+# ---
+# name: test_some_values_from_restriction
+  RDFResources(resources=(RestrictionResource(properties=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/hasProperty'), possible_title=rdflib.term.Literal('http://example.org/hasProperty', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))),), cardinalities=(CardinalityReference(typ='some', value=ResourceReference(iri=rdflib.term.URIRef('http://example.org/SomeClass'), possible_title=rdflib.term.Literal('http://example.org/SomeClass', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI')))),)),))
+# ---
+# name: test_union_class
+  RDFResources(resources=(SetClassResource(cardinality='union', resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/Class1'), possible_title=rdflib.term.Literal('http://example.org/Class1', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))), ResourceReference(iri=rdflib.term.URIRef('http://example.org/Class2'), possible_title=rdflib.term.Literal('http://example.org/Class2', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#anyURI'))))),))
+# ---
+# name: test_uri_with_dcterms_title
+  RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/DirectTitledClass'), possible_title=rdflib.term.Literal('Direct Title', lang='en')),))
+# ---
+# name: test_uri_with_meta_title
+  RDFResources(resources=(ResourceReference(iri=rdflib.term.URIRef('http://example.org/TitledClass'), possible_title=rdflib.term.Literal('Titled Class', lang='en')),))
+# ---
