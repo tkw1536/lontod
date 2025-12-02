@@ -7,7 +7,16 @@ from typing import Literal as TLiteral
 from typing import final
 
 from rdflib import Graph
-from rdflib.namespace import DCTERMS, OWL, PROV, RDF, SDO, SKOS, XSD
+from rdflib.namespace import (  # type: ignore[attr-defined]
+    DCTERMS,
+    OWL,
+    PROV,
+    RDF,
+    SDO,
+    SKOS,
+    XSD,
+    _is_valid_uri,
+)
 from rdflib.paths import ZeroOrMore
 from rdflib.term import BNode, Literal, Node, URIRef
 
@@ -220,8 +229,7 @@ class ResourceExtractor:
         lit: Literal,
         prop: URIRef | None,
     ) -> "LiteralResource|ResourceReference|AgentResource":
-        # TODO: Properly check if it's a valid URI.
-        if str(lit).startswith("http"):
+        if self._is_valid_uri(str(lit)):
             uri = URIRef(str(lit))
             return self.__extract_uri_ref(uri)
 
@@ -229,6 +237,18 @@ class ResourceExtractor:
             is_example=(prop == SKOS.example),
             lit=lit,
         )
+
+    def _is_valid_uri(self, uri: str) -> bool:
+        """Check if a URI is valid."""
+        if not uri.startswith("http") and _is_valid_uri(uri):
+            return False
+
+        try:
+            self.ont.namespace_manager.compute_qname(uri, False)
+        except (ValueError, KeyError):
+            return False
+
+        return True
 
     def __extract_agent(self, obj: URIRef | BNode) -> AgentResource:
         # TODO: Rework this

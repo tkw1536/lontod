@@ -1,5 +1,6 @@
 """extracting information about an ontology as a whole."""
 
+import json
 from collections import defaultdict
 from collections.abc import Generator
 from functools import cached_property
@@ -31,6 +32,7 @@ from lontod.ontologies.data.rdf import AGENT_PROPS, ONT_PROPS, ONTDOC, IndexedPr
 from lontod.ontologies.extractors.resource import ResourceExtractor
 from lontod.utils.frozendict import FrozenDict
 from lontod.utils.graph import used_namespaces
+from lontod.utils.json_ld_sorted import sort_jsonld_by_id
 
 from .meta import MetaExtractor
 
@@ -263,7 +265,8 @@ class OntologyExtractor:
 
     def __call__(self) -> Ontology:
         """Extract an ontology."""
-        schema_json = self.schema.serialize(format="json-ld")
+        json_ld = json.loads(self.schema.serialize(format="json-ld"))
+        schema_json = json.dumps(sort_jsonld_by_id(json_ld), indent=2)
         metadata = self._make_metadata()
         sections = tuple(self.__make_sections())
         namespaces = self.__make_namespaces(metadata)
