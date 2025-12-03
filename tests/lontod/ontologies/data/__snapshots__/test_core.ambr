@@ -1,0 +1,67 @@
+# serializer version: 1
+# name: TestContentRendering.test_show_as_text
+  _element.<locals>.FactoryElement(tag_name='div', attributes=(), children=(_element.<locals>.FactoryElement(tag_name='div', attributes=(('class', 'lang-content'), ('lang', 'en')), children=(TextNode(text='Hello World'),)),))
+# ---
+# name: TestContentRendering.test_show_as_text_no_lang
+  _element.<locals>.FactoryElement(tag_name='div', attributes=(), children=(_element.<locals>.FactoryElement(tag_name='div', attributes=(('class', 'lang-content'),), children=(TextNode(text='Plain text'),)),))
+# ---
+# name: TestContentRendering.test_show_raw_markdown
+  _element.<locals>.FactoryElement(tag_name='div', attributes=(), children=(_element.<locals>.FactoryElement(tag_name='div', attributes=(('lang', 'de'), ('class', 'lang-content')), children=(RawNode(html='<h1>Heading</h1>\n<p>Paragraph</p>'),)),))
+# ---
+# name: TestContentRendering.test_show_sanitized_markdown
+  _element.<locals>.FactoryElement(tag_name='div', attributes=(), children=(_element.<locals>.FactoryElement(tag_name='div', attributes=(('lang', 'en'), ('class', 'lang-content')), children=(RawNode(html='<p><strong>Bold</strong> and <em>italic</em></p>'),)),))
+# ---
+# name: TestContentRendering.test_show_sanitized_markdown_with_script
+  _element.<locals>.FactoryElement(tag_name='div', attributes=(), children=(_element.<locals>.FactoryElement(tag_name='div', attributes=(('class', 'lang-content'),), children=(RawNode(html='\n<p>Safe text</p>'),)),))
+# ---
+# name: TestRemoveNonAsciiChars.test_ascii_only
+  'Hello World'
+# ---
+# name: TestRemoveNonAsciiChars.test_empty_string
+  ''
+# ---
+# name: TestRemoveNonAsciiChars.test_with_ampersand
+  'A  B'
+# ---
+# name: TestRemoveNonAsciiChars.test_with_non_ascii
+  'Hllo Wrld'
+# ---
+# name: TestRemoveNonAsciiChars.test_with_unicode
+  'Test  Text'
+# ---
+# name: TestRenderContext.test_format_iri_no_namespace
+  'http://unknown.org/Thing'
+# ---
+# name: TestRenderContext.test_format_iri_with_hash_namespace
+  'other:Property'
+# ---
+# name: TestRenderContext.test_format_iri_with_namespace
+  'ex:SomeClass'
+# ---
+# name: TestRenderContext.test_fragment_collision_handling
+  tuple(
+    'Thing',
+    'Thing_2',
+  )
+# ---
+# name: TestRenderContext.test_fragment_same_iri_different_groups
+  tuple(
+    'Item',
+    'section_Item',
+  )
+# ---
+# name: TestRenderContext.test_fragment_simple
+  'MyClass'
+# ---
+# name: TestRenderContext.test_fragment_with_group
+  'section_Section'
+# ---
+# name: TestRenderContext.test_fragment_with_hash
+  'Property'
+# ---
+# name: TestRenderContext.test_render_content
+  _element.<locals>.FactoryElement(tag_name='div', attributes=(), children=(_element.<locals>.FactoryElement(tag_name='div', attributes=(('class', 'lang-content'),), children=(RawNode(html='<p>Test content</p>'),)),))
+# ---
+# name: TestRenderContext.test_render_content_with_text_mode
+  _element.<locals>.FactoryElement(tag_name='div', attributes=(), children=(_element.<locals>.FactoryElement(tag_name='div', attributes=(('class', 'lang-content'),), children=(TextNode(text='**Not bold**'),)),))
+# ---
