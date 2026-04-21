@@ -141,7 +141,7 @@ packages = [{include = "lontod", from = "src"}]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.15.0"
-pytest = "^8.3.5"
+pytest = "^9.0.3"
 poethepoet = "^0.37.0"
 ruff = "^0.14.2"
 syrupy = "^5.0.0"
