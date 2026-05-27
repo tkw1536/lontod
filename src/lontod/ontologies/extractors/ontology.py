@@ -55,7 +55,7 @@ class OntologyExtractor:
         self.__res = ResourceExtractor(self.__ont, self.__meta)
 
     @staticmethod
-    def __ontdoc_inference(graph: Graph) -> None:  # noqa: PLR0912 C901
+    def __ontdoc_inference(graph: Graph) -> None:  # noqa: PLR0912
         """Expand the ontology's graph to make OntDoc querying easier.
 
         Uses axioms made up for OntDoc, but they are simple and obvious
@@ -212,7 +212,7 @@ class OntologyExtractor:
         )
 
     @cached_property
-    def schema(self) -> Graph:  # noqa: PLR0912 C901
+    def schema(self) -> Graph:  # noqa: PLR0912
         """Generic schema.org description for this graph."""
         sdo = Graph()
         for ont_iri in chain(

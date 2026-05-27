@@ -4,7 +4,9 @@ import argparse
 from os import environ
 from pathlib import Path
 from threading import Thread
+from typing import TYPE_CHECKING, Any, cast
 
+from readerwriterlock import rwlock
 from uvicorn import run as uv_run
 
 from lontod.daemon import Handler
@@ -19,6 +21,9 @@ from ._common import (
     setup_logging,
     tuple_or_environment,
 )
+
+if TYPE_CHECKING:
+    from contextlib import AbstractContextManager
 
 
 def main(args: tuple[str, ...] | None = None) -> None:
@@ -94,7 +99,7 @@ def main(args: tuple[str, ...] | None = None) -> None:
     )
 
 
-def run(  # noqa: PLR0913
+def run(
     db: str | None,
     paths: tuple[Path, ...],
     port: int,
@@ -118,6 +123,17 @@ def run(  # noqa: PLR0913
     if watch and len(paths) == 0:
         logger.fatal("--watch given, but no paths to watch provided")
         return
+
+    # Create a read-write lock
+    sync_manager = (
+        rwlock.RWLockWrite()
+        if ((not isinstance(db, str)) or no_db_locking_tweaks)
+        else None
+    )
+    if sync_manager is not None:
+        logger.info(
+            "Database will require an additional lock. Use an in-memory database and enable db-locking-tweaks to avoid this."
+        )
 
     server_conn: Connector
     index_conn: Connector
@@ -151,7 +167,16 @@ def run(  # noqa: PLR0913
             conn = index_conn.connect()
 
             # create a watcher and use the ingester to ingest!
-            indexing_controller = Controller(conn, paths, logger)
+            indexing_controller = Controller(
+                conn,
+                paths,
+                logger,
+                sync_manager=cast(
+                    "AbstractContextManager[Any]", sync_manager.gen_wlock()
+                )
+                if sync_manager is not None
+                else None,
+            )
             indexing_controller.index_and_commit()
 
             # start the watcher if given
@@ -165,7 +190,14 @@ def run(  # noqa: PLR0913
         logger.warning("skipping routes blocked for safety, use with caution")
 
     # setup the handler
-    pool = QueryPool(10, logger, server_conn)
+    pool = QueryPool(
+        10,
+        logger,
+        server_conn,
+        sync_manager=cast("AbstractContextManager[Any]", sync_manager.gen_rlock())
+        if sync_manager is not None
+        else None,
+    )
     app = Handler(
         pool=pool,
         ontology_route=ontology_route,

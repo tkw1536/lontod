@@ -2,6 +2,7 @@
 
 import json
 from collections.abc import Generator, Iterable
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from logging import Logger
 from sqlite3 import Connection
@@ -197,13 +198,20 @@ ORDER BY
 class QueryPool(Pool[Query]):
     """Represents a pool of Query objects."""
 
-    def __init__(self, max_size: int, logger: Logger, connector: Connector) -> None:
+    def __init__(
+        self,
+        max_size: int,
+        logger: Logger,
+        connector: Connector,
+        sync_manager: AbstractContextManager[Any] | None = None,
+    ) -> None:
         """Create a new QueryPool."""
         super().__init__(
             size=max_size,
             setup=self.__setup,
             reset=None,
             teardown=self.__teardown,
+            sync_manager=sync_manager,
         )
         self._connector = connector
         self._logger = logger

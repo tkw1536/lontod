@@ -82,7 +82,7 @@ class Handler(Starlette):
     __pool: Pool[Query]
     __logger: Logger
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         pool: Pool[Query],
         logger: Logger,

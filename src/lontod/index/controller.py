@@ -1,11 +1,12 @@
 """implements high level functionality for ingestion."""
 
 from collections.abc import Callable
+from contextlib import AbstractContextManager, nullcontext
 from logging import Logger
 from pathlib import Path
 from sqlite3 import Connection
 from threading import Lock
-from typing import final, override
+from typing import Any, final, override
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
@@ -26,6 +27,7 @@ class Controller:
     __paths: tuple[Path, ...]
     __logger: Logger
     __lock: Lock
+    __sync: AbstractContextManager[Any]
     __ingester: Ingester
 
     def __init__(
@@ -33,12 +35,14 @@ class Controller:
         conn: Connection,
         paths: tuple[Path, ...],
         logger: Logger,
+        sync_manager: AbstractContextManager[Any] | None = None,
     ) -> None:
         """Create a new controller."""
         self.__conn = conn
         self.__logger = logger
         self.__paths = paths
         self.__lock = Lock()
+        self.__sync = nullcontext() if sync_manager is None else sync_manager
         self.__ingester = Ingester(
             Indexer(self.__conn, self.__logger),
             self.__logger,
@@ -46,7 +50,7 @@ class Controller:
 
     def index_and_commit(self) -> None:
         """Perform an indexing operation, and always commits the result."""
-        with self.__lock:
+        with self.__sync, self.__lock:
             self.__logger.info(
                 "ingesting paths [%s]", ",".join(repr(str(p)) for p in self.__paths)
             )
@@ -63,6 +67,7 @@ class Controller:
         handler = ReIndexingHandler(
             self.__ingester,
             self.__lock,
+            self.__sync,
             self.__paths,
             self.__logger,
         )
@@ -90,6 +95,7 @@ class ReIndexingHandler(FileSystemEventHandler):
 
     __logger: Logger
     __lock: Lock
+    __sync: AbstractContextManager[Any]
     __ingester: Ingester
     __paths: tuple[Path, ...]
     __reindex: Callable[[], None]
@@ -98,6 +104,7 @@ class ReIndexingHandler(FileSystemEventHandler):
         self,
         ingester: Ingester,
         lock: Lock,
+        sync: AbstractContextManager[Any],
         paths: tuple[Path, ...],
         logger: Logger,
         debounce_seconds: float = 1.0,
@@ -106,6 +113,7 @@ class ReIndexingHandler(FileSystemEventHandler):
         self.__ingester = ingester
         self.__logger = logger
         self.__lock = lock
+        self.__sync = sync
         self.__paths = paths
         self.__reindex = debounce(debounce_seconds)(self.reindex_now)
 
@@ -115,7 +123,7 @@ class ReIndexingHandler(FileSystemEventHandler):
 
     def reindex_now(self, initialize: bool = False, force: bool = False) -> None:
         """Triggers a re-indexing procedure, and logs in case of failure."""
-        with self.__lock:
+        with self.__sync, self.__lock:
             conn = self.__ingester.conn
             conn.execute("BEGIN;")
 

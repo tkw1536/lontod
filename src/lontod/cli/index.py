@@ -68,7 +68,7 @@ def main(args: tuple[str, ...] | None = None) -> None:
     )
 
 
-def run(  # noqa: PLR0913
+def run(
     paths: tuple[Path, ...],
     clean: bool,
     simulate: bool,
