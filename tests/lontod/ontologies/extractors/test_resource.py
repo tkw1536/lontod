@@ -57,9 +57,7 @@ def test_simple_uri(
     assert extractor(uri, prop=None) == snapshot
 
 
-def test_uri_with_meta_title(
-    simple_graph: Graph, snapshot: SnapshotAssertion
-) -> None:
+def test_uri_with_meta_title(simple_graph: Graph, snapshot: SnapshotAssertion) -> None:
     """Test extraction of URI with title from metadata."""
     uri = URIRef("http://example.org/TitledClass")
     title = Literal("Titled Class", lang="en")

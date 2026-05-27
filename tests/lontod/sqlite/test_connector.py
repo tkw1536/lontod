@@ -1,5 +1,6 @@
 """Test the connector module."""
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -72,3 +73,38 @@ def test_connector_connect() -> None:
             conn2.close()
     finally:
         conn1.close()
+
+
+def test_connector_locking_tweaks_toggle(tmp_path: Path) -> None:
+    """Tests that locking tweaks can be toggled."""
+    db = tmp_path / "lontod-test.sqlite"
+
+    enabled = Connector(
+        str(db),
+        mode=Mode.READ_WRITE_CREATE,
+        enable_locking_tweaks=True,
+        timeout_seconds=0.1,
+    )
+    conn1 = enabled.connect()
+    try:
+        want_busy = int(0.1 * 1000)
+        got_busy = conn1.execute("PRAGMA busy_timeout;").fetchone()
+        assert got_busy == (want_busy,)
+
+        got_journal = conn1.execute("PRAGMA journal_mode;").fetchone()
+        assert got_journal == ("wal",)
+    finally:
+        conn1.close()
+
+    db2 = tmp_path / "lontod-test2.sqlite"
+    disabled = Connector(
+        str(db2),
+        mode=Mode.READ_WRITE_CREATE,
+        enable_locking_tweaks=False,
+    )
+    conn2 = disabled.connect()
+    try:
+        got_journal2 = conn2.execute("PRAGMA journal_mode;").fetchone()
+        assert got_journal2 != ("wal",)
+    finally:
+        conn2.close()

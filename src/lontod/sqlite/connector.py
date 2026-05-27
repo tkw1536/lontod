@@ -27,6 +27,8 @@ class Connector:
     filename: str
     mode: Mode = Mode.READ_WRITE_CREATE
     check_same_thread: bool = False
+    enable_locking_tweaks: bool = True
+    timeout_seconds: float = 30.0
     kwargs: FrozenDict[str, Any] = FrozenDict()
 
     @property
@@ -43,5 +45,18 @@ class Connector:
 
     def connect(self) -> Connection:
         """Call connect with the given arguments."""
-        conn = connect(self.connect_url, **self.connect_kwargs)
+        connect_kwargs = self.connect_kwargs
+        if self.enable_locking_tweaks and "timeout" not in connect_kwargs:
+            connect_kwargs["timeout"] = self.timeout_seconds
+
+        conn = connect(self.connect_url, **connect_kwargs)
+        if self.enable_locking_tweaks:
+            # sqlite PRAGMA statements don't support parameter binding
+            conn.execute(f"PRAGMA busy_timeout = {int(self.timeout_seconds * 1000)};")
+            if (
+                self.mode in (Mode.READ_WRITE, Mode.READ_WRITE_CREATE)
+                and self.filename != ""
+            ):
+                conn.execute("PRAGMA journal_mode = WAL;")
+                conn.execute("PRAGMA synchronous = NORMAL;")
         return cast("Connection", conn)

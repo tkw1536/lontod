@@ -69,6 +69,16 @@ def add_logging_arg(parser: ArgumentParser) -> None:
     )
 
 
+def add_db_locking_tweaks_arg(parser: ArgumentParser) -> None:
+    """Add an opt-out for sqlite locking tweaks (WAL + busy-timeout)."""
+    parser.add_argument(
+        "--no-db-locking-tweaks",
+        default=False,
+        action="store_true",
+        help="Disable sqlite WAL and busy-timeout connection settings",
+    )
+
+
 def setup_logging(name: str, level: str) -> Logger:
     """Perform global logging config and setup a new logger with the given name and level for the."""
     basicConfig()

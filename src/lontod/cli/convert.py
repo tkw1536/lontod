@@ -9,6 +9,7 @@ from lontod.ontologies.types import media_types
 from lontod.sqlite import Connector, Mode
 
 from ._common import (
+    add_db_locking_tweaks_arg,
     add_logging_arg,
     legal_info,
     setup_logging,
@@ -41,6 +42,7 @@ def main(args: tuple[str, ...] | None = None) -> None:
         help="File to write output to. Defaults to STDOUT.",
     )
     add_logging_arg(parser)
+    add_db_locking_tweaks_arg(parser)
 
     result = parser.parse_args(args)
 
@@ -49,6 +51,7 @@ def main(args: tuple[str, ...] | None = None) -> None:
         MEDIA_DICT.get(result.format, result.format),
         Path(result.output) if result.output is not None else None,
         result.log,
+        result.no_db_locking_tweaks,
     )
 
 
@@ -57,6 +60,7 @@ def run(
     media_type: str,
     output: Path | None,
     log_level: str,
+    no_db_locking_tweaks: bool,
 ) -> None:
     """Start the lontod server."""
     # setup logging
@@ -64,7 +68,11 @@ def run(
     legal_info(logger)
 
     # create a new connection and controller
-    connector = Connector("", mode=Mode.READ_WRITE_CREATE)
+    connector = Connector(
+        "",
+        mode=Mode.READ_WRITE_CREATE,
+        enable_locking_tweaks=not no_db_locking_tweaks,
+    )
     logger.info("opening database at %r", connector.connect_url)
     conn = connector.connect()
 

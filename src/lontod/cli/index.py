@@ -8,6 +8,7 @@ from lontod.index import Indexer, Ingester
 from lontod.sqlite import Connector
 
 from ._common import (
+    add_db_locking_tweaks_arg,
     add_logging_arg,
     legal_info,
     setup_logging,
@@ -53,6 +54,7 @@ def main(args: tuple[str, ...] | None = None) -> None:
         action=argparse.BooleanOptionalAction,
         help="Instead of adding new entries, remove ontologies with slugs or URIs given in input. If no slugs are provided, remove all ontologies. ",
     )
+    add_db_locking_tweaks_arg(parser)
 
     result = parser.parse_args(args)
     run(
@@ -62,6 +64,7 @@ def main(args: tuple[str, ...] | None = None) -> None:
         result.database,
         result.remove,
         result.log,
+        result.no_db_locking_tweaks,
     )
 
 
@@ -72,13 +75,14 @@ def run(  # noqa: PLR0913
     db: str,
     remove: bool,
     log_level: str,
+    no_db_locking_tweaks: bool,
 ) -> None:
     """Begins an indexing process."""
     # setup logging
     logger = setup_logging("lontod_index", log_level)
     legal_info(logger)
 
-    connector = Connector(db)
+    connector = Connector(db, enable_locking_tweaks=not no_db_locking_tweaks)
     logger.info("opening database at %r", connector.connect_url)
     conn = connector.connect()
 

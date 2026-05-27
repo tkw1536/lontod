@@ -209,4 +209,3 @@ class TestRemoveNonAsciiChars:
     def test_empty_string(self, snapshot: SnapshotAssertion) -> None:
         """Test with empty string."""
         assert _remove_non_ascii_chars("") == snapshot
-

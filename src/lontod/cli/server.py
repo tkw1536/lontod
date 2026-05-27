@@ -12,6 +12,7 @@ from lontod.index import Controller, QueryPool
 from lontod.sqlite import Connector, Mode
 
 from ._common import (
+    add_db_locking_tweaks_arg,
     add_logging_arg,
     file_or_none,
     legal_info,
@@ -76,6 +77,7 @@ def main(args: tuple[str, ...] | None = None) -> None:
     )
 
     add_logging_arg(parser)
+    add_db_locking_tweaks_arg(parser)
 
     result = parser.parse_args(args)
     run(
@@ -88,6 +90,7 @@ def main(args: tuple[str, ...] | None = None) -> None:
         result.insecure_skip_routes,
         result.log,
         result.watch,
+        result.no_db_locking_tweaks,
     )
 
 
@@ -101,6 +104,7 @@ def run(  # noqa: PLR0913
     insecure_skip_routes: bool,
     log_level: str,
     watch: bool,
+    no_db_locking_tweaks: bool,
 ) -> None:
     """Start the lontod server."""
     # setup logging
@@ -118,10 +122,22 @@ def run(  # noqa: PLR0913
     server_conn: Connector
     index_conn: Connector
     if isinstance(db, str):
-        server_conn = Connector(db, mode=Mode.READ_ONLY)
-        index_conn = Connector(db, mode=Mode.READ_WRITE_CREATE)
+        server_conn = Connector(
+            db,
+            mode=Mode.READ_ONLY,
+            enable_locking_tweaks=not no_db_locking_tweaks,
+        )
+        index_conn = Connector(
+            db,
+            mode=Mode.READ_WRITE_CREATE,
+            enable_locking_tweaks=not no_db_locking_tweaks,
+        )
     else:
-        server_conn = Connector("lontod", mode=Mode.MEMORY_SHARED_CACHE)
+        server_conn = Connector(
+            "lontod",
+            mode=Mode.MEMORY_SHARED_CACHE,
+            enable_locking_tweaks=not no_db_locking_tweaks,
+        )
         index_conn = server_conn
 
     # an optional controller for indexing

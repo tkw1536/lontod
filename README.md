@@ -243,6 +243,12 @@ docker run --tty --interactive --read-only  --publish 8080:8080 --volume /path/t
 docker run --tty --interactive --read-only --publish 8080:8080 --volume /path/to/ontologies/:/data/:ro ghcr.io/tkw1536/lontod:latest --watch
 ```
 
+If you run into sqlite lock issues or are on a filesystem where WAL is problematic, you can disable the sqlite connection tweaks (WAL + busy-timeout) using:
+
+```bash
+docker run ... ghcr.io/tkw1536/lontod:latest --no-db-locking-tweaks
+```
+
 ## LICENSE
 
 There is no LICENSE. 
