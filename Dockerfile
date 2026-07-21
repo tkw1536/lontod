@@ -1,4 +1,4 @@
-FROM python:3.13-bullseye as builder
+FROM python:3.13-bullseye AS builder
 
 RUN pip install poetry==2.1.1
 
@@ -14,7 +14,7 @@ ADD README.md .
 
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --without dev --no-root
 
-FROM python:3.13-slim-bullseye as runtime
+FROM python:3.13-slim-bullseye AS runtime
 
 # RUN adduser --system --no-create-home nonroot
 
