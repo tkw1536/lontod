@@ -28,6 +28,7 @@ from lontod.html import (
 )
 from lontod.index import Query
 from lontod.ontologies.types import extension_from_type
+from lontod.utils.buffered import buffered
 from lontod.utils.pool import Pool
 
 from .http import LoggingMiddleware, negotiate
@@ -367,6 +368,7 @@ class Handler(Starlette):
             return StreamingResponse(self.__stream_root_text(), media_type="text/plain")
         return StreamingResponse(self.__stream_root_html(), media_type="text/html")
 
+    @buffered()
     def __stream_root_html(self) -> Generator[str]:
         with self.__pool.use() as query:
             return stream_nodes(
@@ -410,6 +412,7 @@ class Handler(Starlette):
                 self.__index_html_footer,
             )
 
+    @buffered()
     def __stream_root_text(self) -> Generator[str]:
         with self.__pool.use() as query:
             yield self.__index_txt_header
