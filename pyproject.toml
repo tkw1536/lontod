@@ -153,6 +153,10 @@ syrupy = "^5.0.0"
 testpaths = [
     "tests/"
 ]
+filterwarnings = [
+    # Colon in "Code:" would split the filter fields; "." matches it instead.
+    "ignore:Code. _mock_name is not defined in namespace .*:UserWarning",
+]
 
 [tool.mypy]
 mypy_path = "typings/"
